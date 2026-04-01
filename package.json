@@ -1,6 +1,5 @@
 {
   "private": true,
-  "author": "ray.zhang <2091828832@qq.com>",
   "scripts": {
     "build": "max build",
     "dev": "max dev",
@@ -27,6 +26,11 @@
       "prettier --write"
     ]
   },
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
+  },
   "dependencies": {
     "@ant-design/charts": "^2.6.7",
     "@ant-design/icons": "^5.0.1",
@@ -43,6 +47,7 @@
     "@typescript-eslint/eslint-plugin": "^6.12.0",
     "@typescript-eslint/parser": "^6.12.0",
     "commitizen": "^4.3.0",
+    "cz-conventional-changelog": "^3.3.0",
     "eslint": "^8.48.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-react": "^7.33.2",
