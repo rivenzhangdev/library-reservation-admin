@@ -1,0 +1,22 @@
+export default {
+  'booking.listTitle': '预约列表',
+  'booking.confirmCancelTitle': '确认取消',
+  'booking.confirmCancelContent': '确定要取消该预约吗？',
+  'booking.cancelSuccess': '取消成功',
+  'booking.cancelFailed': '取消失败',
+  'booking.column.seat': '座位',
+  'booking.column.dateRange': '日期范围',
+  'booking.action.details': '详情',
+  'booking.batchCancel': '批量取消',
+  'booking.confirmBatchCancelTitle': '确认批量取消',
+  'booking.confirmBatchCancelContent': '确定要取消 {count} 条预约吗？',
+  'booking.batchCancelSuccess': '批量取消成功',
+  'booking.batchCancelFailed': '批量取消失败',
+  'booking.new': '新增预约',
+  'booking.form.seatNameRequired': '请选择座位',
+  'booking.form.date': '日期',
+  'booking.form.dateRequired': '请选择日期',
+  'booking.form.timeSlot': '时段',
+  'booking.form.timeSlotRequired': '请选择时段',
+  // booking status
+};

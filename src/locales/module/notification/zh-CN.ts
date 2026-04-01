@@ -1,0 +1,15 @@
+export default {
+  'notification.listTitle': '通知列表',
+  'notification.confirmDeleteContent': '确定要删除该通知吗？',
+  'notification.markReadSuccess': '标记已读',
+  'notification.type.system': '系统通知',
+  'notification.type.booking': '预约通知',
+  'notification.type.activity': '活动通知',
+  'notification.type.marketing': '营销通知',
+  'notification.status.read': '已读',
+  'notification.status.unread': '未读',
+  'notification.send': '发送通知',
+  'notification.sendSuccess': '发送成功',
+  'notification.sendFailed': '发送失败',
+  'notification.form.content': '内容',
+};
