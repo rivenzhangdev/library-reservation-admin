@@ -4,9 +4,14 @@ import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
 import { Button, Form, Input, Modal, Select, Space, Tag, message } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
+import {
+  NotificationType as NotificationTypeEnum,
+  NotificationTypeText,
+} from '../../constants/status';
 import { getFloors } from '../../services/library/floor';
 import {
   deleteNotification,
+  getNotificationDetail,
   getNotificationList,
   sendNotification,
 } from '../../services/library/notification';
@@ -14,11 +19,11 @@ import {
 /**
  * 通知数据类型
  */
-interface NotificationType {
+interface NotificationRecord {
   id: string;
   userId: string;
   userName: string;
-  type: string;
+  type: number;
   title: string;
   content: string;
   time: string;
@@ -36,6 +41,8 @@ const NotificationManagement: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [form] = Form.useForm();
   const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [detailVisible, setDetailVisible] = useState<boolean>(false);
+  const [detailData, setDetailData] = useState<any>(null);
   const [floors, setFloors] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
@@ -69,27 +76,21 @@ const NotificationManagement: React.FC = () => {
           await deleteNotification(id);
           message.success('删除成功');
           actionRef.current?.reload?.();
-        } catch (e) {
-          message.error('删除失败');
+        } catch (e: any) {
+          message.error(e?.message || '删除失败');
         }
       },
     });
   };
 
-  const columns: ProColumns<NotificationType>[] = [
+  const columns: ProColumns<NotificationRecord>[] = [
     {
       title: intl.formatMessage({
         id: 'credit.tab.users',
         defaultMessage: '用户',
       }),
       dataIndex: 'userName',
-    },
-    {
-      title: intl.formatMessage({
-        id: 'credit.tab.users',
-        defaultMessage: '用户',
-      }),
-      dataIndex: 'userName',
+      width: 100,
     },
     {
       title: intl.formatMessage({
@@ -99,28 +100,28 @@ const NotificationManagement: React.FC = () => {
       dataIndex: 'type',
       valueType: 'select',
       valueEnum: {
-        system: {
+        [NotificationTypeEnum.System]: {
           text: intl.formatMessage({
             id: 'notification.type.system',
             defaultMessage: '系统通知',
           }),
           status: 'Default',
         },
-        booking: {
+        [NotificationTypeEnum.Booking]: {
           text: intl.formatMessage({
             id: 'notification.type.booking',
             defaultMessage: '预约通知',
           }),
           status: 'Processing',
         },
-        activity: {
+        [NotificationTypeEnum.Activity]: {
           text: intl.formatMessage({
             id: 'notification.type.activity',
             defaultMessage: '活动通知',
           }),
           status: 'Success',
         },
-        marketing: {
+        [NotificationTypeEnum.Marketing]: {
           text: intl.formatMessage({
             id: 'notification.type.marketing',
             defaultMessage: '营销通知',
@@ -129,13 +130,7 @@ const NotificationManagement: React.FC = () => {
         },
       },
       render: (_, record) => {
-        const textMap: Record<string, string> = {
-          system: '系统通知',
-          booking: '预约通知',
-          activity: '活动通知',
-          marketing: '营销通知',
-        };
-        return <Tag>{textMap[record.type]}</Tag>;
+        return <Tag>{NotificationTypeText[record.type] || '未知'}</Tag>;
       },
     },
     {
@@ -162,6 +157,8 @@ const NotificationManagement: React.FC = () => {
       }),
       dataIndex: 'title',
       copyable: true,
+      width: 160,
+      ellipsis: true,
     },
     {
       title: intl.formatMessage({
@@ -170,6 +167,7 @@ const NotificationManagement: React.FC = () => {
       }),
       dataIndex: 'content',
       ellipsis: true,
+      width: 200,
       hideInSearch: true,
     },
     {
@@ -179,6 +177,7 @@ const NotificationManagement: React.FC = () => {
       }),
       dataIndex: 'time',
       valueType: 'dateTime',
+      width: 160,
       sorter: true,
     },
     {
@@ -225,9 +224,25 @@ const NotificationManagement: React.FC = () => {
         defaultMessage: '操作',
       }),
       valueType: 'option',
+      width: 140,
+      fixed: 'right',
       render: (_, record) => (
         <Space size="small">
-          <Button type="link" icon={<EditOutlined />} size="small">
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            size="small"
+            onClick={async () => {
+              try {
+                const res: any = await getNotificationDetail(record.id);
+                const raw = res?.data ?? res;
+                setDetailData(raw);
+                setDetailVisible(true);
+              } catch (e: any) {
+                message.error(e?.message || '获取详情失败');
+              }
+            }}
+          >
             {intl.formatMessage({
               id: 'dashboard.view',
               defaultMessage: '查看',
@@ -257,10 +272,11 @@ const NotificationManagement: React.FC = () => {
         defaultMessage: '通知管理',
       })}
     >
-      <ProTable<NotificationType>
+      <ProTable<NotificationRecord>
         headerTitle="通知列表"
         actionRef={actionRef}
         rowKey="id"
+        scroll={{ x: 1000 }}
         search={{
           labelWidth: 'auto',
           defaultCollapsed: false,
@@ -275,6 +291,16 @@ const NotificationManagement: React.FC = () => {
             else if (Array.isArray(raw?.notifications))
               list = raw.notifications;
             else list = [];
+            list = list.map((item: any) => ({
+              ...item,
+              id: item.id || item._id,
+              userName:
+                item.userName ||
+                item.user?.name ||
+                item.user?.username ||
+                item.userId ||
+                '-',
+            }));
             const total = raw?.total ?? (Array.isArray(list) ? list.length : 0);
             return { data: list, success: true, total };
           } catch (e) {
@@ -301,10 +327,48 @@ const NotificationManagement: React.FC = () => {
       />
       <Modal
         title={intl.formatMessage({
+          id: 'dashboard.view',
+          defaultMessage: '查看',
+        })}
+        open={detailVisible}
+        onCancel={() => {
+          setDetailVisible(false);
+          setDetailData(null);
+        }}
+        footer={null}
+      >
+        {detailData ? (
+          <div>
+            <p>
+              <strong>用户：</strong>
+              {detailData.userName ||
+                detailData.user?.name ||
+                detailData.user?.username ||
+                '-'}
+            </p>
+            <p>
+              <strong>标题：</strong>
+              {detailData.title}
+            </p>
+            <p>
+              <strong>内容：</strong>
+              {detailData.content}
+            </p>
+            <p>
+              <strong>时间：</strong>
+              {detailData.time || detailData.createdAt || '-'}
+            </p>
+          </div>
+        ) : (
+          <div>加载中...</div>
+        )}
+      </Modal>
+      <Modal
+        title={intl.formatMessage({
           id: 'notification.send',
           defaultMessage: '发送通知',
         })}
-        visible={modalVisible}
+        open={modalVisible}
         onCancel={() => {
           setModalVisible(false);
           form.resetFields();
@@ -317,8 +381,9 @@ const NotificationManagement: React.FC = () => {
             setModalVisible(false);
             form.resetFields();
             actionRef.current?.reload?.();
-          } catch (e) {
-            message.error('发送失败');
+          } catch (e: any) {
+            if (e?.errorFields) return;
+            message.error(e?.message || '发送失败');
           }
         }}
       >
@@ -338,28 +403,28 @@ const NotificationManagement: React.FC = () => {
               id: 'seat.form.type',
               defaultMessage: '类型',
             })}
-            initialValue="system"
+            initialValue={NotificationTypeEnum.System}
           >
             <Select>
-              <Select.Option value="system">
+              <Select.Option value={NotificationTypeEnum.System}>
                 {intl.formatMessage({
                   id: 'notification.type.system',
                   defaultMessage: '系统通知',
                 })}
               </Select.Option>
-              <Select.Option value="booking">
+              <Select.Option value={NotificationTypeEnum.Booking}>
                 {intl.formatMessage({
                   id: 'notification.type.booking',
                   defaultMessage: '预约通知',
                 })}
               </Select.Option>
-              <Select.Option value="activity">
+              <Select.Option value={NotificationTypeEnum.Activity}>
                 {intl.formatMessage({
                   id: 'notification.type.activity',
                   defaultMessage: '活动通知',
                 })}
               </Select.Option>
-              <Select.Option value="marketing">
+              <Select.Option value={NotificationTypeEnum.Marketing}>
                 {intl.formatMessage({
                   id: 'notification.type.marketing',
                   defaultMessage: '营销通知',

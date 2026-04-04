@@ -65,6 +65,7 @@ const SeatManagement: React.FC = () => {
   );
   const [form] = Form.useForm();
   const [batchForm] = Form.useForm();
+  const [batchStatusForm] = Form.useForm();
   const [batchStatus, setBatchStatus] = useState<number>(SeatStatus.Available);
   const [floors, setFloors] = useState<Array<{ id: string; name: string }>>([]);
 
@@ -113,8 +114,8 @@ const SeatManagement: React.FC = () => {
           await deleteSeat(id);
           message.success('删除成功');
           actionRef.current?.reload?.();
-        } catch (e) {
-          message.error('删除失败');
+        } catch (e: any) {
+          message.error(e?.message || '删除失败');
         }
       },
     });
@@ -129,8 +130,8 @@ const SeatManagement: React.FC = () => {
       await updateSeat(record.id, { status: newStatus });
       message.success('更新成功');
       actionRef.current?.reload?.();
-    } catch (e) {
-      message.error('更新失败');
+    } catch (e: any) {
+      message.error(e?.message || '更新失败');
     }
   };
 
@@ -157,6 +158,7 @@ const SeatManagement: React.FC = () => {
         return map;
       })(),
       render: (_, record) => record.floorName || '',
+      width: 100,
     },
     {
       title: intl.formatMessage({
@@ -165,6 +167,7 @@ const SeatManagement: React.FC = () => {
       }),
       dataIndex: 'position',
       hideInSearch: true,
+      width: 140,
       render: (_, record) => `第${record.rowNum}行 - 第${record.colNum}列`,
     },
     {
@@ -174,6 +177,7 @@ const SeatManagement: React.FC = () => {
       }),
       dataIndex: 'rowNum',
       sorter: true,
+      width: 70,
       hideInSearch: true,
     },
     {
@@ -183,6 +187,7 @@ const SeatManagement: React.FC = () => {
       }),
       dataIndex: 'colNum',
       sorter: true,
+      width: 70,
       hideInSearch: true,
     },
     {
@@ -253,7 +258,10 @@ const SeatManagement: React.FC = () => {
         id: 'seat.form.zone',
         defaultMessage: '区域',
       }),
-      dataIndex: 'zone',
+      dataIndex: 'zoneName',
+      render: (_, record) => (
+        <Tag color="#108ee9">{record.zoneName || record.zone || '-'}</Tag>
+      ),
     },
     {
       title: intl.formatMessage({
@@ -261,8 +269,10 @@ const SeatManagement: React.FC = () => {
         defaultMessage: '操作',
       }),
       valueType: 'option',
+      width: 260,
+      fixed: 'right',
       render: (_, record) => (
-        <Space size="small">
+        <Space size={4} wrap={false}>
           <Button
             type="link"
             icon={<EditOutlined />}
@@ -306,6 +316,7 @@ const SeatManagement: React.FC = () => {
         headerTitle="座位列表"
         actionRef={actionRef}
         rowKey="id"
+        scroll={{ x: 1300 }}
         search={{
           labelWidth: 'auto',
           defaultCollapsed: false,
@@ -367,8 +378,11 @@ const SeatManagement: React.FC = () => {
           id: 'seat.batchStatusModal.title',
           defaultMessage: '批量设置座位状态',
         })}
-        visible={batchStatusModalVisible}
-        onCancel={() => setBatchStatusModalVisible(false)}
+        open={batchStatusModalVisible}
+        onCancel={() => {
+          setBatchStatusModalVisible(false);
+          batchStatusForm.resetFields();
+        }}
         onOk={async () => {
           try {
             if (!selectedSeatIds || selectedSeatIds.length === 0) {
@@ -384,12 +398,12 @@ const SeatManagement: React.FC = () => {
             setSelectedSeatIds([]);
             setBatchStatusModalVisible(false);
             actionRef.current?.reload?.();
-          } catch (e) {
-            message.error('批量更新失败');
+          } catch (e: any) {
+            message.error(e?.message || '批量更新失败');
           }
         }}
       >
-        <Form layout="vertical">
+        <Form form={batchStatusForm} layout="vertical">
           <Form.Item
             label={intl.formatMessage({
               id: 'seat.form.status',
@@ -419,7 +433,7 @@ const SeatManagement: React.FC = () => {
 
       <Modal
         title={editingSeat ? '编辑座位' : '新建座位'}
-        visible={editModalVisible}
+        open={editModalVisible}
         onCancel={() => {
           setEditModalVisible(false);
           setEditingSeat(null);
@@ -439,8 +453,9 @@ const SeatManagement: React.FC = () => {
             setEditingSeat(null);
             form.resetFields();
             actionRef.current?.reload?.();
-          } catch (e) {
-            message.error('操作失败');
+          } catch (e: any) {
+            if (e?.errorFields) return;
+            message.error(e?.message || '操作失败');
           }
         }}
       >
@@ -592,7 +607,7 @@ const SeatManagement: React.FC = () => {
           id: 'seat.batchCreateModal.title',
           defaultMessage: '批量创建座位',
         })}
-        visible={batchModalVisible}
+        open={batchModalVisible}
         onCancel={() => {
           setBatchModalVisible(false);
           batchForm.resetFields();
@@ -636,6 +651,7 @@ const SeatManagement: React.FC = () => {
             batchForm.resetFields();
             actionRef.current?.reload?.();
           } catch (err: any) {
+            if (err?.errorFields) return;
             message.error(err?.message || '创建失败');
           }
         }}

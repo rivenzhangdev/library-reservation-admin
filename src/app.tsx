@@ -1,5 +1,10 @@
-import RightContent from '@/components/RightContent';
-import { history } from '@umijs/max';
+import { LogoutOutlined, UserOutlined } from '@ant-design/icons';
+import { history, SelectLang } from '@umijs/max';
+import { Dropdown, message } from 'antd';
+import React from 'react';
+import requestConfig from './utils/request';
+
+export const request = requestConfig;
 
 const loginPath = '/login';
 
@@ -27,11 +32,52 @@ export async function getInitialState(): Promise<{
 }
 
 export const layout = ({ initialState }: any) => {
+  const currentUser = initialState?.currentUser;
+
   return {
-    rightContentRender: () => <RightContent />,
+    avatarProps: {
+      src: currentUser?.avatar,
+      icon: !currentUser?.avatar ? <UserOutlined /> : undefined,
+      title: currentUser?.name || currentUser?.username || '用户',
+      size: 'small' as const,
+      style: { backgroundColor: currentUser?.avatar ? undefined : '#1890ff' },
+      render: (_: any, avatarDom: React.ReactNode) => {
+        return (
+          <Dropdown
+            menu={{
+              items: [
+                { key: 'profile', icon: <UserOutlined />, label: '个人中心' },
+                { type: 'divider' as const },
+                {
+                  key: 'logout',
+                  icon: <LogoutOutlined />,
+                  label: '退出登录',
+                  danger: true,
+                },
+              ],
+              onClick: ({ key }) => {
+                if (key === 'profile') {
+                  window.dispatchEvent(new CustomEvent('open-profile-modal'));
+                } else if (key === 'logout') {
+                  localStorage.removeItem('token');
+                  localStorage.removeItem('currentUser');
+                  message.success('已退出登录');
+                  history.push('/login');
+                }
+              },
+            }}
+          >
+            {avatarDom}
+          </Dropdown>
+        );
+      },
+    },
+    actionsRender: () => {
+      return [<SelectLang key="select-lang" />];
+    },
+    siderWidth: 208,
     onPageChange: () => {
       const { location } = history;
-      // 如果没有登录，重定向到 login
       if (!initialState?.currentUser && location.pathname !== loginPath) {
         history.push(loginPath);
       }

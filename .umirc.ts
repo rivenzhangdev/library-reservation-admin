@@ -17,6 +17,16 @@ export default defineConfig({
     title: '图书馆管理后台',
     logo: false,
   },
+  // 本地开发时将 /api 请求代理到后端服务，优先使用环境变量 BACKEND_URL
+  // 启动示例（PowerShell）：
+  // $env:BACKEND_URL='http://localhost:3001'; pnpm dev
+  proxy: {
+    '/api': {
+      target: process.env.BACKEND_URL || 'http://localhost:3001',
+      changeOrigin: true,
+      secure: false,
+    },
+  },
   routes: [
     {
       path: '/login',
@@ -68,6 +78,25 @@ export default defineConfig({
       icon: 'BellOutlined',
       component: 'Notification',
       access: 'canSeeAdmin',
+    },
+    {
+      path: '/feedback',
+      name: 'feedback',
+      icon: 'MessageOutlined',
+      component: 'Feedback',
+      access: 'canSeeAdmin',
+    },
+    {
+      path: '/uploads',
+      name: 'uploads',
+      icon: 'PictureOutlined',
+      component: 'Uploads',
+      access: 'canSeeAdmin',
+    },
+    {
+      path: '/feedback/:id',
+      component: 'Feedback/Detail',
+      hideInMenu: true,
     },
     {
       path: '/credit',

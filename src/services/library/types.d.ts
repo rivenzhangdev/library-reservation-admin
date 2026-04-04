@@ -87,7 +87,7 @@ export interface Notification {
   id: string;
   userId: string;
   userName: string;
-  type: 'system' | 'booking' | 'activity' | 'marketing';
+  type: number; // 0: system, 1: booking, 2: activity, 3: marketing
   title: string;
   content: string;
   time: string;

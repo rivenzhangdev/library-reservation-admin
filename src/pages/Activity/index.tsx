@@ -21,6 +21,7 @@ import {
   createActivity,
   deleteActivity,
   getActivityList,
+  updateActivity,
 } from '../../services/library/activity';
 import { getFloors } from '../../services/library/floor';
 
@@ -50,6 +51,7 @@ const ActivityManagement: React.FC = () => {
 
   const actionRef = useRef<ActionType>();
   const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [floors, setFloors] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
@@ -84,31 +86,14 @@ const ActivityManagement: React.FC = () => {
           await deleteActivity(id);
           message.success('删除成功');
           actionRef.current?.reload?.();
-        } catch (e) {
-          message.error('删除失败');
+        } catch (e: any) {
+          message.error(e?.message || '删除失败');
         }
       },
     });
   };
 
   const columns: ProColumns<ActivityType>[] = [
-    {
-      title: intl.formatMessage({
-        id: 'activity.column.cover',
-        defaultMessage: '封面',
-      }),
-      dataIndex: 'coverImage',
-      hideInSearch: true,
-      render: (_, record) => (
-        <Image
-          src={record.coverImage}
-          alt={record.title}
-          width={60}
-          height={60}
-          style={{ objectFit: 'cover', borderRadius: '4px' }}
-        />
-      ),
-    },
     {
       title: intl.formatMessage({
         id: 'activity.column.timeRange',
@@ -125,15 +110,28 @@ const ActivityManagement: React.FC = () => {
       }),
       dataIndex: 'coverImage',
       hideInSearch: true,
-      render: (_, record) => (
-        <Image
-          src={record.coverImage}
-          alt={record.title}
-          width={60}
-          height={60}
-          style={{ objectFit: 'cover', borderRadius: '4px' }}
-        />
-      ),
+      width: 80,
+      render: (_, record) => {
+        const src = record.coverImage || record.cover_image || record.cover;
+        return src ? (
+          <Image
+            src={src}
+            alt={record.title}
+            width={60}
+            height={60}
+            style={{ objectFit: 'cover', borderRadius: '4px' }}
+          />
+        ) : (
+          <div
+            style={{
+              width: 60,
+              height: 60,
+              background: '#f5f5f5',
+              borderRadius: 4,
+            }}
+          />
+        );
+      },
     },
     {
       title: intl.formatMessage({
@@ -142,6 +140,8 @@ const ActivityManagement: React.FC = () => {
       }),
       dataIndex: 'title',
       copyable: true,
+      width: 160,
+      ellipsis: true,
     },
     {
       title: intl.formatMessage({
@@ -166,6 +166,8 @@ const ActivityManagement: React.FC = () => {
         defaultMessage: '地点',
       }),
       dataIndex: 'location',
+      width: 120,
+      ellipsis: true,
     },
     {
       title: intl.formatMessage({
@@ -174,6 +176,7 @@ const ActivityManagement: React.FC = () => {
       }),
       dataIndex: 'startTime',
       valueType: 'dateTime',
+      width: 160,
       sorter: true,
     },
     {
@@ -183,6 +186,7 @@ const ActivityManagement: React.FC = () => {
       }),
       dataIndex: 'endTime',
       valueType: 'dateTime',
+      width: 160,
       hideInSearch: true,
     },
     {
@@ -226,7 +230,14 @@ const ActivityManagement: React.FC = () => {
       }),
       dataIndex: 'participants',
       hideInSearch: true,
-      render: (_, record) => `${record.participants}/${record.maxParticipants}`,
+      width: 100,
+      render: (_, record) => {
+        const p = record.participants || 0;
+        if (record.maxParticipants && record.maxParticipants > 0) {
+          return `${p} / ${record.maxParticipants} 人`;
+        }
+        return `${p} 人`;
+      },
     },
     {
       title: intl.formatMessage({
@@ -234,9 +245,42 @@ const ActivityManagement: React.FC = () => {
         defaultMessage: '操作',
       }),
       valueType: 'option',
+      width: 150,
+      fixed: 'right',
       render: (_, record) => (
         <Space size="small">
-          <Button type="link" icon={<EditOutlined />} size="small">
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            size="small"
+            onClick={async () => {
+              setEditingId(record.id);
+              // populate form
+              try {
+                const values: any = {
+                  title: record.title,
+                  description: record.description,
+                  coverImage: record.coverImage,
+                  location: record.location,
+                  maxParticipants: record.maxParticipants,
+                  status: record.status,
+                  floorId: record.floorId,
+                };
+                if (record.startTime && record.endTime) {
+                  // lazy import dayjs to convert to date objects compatible with DatePicker
+                  const dayjs = (await import('dayjs')).default;
+                  values.time = [
+                    dayjs(record.startTime),
+                    dayjs(record.endTime),
+                  ];
+                }
+                form.setFieldsValue(values);
+                setModalVisible(true);
+              } catch (e) {
+                // ignore
+              }
+            }}
+          >
             {intl.formatMessage({ id: 'common.edit', defaultMessage: '编辑' })}
           </Button>
           <Button
@@ -267,6 +311,7 @@ const ActivityManagement: React.FC = () => {
         headerTitle="活动列表"
         actionRef={actionRef}
         rowKey="id"
+        scroll={{ x: 1100 }}
         search={{
           labelWidth: 'auto',
           defaultCollapsed: false,
@@ -280,6 +325,10 @@ const ActivityManagement: React.FC = () => {
             else if (Array.isArray(raw?.list)) list = raw.list;
             else if (Array.isArray(raw?.activities)) list = raw.activities;
             else list = [];
+            list = list.map((item: any) => ({
+              ...item,
+              id: item.id || item._id,
+            }));
             const total = raw?.total ?? (Array.isArray(list) ? list.length : 0);
             return { data: list, success: true, total };
           } catch (e) {
@@ -292,7 +341,10 @@ const ActivityManagement: React.FC = () => {
             key="new"
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => setModalVisible(true)}
+            onClick={() => {
+              setEditingId(null);
+              setModalVisible(true);
+            }}
           >
             {intl.formatMessage({
               id: 'activity.publish',
@@ -309,10 +361,11 @@ const ActivityManagement: React.FC = () => {
           id: 'activity.publish',
           defaultMessage: '发布活动',
         })}
-        visible={modalVisible}
+        open={modalVisible}
         onCancel={() => {
           setModalVisible(false);
           form.resetFields();
+          setEditingId(null);
         }}
         onOk={async () => {
           try {
@@ -323,13 +376,20 @@ const ActivityManagement: React.FC = () => {
               payload.endTime = values.time[1].format();
               delete payload.time;
             }
-            await createActivity(payload);
-            message.success('发布成功');
+            if (editingId) {
+              await updateActivity(editingId, payload);
+              message.success('更新成功');
+            } else {
+              await createActivity(payload);
+              message.success('发布成功');
+            }
             setModalVisible(false);
             form.resetFields();
+            setEditingId(null);
             actionRef.current?.reload?.();
-          } catch (e) {
-            message.error('发布失败');
+          } catch (e: any) {
+            if (e?.errorFields) return; // form validation errors shown inline
+            message.error(e?.message || (editingId ? '更新失败' : '发布失败'));
           }
         }}
       >

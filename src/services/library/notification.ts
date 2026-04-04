@@ -4,7 +4,7 @@ import { request } from '@umijs/max';
  * 获取通知列表
  */
 export async function getNotificationList(params?: any) {
-  return request('/api/notification/list', {
+  return request('/api/notification', {
     method: 'GET',
     params,
   });
@@ -33,7 +33,7 @@ export async function sendNotification(data: any) {
  * 标记为已读
  */
 export async function markAsRead(id: string) {
-  return request(`/api/notification/${id}/read`, {
+  return request(`/api/notification/read/${id}`, {
     method: 'POST',
   });
 }

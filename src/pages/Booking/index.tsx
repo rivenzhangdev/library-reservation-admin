@@ -24,6 +24,7 @@ import {
   batchCancelBookings,
   cancelBooking,
   createBooking,
+  getBookingDetail,
   getBookingList,
 } from '../../services/library/booking';
 import { getFloors } from '../../services/library/floor';
@@ -54,6 +55,8 @@ const BookingManagement: React.FC = () => {
   const [form] = Form.useForm();
   const [selectedRows, setSelectedRows] = useState<number[] | string[]>([]);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [detailVisible, setDetailVisible] = useState<boolean>(false);
+  const [detailData, setDetailData] = useState<any>(null);
   const [floors, setFloors] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
@@ -87,11 +90,22 @@ const BookingManagement: React.FC = () => {
           await cancelBooking(id);
           message.success('取消成功');
           actionRef.current?.reload?.();
-        } catch (e) {
-          message.error('取消失败');
+        } catch (e: any) {
+          message.error(e?.message || '取消失败');
         }
       },
     });
+  };
+
+  const handleShowDetail = async (id: number) => {
+    try {
+      const res: any = await getBookingDetail(id);
+      const raw = res?.data ?? res;
+      setDetailData(raw);
+      setDetailVisible(true);
+    } catch (e: any) {
+      message.error(e?.message || '获取详情失败');
+    }
   };
 
   const columns: ProColumns<BookingType>[] = [
@@ -118,6 +132,9 @@ const BookingManagement: React.FC = () => {
         defaultMessage: '用户',
       }),
       dataIndex: 'userName',
+      width: 100,
+      render: (_, record) =>
+        record.userName || record.user?.name || record.user?.username || '-',
     },
     {
       title: intl.formatMessage({
@@ -125,7 +142,8 @@ const BookingManagement: React.FC = () => {
         defaultMessage: '座位',
       }),
       dataIndex: 'seatName',
-      render: (_, record) => `${record.seatName}`,
+      width: 120,
+      render: (_, record) => record.seatName || record.seat?.name || '-',
     },
     {
       title: intl.formatMessage({
@@ -134,6 +152,7 @@ const BookingManagement: React.FC = () => {
       }),
       dataIndex: 'date',
       valueType: 'date',
+      width: 110,
     },
     {
       title: intl.formatMessage({
@@ -163,7 +182,13 @@ const BookingManagement: React.FC = () => {
         defaultMessage: '时间',
       }),
       hideInSearch: true,
-      render: (_, record) => `${record.startTime} - ${record.endTime}`,
+      width: 160,
+      render: (_, record) => {
+        const start =
+          record.startTime ?? record.start_time ?? record.start ?? '-';
+        const end = record.endTime ?? record.end_time ?? record.end ?? '-';
+        return `${start} - ${end}`;
+      },
     },
     {
       title: intl.formatMessage({
@@ -215,9 +240,16 @@ const BookingManagement: React.FC = () => {
         defaultMessage: '操作',
       }),
       valueType: 'option',
+      width: 140,
+      fixed: 'right',
       render: (_, record) => (
         <Space size="small">
-          <Button type="link" icon={<EditOutlined />} size="small">
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            size="small"
+            onClick={() => handleShowDetail(record.id)}
+          >
             {intl.formatMessage({
               id: 'booking.action.details',
               defaultMessage: '详情',
@@ -252,6 +284,7 @@ const BookingManagement: React.FC = () => {
         headerTitle="预约列表"
         actionRef={actionRef}
         rowKey="id"
+        scroll={{ x: 1000 }}
         search={{
           labelWidth: 'auto',
           defaultCollapsed: false,
@@ -277,8 +310,8 @@ const BookingManagement: React.FC = () => {
                     message.success('批量取消成功');
                     setSelectedRows([]);
                     actionRef.current?.reload?.();
-                  } catch (e) {
-                    message.error('批量取消失败');
+                  } catch (e: any) {
+                    message.error(e?.message || '批量取消失败');
                   }
                 },
               });
@@ -323,10 +356,54 @@ const BookingManagement: React.FC = () => {
       />
       <Modal
         title={intl.formatMessage({
+          id: 'booking.action.details',
+          defaultMessage: '详情',
+        })}
+        open={detailVisible}
+        onCancel={() => {
+          setDetailVisible(false);
+          setDetailData(null);
+        }}
+        footer={null}
+      >
+        {detailData ? (
+          <div>
+            <p>
+              <strong>用户：</strong>
+              {detailData.userName ||
+                detailData.user?.name ||
+                detailData.user?.username ||
+                '-'}
+            </p>
+            <p>
+              <strong>座位：</strong>
+              {detailData.seatName || detailData.seat?.name || '-'}
+            </p>
+            <p>
+              <strong>日期：</strong>
+              {detailData.date || detailData.book_date || '-'}
+            </p>
+            <p>
+              <strong>时间：</strong>
+              {(detailData.startTime ?? detailData.start ?? '-') +
+                ' - ' +
+                (detailData.endTime ?? detailData.end ?? '-')}
+            </p>
+            <p>
+              <strong>状态：</strong>
+              {detailData.status}
+            </p>
+          </div>
+        ) : (
+          <div>加载中...</div>
+        )}
+      </Modal>
+      <Modal
+        title={intl.formatMessage({
           id: 'booking.new',
           defaultMessage: '新增预约',
         })}
-        visible={modalVisible}
+        open={modalVisible}
         onCancel={() => {
           setModalVisible(false);
           form.resetFields();
@@ -339,8 +416,9 @@ const BookingManagement: React.FC = () => {
             setModalVisible(false);
             form.resetFields();
             actionRef.current?.reload?.();
-          } catch (e) {
-            message.error('创建失败');
+          } catch (e: any) {
+            if (e?.errorFields) return;
+            message.error(e?.message || '创建失败');
           }
         }}
       >

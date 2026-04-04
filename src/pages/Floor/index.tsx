@@ -48,6 +48,7 @@ const FloorManagement: React.FC = () => {
         defaultMessage: '操作',
       }),
       valueType: 'option',
+      width: 150,
       render: (_: any, record: FloorType) => (
         <Space>
           <Button
@@ -65,10 +66,22 @@ const FloorManagement: React.FC = () => {
             type="link"
             danger
             icon={<DeleteOutlined />}
-            onClick={async () => {
-              await request(`/api/floors/${record.id}`, { method: 'DELETE' });
-              message.success('删除成功');
-              actionRef.current?.reload?.();
+            onClick={() => {
+              Modal.confirm({
+                title: '确认删除',
+                content: '确定要删除该楼层吗？',
+                onOk: async () => {
+                  try {
+                    await request(`/api/floors/${record.id}`, {
+                      method: 'DELETE',
+                    });
+                    message.success('删除成功');
+                    actionRef.current?.reload?.();
+                  } catch (e: any) {
+                    message.error(e?.message || '删除失败');
+                  }
+                },
+              });
             }}
           >
             {intl.formatMessage({
@@ -93,8 +106,21 @@ const FloorManagement: React.FC = () => {
         actionRef={actionRef}
         rowKey="id"
         request={async (params) => {
-          const res = await request('/api/floors', { params });
-          return { data: res.data.list, success: true, total: res.data.total };
+          try {
+            const res = await request('/api/floors', { params });
+            const raw = res?.data;
+            let list: any[] = [];
+            if (Array.isArray(raw)) list = raw;
+            else if (Array.isArray(raw?.list)) list = raw.list;
+            else list = [];
+            return {
+              data: list,
+              success: true,
+              total: raw?.total ?? list.length,
+            };
+          } catch (e) {
+            return { data: [], success: false, total: 0 };
+          }
         }}
         columns={columns}
         toolBarRender={() => [
@@ -118,28 +144,33 @@ const FloorManagement: React.FC = () => {
 
       <Modal
         title={editing ? '编辑楼层' : '新建楼层'}
-        visible={modalVisible}
+        open={modalVisible}
         onCancel={() => {
           setModalVisible(false);
           setEditing(null);
           form.resetFields();
         }}
         onOk={async () => {
-          const values = await form.validateFields();
-          if (editing) {
-            await request(`/api/floors/${editing.id}`, {
-              method: 'PUT',
-              data: values,
-            });
-            message.success('更新成功');
-          } else {
-            await request('/api/floors', { method: 'POST', data: values });
-            message.success('创建成功');
+          try {
+            const values = await form.validateFields();
+            if (editing) {
+              await request(`/api/floors/${editing.id}`, {
+                method: 'PUT',
+                data: values,
+              });
+              message.success('更新成功');
+            } else {
+              await request('/api/floors', { method: 'POST', data: values });
+              message.success('创建成功');
+            }
+            setModalVisible(false);
+            setEditing(null);
+            form.resetFields();
+            actionRef.current?.reload?.();
+          } catch (err: any) {
+            if (err?.errorFields) return;
+            message.error(err?.message || '操作失败');
           }
-          setModalVisible(false);
-          setEditing(null);
-          form.resetFields();
-          actionRef.current?.reload?.();
         }}
       >
         <Form form={form} layout="vertical">

@@ -52,7 +52,7 @@ export async function deleteActivity(id: string) {
  * 报名活动
  */
 export async function joinActivity(id: string) {
-  return request(`/api/activity/${id}/join`, {
+  return request(`/api/activity/join/${id}`, {
     method: 'POST',
   });
 }
@@ -61,7 +61,7 @@ export async function joinActivity(id: string) {
  * 取消报名
  */
 export async function cancelActivityJoin(id: string) {
-  return request(`/api/activity/${id}/cancel`, {
+  return request(`/api/activity/cancel/${id}`, {
     method: 'POST',
   });
 }

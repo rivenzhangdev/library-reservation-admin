@@ -60,3 +60,27 @@ export const ActivityStatusText: Record<number, string> = {
   [ActivityStatus.Ongoing]: '进行中',
   [ActivityStatus.Ended]: '已结束',
 };
+
+export enum NotificationType {
+  System = 0,
+  Booking = 1,
+  Activity = 2,
+  Marketing = 3,
+}
+
+export const NotificationTypeText: Record<number, string> = {
+  [NotificationType.System]: '系统通知',
+  [NotificationType.Booking]: '预约通知',
+  [NotificationType.Activity]: '活动通知',
+  [NotificationType.Marketing]: '营销通知',
+};
+
+export enum CreditType {
+  Add = 0,
+  Deduct = 1,
+}
+
+export const CreditTypeText: Record<number, string> = {
+  [CreditType.Add]: '加分',
+  [CreditType.Deduct]: '减分',
+};

@@ -1,9 +1,10 @@
+import '@/assets/styles/global.less';
 import UserProfileModal, { UserProfile } from '@/components/UserProfileModal';
-import { updateUser } from '@/services/library/user';
-import { BellOutlined, LogoutOutlined, UserOutlined } from '@ant-design/icons';
+import { updateUser, uploadImage } from '@/services/library/user';
+import { LogoutOutlined, UserOutlined } from '@ant-design/icons';
 import { history, SelectLang } from '@umijs/max';
 import type { MenuProps } from 'antd';
-import { Badge, Dropdown, message, Space } from 'antd';
+import { Dropdown, message, Space, Tooltip } from 'antd';
 import React, { useEffect, useState } from 'react';
 
 const RightContent: React.FC = () => {
@@ -72,6 +73,24 @@ const RightContent: React.FC = () => {
   const handleSaveProfile = async (data: UserProfile) => {
     // 尝试调用后端更新；失败则保存在 localStorage
     try {
+      // 如果头像是 base64 字符串，先上传获取 URL
+      if (
+        data.avatar &&
+        typeof data.avatar === 'string' &&
+        data.avatar.startsWith('data:')
+      ) {
+        try {
+          const uploadRes: any = await uploadImage(data.avatar);
+          const avatarUrl =
+            uploadRes?.url ||
+            (uploadRes && uploadRes.data && uploadRes.data.url) ||
+            uploadRes;
+          data.avatar = avatarUrl;
+        } catch (e) {
+          console.error('上传头像失败', e);
+        }
+      }
+
       if (currentUser?.id) {
         await updateUser(currentUser.id, data);
       }
@@ -83,101 +102,47 @@ const RightContent: React.FC = () => {
     }
   };
 
-  // 通知菜单
-  const notificationMenuItems: MenuProps['items'] = [
-    {
-      key: '1',
-      label: (
-        <div>
-          <div>您有新的预约申请</div>
-          <div style={{ fontSize: 12, color: '#888' }}>1 分钟前</div>
-        </div>
-      ),
-    },
-    {
-      key: '2',
-      label: (
-        <div>
-          <div>系统维护通知</div>
-          <div style={{ fontSize: 12, color: '#888' }}>2 小时前</div>
-        </div>
-      ),
-    },
-    {
-      key: '3',
-      label: (
-        <div>
-          <div>张三取消了预约</div>
-          <div style={{ fontSize: 12, color: '#888' }}>5 小时前</div>
-        </div>
-      ),
-    },
-  ];
+  // （通知已移除 — 如需显示请在此恢复）
 
   return (
-    <Space size="large" style={{ marginRight: 16 }}>
-      {/* 国际化切换 */}
-      <SelectLang />
+    <Space
+      size="large"
+      style={{ marginRight: 16 }}
+      className="rc-right-container"
+    >
+      {/* 语言切换（独立部分）*/}
+      <div className="rc-lang">
+        <SelectLang />
+      </div>
 
-      {/* 通知 */}
-      <Badge count={3} size="small">
-        <Dropdown
-          menu={{ items: notificationMenuItems }}
-          placement="bottomRight"
-          trigger={['click']}
-        >
-          <div
-            style={{
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              padding: '8px',
-            }}
-          >
-            <BellOutlined style={{ fontSize: 18 }} />
-          </div>
-        </Dropdown>
-      </Badge>
-
-      {/* 用户信息 */}
+      {/* 用户信息组：头像 + 名称 + 角色（点击弹出菜单） */}
       <Dropdown
         menu={{ items: userMenuItems, onClick: handleUserMenuClick }}
         placement="bottomRight"
         trigger={['click']}
       >
         <div
-          style={{
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            padding: '8px',
-          }}
+          className="rc-user-group"
+          style={{ cursor: 'pointer', padding: 8 }}
         >
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '50%',
-              backgroundColor: '#1890ff',
-              overflow: 'hidden',
-            }}
-          >
+          <div className="rc-avatar" role="img" aria-label="avatar">
             {currentUser?.avatar ? (
-              <img
-                src={currentUser.avatar}
-                alt="avatar"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
+              <img src={currentUser.avatar} alt="avatar" />
             ) : (
-              <UserOutlined style={{ color: '#fff' }} />
+              <UserOutlined />
             )}
           </div>
-          <span style={{ marginLeft: 8, whiteSpace: 'nowrap' }}>
-            {currentUser?.name || currentUser?.username || '管理员'}
-          </span>
+
+          <div className="rc-user-meta">
+            <div className="rc-username">
+              <Tooltip
+                title={currentUser?.name || currentUser?.username || '管理员'}
+              >
+                {currentUser?.name || currentUser?.username || '管理员'}
+              </Tooltip>
+            </div>
+            <div className="rc-role">管理员</div>
+          </div>
         </div>
       </Dropdown>
 

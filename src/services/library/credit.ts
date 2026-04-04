@@ -4,7 +4,7 @@ import { request } from '@umijs/max';
  * 获取信用记录列表
  */
 export async function getCreditRecordList(params?: any) {
-  return request('/api/credit/list', {
+  return request('/api/user/credit/records', {
     method: 'GET',
     params,
   });

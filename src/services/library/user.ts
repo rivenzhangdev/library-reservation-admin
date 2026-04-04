@@ -40,6 +40,16 @@ export async function updateUser(id: string, data: any) {
 }
 
 /**
+ * 上传 base64 图片，返回 { url }
+ */
+export async function uploadImage(base64: string) {
+  return request('/api/upload', {
+    method: 'POST',
+    data: { dataUrl: base64 },
+  });
+}
+
+/**
  * 删除用户
  */
 export async function deleteUser(id: string) {
@@ -53,10 +63,10 @@ export async function deleteUser(id: string) {
  */
 export async function updateUserStatus(
   id: string,
-  status: string,
+  status: string | number | boolean,
   reason?: string,
 ) {
-  return request(`/api/user/${id}/status`, {
+  return request(`/api/user/status/${id}`, {
     method: 'PUT',
     data: { status, reason },
   });
@@ -76,8 +86,10 @@ export async function batchUpdateUserStatus(userIds: string[], status: number) {
  * 登录（示例）
  */
 export async function login(data: any) {
+  // login 不应注入 token，使用 skipAuth
   return request('/api/login', {
     method: 'POST',
     data,
+    skipAuth: true,
   });
 }

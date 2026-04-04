@@ -15,6 +15,7 @@ import {
   message,
 } from 'antd';
 import React, { useRef, useState } from 'react';
+import { CreditType, CreditTypeText } from '../../constants/status';
 import {
   addCreditPoints,
   deductCreditPoints,
@@ -33,7 +34,7 @@ interface CreditRecordType {
   id: string;
   userId: string;
   userName: string;
-  type: string;
+  type: number;
   points: number;
   date: string;
   reason: string;
@@ -46,10 +47,35 @@ const CreditManagement: React.FC = () => {
   const intl = useIntl();
 
   const actionRef = useRef<ActionType>();
+  const usersActionRef = useRef<ActionType>();
+  const violationsActionRef = useRef<ActionType>();
+  const blacklistActionRef = useRef<ActionType>();
   const [modalVisible, setModalVisible] = useState(false);
   const [adjustTarget, setAdjustTarget] =
     useState<Partial<CreditRecordType> | null>(null);
   const [form] = Form.useForm();
+
+  const [activeTab, setActiveTab] = useState<string>('records');
+
+  const handleTabChange = (key: string) => {
+    setActiveTab(key);
+    switch (key) {
+      case 'records':
+        actionRef.current?.reload?.();
+        break;
+      case 'users':
+        usersActionRef.current?.reload?.();
+        break;
+      case 'violations':
+        violationsActionRef.current?.reload?.();
+        break;
+      case 'blacklist':
+        blacklistActionRef.current?.reload?.();
+        break;
+      default:
+        break;
+    }
+  };
 
   const columns: ProColumns<CreditRecordType>[] = [
     {
@@ -73,14 +99,14 @@ const CreditManagement: React.FC = () => {
       dataIndex: 'type',
       valueType: 'select',
       valueEnum: {
-        add: {
+        [CreditType.Add]: {
           text: intl.formatMessage({
             id: 'credit.type.add',
             defaultMessage: '加分',
           }),
           status: 'Success',
         },
-        deduct: {
+        [CreditType.Deduct]: {
           text: intl.formatMessage({
             id: 'credit.type.deduct',
             defaultMessage: '减分',
@@ -89,16 +115,8 @@ const CreditManagement: React.FC = () => {
         },
       },
       render: (_, record) => (
-        <Tag color={record.type === 'add' ? 'green' : 'red'}>
-          {record.type === 'add'
-            ? intl.formatMessage({
-                id: 'credit.type.add',
-                defaultMessage: '加分',
-              })
-            : intl.formatMessage({
-                id: 'credit.type.deduct',
-                defaultMessage: '减分',
-              })}
+        <Tag color={record.type === CreditType.Add ? 'green' : 'red'}>
+          {CreditTypeText[record.type] || '未知'}
         </Tag>
       ),
     },
@@ -109,9 +127,14 @@ const CreditManagement: React.FC = () => {
       }),
       dataIndex: 'points',
       sorter: true,
+      width: 100,
       render: (_, record) => (
-        <span style={{ color: record.type === 'add' ? '#52c41a' : '#f5222d' }}>
-          {record.type === 'add' ? '+' : ''}
+        <span
+          style={{
+            color: record.type === CreditType.Add ? '#52c41a' : '#f5222d',
+          }}
+        >
+          {record.type === CreditType.Add ? '+' : ''}
           {record.points}
         </span>
       ),
@@ -123,6 +146,7 @@ const CreditManagement: React.FC = () => {
       }),
       dataIndex: 'date',
       valueType: 'dateTime',
+      width: 160,
       sorter: true,
     },
     {
@@ -132,6 +156,7 @@ const CreditManagement: React.FC = () => {
       }),
       dataIndex: 'reason',
       ellipsis: true,
+      width: 200,
     },
     {
       title: intl.formatMessage({
@@ -139,6 +164,8 @@ const CreditManagement: React.FC = () => {
         defaultMessage: '操作',
       }),
       valueType: 'option',
+      width: 120,
+      fixed: 'right',
       render: (_, record) => (
         <Space>
           <Button
@@ -147,7 +174,11 @@ const CreditManagement: React.FC = () => {
             onClick={() => {
               setAdjustTarget(record);
               setModalVisible(true);
-              form.setFieldsValue({ type: 'add', points: 1, reason: '' });
+              form.setFieldsValue({
+                type: CreditType.Add,
+                points: 1,
+                reason: '',
+              });
             }}
           >
             {intl.formatMessage({
@@ -167,7 +198,11 @@ const CreditManagement: React.FC = () => {
         defaultMessage: '信用管理',
       })}
     >
-      <Tabs defaultActiveKey="records">
+      <Tabs
+        activeKey={activeTab}
+        onChange={handleTabChange}
+        defaultActiveKey="records"
+      >
         <Tabs.TabPane
           tab={intl.formatMessage({
             id: 'credit.tab.records',
@@ -182,6 +217,7 @@ const CreditManagement: React.FC = () => {
             })}
             actionRef={actionRef}
             rowKey="id"
+            scroll={{ x: 900 }}
             search={{ labelWidth: 'auto', defaultCollapsed: false }}
             request={async (params) => {
               try {
@@ -192,6 +228,10 @@ const CreditManagement: React.FC = () => {
                 else if (Array.isArray(raw?.list)) list = raw.list;
                 else if (Array.isArray(raw?.records)) list = raw.records;
                 else list = [];
+                list = list.map((item: any) => ({
+                  ...item,
+                  id: item.id || item._id,
+                }));
                 const total =
                   raw?.total ?? (Array.isArray(list) ? list.length : 0);
                 return { data: list, success: true, total };
@@ -212,6 +252,7 @@ const CreditManagement: React.FC = () => {
           key="users"
         >
           <ProTable<any>
+            actionRef={usersActionRef}
             rowKey="id"
             search={{ labelWidth: 'auto', defaultCollapsed: false }}
             request={async (params) => {
@@ -223,6 +264,10 @@ const CreditManagement: React.FC = () => {
                 else if (Array.isArray(raw?.list)) list = raw.list;
                 else if (Array.isArray(raw?.users)) list = raw.users;
                 else list = [];
+                list = list.map((item: any) => ({
+                  ...item,
+                  id: item.id || item._id,
+                }));
                 const total =
                   raw?.total ?? (Array.isArray(list) ? list.length : 0);
                 return { data: list, success: true, total };
@@ -305,14 +350,18 @@ const CreditManagement: React.FC = () => {
                     {record.blacklisted ? (
                       <a
                         onClick={async () => {
-                          await updateUserStatus(record.id, 'active');
-                          message.success(
-                            intl.formatMessage({
-                              id: 'credit.message.removed',
-                              defaultMessage: '已移出黑名单',
-                            }),
-                          );
-                          actionRef.current?.reload?.();
+                          try {
+                            await updateUserStatus(record.id, 0);
+                            message.success(
+                              intl.formatMessage({
+                                id: 'credit.message.removed',
+                                defaultMessage: '已移出黑名单',
+                              }),
+                            );
+                            usersActionRef.current?.reload?.();
+                          } catch (e: any) {
+                            message.error(e?.message || '操作失败');
+                          }
                         }}
                       >
                         {intl.formatMessage({
@@ -323,14 +372,18 @@ const CreditManagement: React.FC = () => {
                     ) : (
                       <a
                         onClick={async () => {
-                          await updateUserStatus(record.id, 'blacklisted');
-                          message.success(
-                            intl.formatMessage({
-                              id: 'credit.message.added',
-                              defaultMessage: '已加入黑名单',
-                            }),
-                          );
-                          actionRef.current?.reload?.();
+                          try {
+                            await updateUserStatus(record.id, 1);
+                            message.success(
+                              intl.formatMessage({
+                                id: 'credit.message.added',
+                                defaultMessage: '已加入黑名单',
+                              }),
+                            );
+                            usersActionRef.current?.reload?.();
+                          } catch (e: any) {
+                            message.error(e?.message || '操作失败');
+                          }
                         }}
                       >
                         {intl.formatMessage({
@@ -340,15 +393,25 @@ const CreditManagement: React.FC = () => {
                       </a>
                     )}
                     <a
-                      onClick={async () => {
-                        await deleteViolation(record.id);
-                        message.success(
-                          intl.formatMessage({
-                            id: 'common.deleted',
-                            defaultMessage: '已删除',
-                          }),
-                        );
-                        actionRef.current?.reload?.();
+                      onClick={() => {
+                        Modal.confirm({
+                          title: '确认删除',
+                          content: '确定要删除该记录吗？',
+                          onOk: async () => {
+                            try {
+                              await deleteViolation(record.id);
+                              message.success(
+                                intl.formatMessage({
+                                  id: 'common.deleted',
+                                  defaultMessage: '已删除',
+                                }),
+                              );
+                              usersActionRef.current?.reload?.();
+                            } catch (e: any) {
+                              message.error(e?.message || '删除失败');
+                            }
+                          },
+                        });
                       }}
                     >
                       {intl.formatMessage({
@@ -372,6 +435,7 @@ const CreditManagement: React.FC = () => {
           key="violations"
         >
           <ProTable<any>
+            actionRef={violationsActionRef}
             headerTitle={intl.formatMessage({
               id: 'credit.header.violations',
               defaultMessage: '违规记录',
@@ -387,6 +451,10 @@ const CreditManagement: React.FC = () => {
                 else if (Array.isArray(raw?.list)) list = raw.list;
                 else if (Array.isArray(raw?.violations)) list = raw.violations;
                 else list = [];
+                list = list.map((item: any) => ({
+                  ...item,
+                  id: item.id || item._id,
+                }));
                 const total =
                   raw?.total ?? (Array.isArray(list) ? list.length : 0);
                 return { data: list, success: true, total };
@@ -441,15 +509,25 @@ const CreditManagement: React.FC = () => {
                 render: (_: any, record: any) => (
                   <Space>
                     <a
-                      onClick={async () => {
-                        await deleteViolation(record.id);
-                        message.success(
-                          intl.formatMessage({
-                            id: 'common.deleted',
-                            defaultMessage: '已删除',
-                          }),
-                        );
-                        actionRef.current?.reload?.();
+                      onClick={() => {
+                        Modal.confirm({
+                          title: '确认删除',
+                          content: '确定要删除该违规记录吗？',
+                          onOk: async () => {
+                            try {
+                              await deleteViolation(record.id);
+                              message.success(
+                                intl.formatMessage({
+                                  id: 'common.deleted',
+                                  defaultMessage: '已删除',
+                                }),
+                              );
+                              violationsActionRef.current?.reload?.();
+                            } catch (e: any) {
+                              message.error(e?.message || '删除失败');
+                            }
+                          },
+                        });
                       }}
                     >
                       {intl.formatMessage({
@@ -472,6 +550,7 @@ const CreditManagement: React.FC = () => {
           key="blacklist"
         >
           <ProTable<any>
+            actionRef={blacklistActionRef}
             headerTitle={intl.formatMessage({
               id: 'credit.header.blacklist',
               defaultMessage: '黑名单用户',
@@ -488,6 +567,10 @@ const CreditManagement: React.FC = () => {
                 else if (Array.isArray(raw?.list)) list = raw.list;
                 else if (Array.isArray(raw?.users)) list = raw.users;
                 else list = [];
+                list = list.map((item: any) => ({
+                  ...item,
+                  id: item.id || item._id,
+                }));
                 const total =
                   raw?.total ?? (Array.isArray(list) ? list.length : 0);
                 return { data: list, success: true, total };
@@ -548,14 +631,18 @@ const CreditManagement: React.FC = () => {
                 render: (_: any, record: any) => (
                   <a
                     onClick={async () => {
-                      await updateUserStatus(record.id, 'active');
-                      message.success(
-                        intl.formatMessage({
-                          id: 'credit.message.removed',
-                          defaultMessage: '已移出黑名单',
-                        }),
-                      );
-                      actionRef.current?.reload?.();
+                      try {
+                        await updateUserStatus(record.id, 0);
+                        message.success(
+                          intl.formatMessage({
+                            id: 'credit.message.removed',
+                            defaultMessage: '已移出黑名单',
+                          }),
+                        );
+                        blacklistActionRef.current?.reload?.();
+                      } catch (e: any) {
+                        message.error(e?.message || '操作失败');
+                      }
                     }}
                   >
                     {intl.formatMessage({
@@ -599,7 +686,7 @@ const CreditManagement: React.FC = () => {
                 defaultMessage: '调整积分',
               })
         }
-        visible={modalVisible}
+        open={modalVisible}
         onCancel={() => {
           setModalVisible(false);
           setAdjustTarget(null);
@@ -608,7 +695,7 @@ const CreditManagement: React.FC = () => {
         onOk={async () => {
           try {
             const values = await form.validateFields();
-            if (values.type === 'add') {
+            if (values.type === CreditType.Add) {
               await addCreditPoints(
                 adjustTarget?.userId || values.userId,
                 values.points,
@@ -631,19 +718,21 @@ const CreditManagement: React.FC = () => {
             setAdjustTarget(null);
             form.resetFields();
             actionRef.current?.reload?.();
-          } catch (e) {
+          } catch (e: any) {
+            if (e?.errorFields) return;
             message.error(
-              intl.formatMessage({
-                id: 'credit.message.adjustFailed',
-                defaultMessage: '调整失败',
-              }),
+              e?.message ||
+                intl.formatMessage({
+                  id: 'credit.message.adjustFailed',
+                  defaultMessage: '调整失败',
+                }),
             );
           }
         }}
       >
         <Form
           form={form}
-          initialValues={{ type: 'add', points: 1 }}
+          initialValues={{ type: CreditType.Add, points: 1 }}
           layout="vertical"
         >
           {!adjustTarget && (
@@ -666,13 +755,13 @@ const CreditManagement: React.FC = () => {
             })}
           >
             <Radio.Group>
-              <Radio value="add">
+              <Radio value={CreditType.Add}>
                 {intl.formatMessage({
                   id: 'credit.type.add',
                   defaultMessage: '加分',
                 })}
               </Radio>
-              <Radio value="deduct">
+              <Radio value={CreditType.Deduct}>
                 {intl.formatMessage({
                   id: 'credit.type.deduct',
                   defaultMessage: '减分',

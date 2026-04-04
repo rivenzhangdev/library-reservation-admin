@@ -1,3 +1,4 @@
+import { Roles } from '@/constants/roles';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
@@ -7,12 +8,13 @@ import {
   Button,
   Form,
   Input,
+  message,
   Modal,
   Select,
   Space,
+  Switch,
   Tag,
   Upload,
-  message,
 } from 'antd';
 import React, { useRef, useState } from 'react';
 import {
@@ -21,6 +23,7 @@ import {
   deleteUser,
   getUserList,
   updateUser,
+  uploadImage,
 } from '../../services/library/user';
 
 /**
@@ -73,8 +76,8 @@ const UserManagement: React.FC = () => {
             message.success('删除成功');
             actionRef.current?.reload?.();
           })
-          .catch(() => {
-            message.error('删除失败');
+          .catch((e: any) => {
+            message.error(e?.message || '删除失败');
           });
       },
     });
@@ -87,6 +90,7 @@ const UserManagement: React.FC = () => {
         defaultMessage: '用户信息',
       }),
       dataIndex: 'username',
+      width: 180,
       render: (_, record) => (
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <Avatar src={record.avatar} style={{ marginRight: 12 }}>
@@ -105,6 +109,7 @@ const UserManagement: React.FC = () => {
         defaultMessage: '学号',
       }),
       dataIndex: 'studentId',
+      width: 100,
     },
     {
       title: intl.formatMessage({
@@ -113,6 +118,8 @@ const UserManagement: React.FC = () => {
       }),
       dataIndex: 'email',
       valueType: 'text',
+      width: 160,
+      ellipsis: true,
     },
     {
       title: intl.formatMessage({
@@ -120,6 +127,7 @@ const UserManagement: React.FC = () => {
         defaultMessage: '手机号',
       }),
       dataIndex: 'phone',
+      width: 120,
     },
     {
       title: intl.formatMessage({
@@ -129,14 +137,14 @@ const UserManagement: React.FC = () => {
       dataIndex: 'role',
       valueType: 'select',
       valueEnum: {
-        user: {
+        [Roles.USER]: {
           text: intl.formatMessage({
             id: 'user.role.user',
             defaultMessage: '普通用户',
           }),
           status: 'Default',
         },
-        admin: {
+        [Roles.ADMIN]: {
           text: intl.formatMessage({
             id: 'user.role.admin',
             defaultMessage: '管理员',
@@ -151,6 +159,7 @@ const UserManagement: React.FC = () => {
         defaultMessage: '信用分',
       }),
       dataIndex: 'creditScore',
+      width: 90,
       sorter: true,
       render: (_, record) => (
         <Tag
@@ -173,6 +182,7 @@ const UserManagement: React.FC = () => {
       }),
       dataIndex: 'blacklisted',
       valueType: 'switch',
+      width: 100,
       render: (_, record) => (
         <Tag color={record.blacklisted ? 'red' : 'green'}>
           {record.blacklisted ? '是' : '否'}
@@ -186,6 +196,7 @@ const UserManagement: React.FC = () => {
       }),
       dataIndex: 'createdAt',
       valueType: 'dateTime',
+      width: 160,
       hideInSearch: true,
     },
     {
@@ -194,6 +205,8 @@ const UserManagement: React.FC = () => {
         defaultMessage: '操作',
       }),
       valueType: 'option',
+      width: 150,
+      fixed: 'right',
       render: (_, record) => (
         <Space size="small">
           <Button
@@ -236,6 +249,7 @@ const UserManagement: React.FC = () => {
         headerTitle="用户列表"
         actionRef={actionRef}
         rowKey="id"
+        scroll={{ x: 1100 }}
         search={{
           labelWidth: 'auto',
           defaultCollapsed: false,
@@ -307,6 +321,8 @@ const UserManagement: React.FC = () => {
           </Button>,
         ]}
         rowSelection={{
+          // 受控 selectedRowKeys，保证在调用 setSelectedRows([]) 后表格复选框会被清空
+          selectedRowKeys: selectedRows.map((r) => r.id),
           onChange: (_, rows) => setSelectedRows(rows),
         }}
         request={async (params) => {
@@ -318,6 +334,10 @@ const UserManagement: React.FC = () => {
             else if (Array.isArray(raw?.list)) list = raw.list;
             else if (Array.isArray(raw?.users)) list = raw.users;
             else list = [];
+            list = list.map((item: any) => ({
+              ...item,
+              id: item.id || item._id,
+            }));
             const total = raw?.total ?? (Array.isArray(list) ? list.length : 0);
             return { data: list, success: true, total };
           } catch (e) {
@@ -331,7 +351,7 @@ const UserManagement: React.FC = () => {
       />
       <Modal
         title={editingUser ? '编辑用户' : '新建用户'}
-        visible={modalVisible}
+        open={modalVisible}
         onCancel={() => {
           setModalVisible(false);
           setEditingUser(null);
@@ -340,7 +360,26 @@ const UserManagement: React.FC = () => {
         onOk={async () => {
           try {
             const values = await form.validateFields();
+            // 如果 avatar 是 base64，先上传获取 URL
+            if (
+              values.avatar &&
+              typeof values.avatar === 'string' &&
+              values.avatar.startsWith('data:')
+            ) {
+              try {
+                const uploadRes: any = await uploadImage(values.avatar);
+                const avatarUrl =
+                  uploadRes?.url ||
+                  (uploadRes && uploadRes.data && uploadRes.data.url) ||
+                  uploadRes;
+                values.avatar = avatarUrl;
+              } catch (e) {
+                console.error('上传头像失败', e);
+              }
+            }
             if (editingUser && editingUser.id) {
+              // 编辑时不发送密码字段（除非用户填写了新密码）
+              if (!values.password) delete values.password;
               await updateUser(editingUser.id, values);
               message.success('更新成功');
             } else {
@@ -351,18 +390,18 @@ const UserManagement: React.FC = () => {
             setEditingUser(null);
             form.resetFields();
             actionRef.current?.reload?.();
-          } catch (err) {
-            // 验证或请求失败
+          } catch (err: any) {
+            if (err?.errorFields) return;
+            message.error(err?.message || '操作失败');
           }
         }}
       >
         <Form
           form={form}
-          initialValues={editingUser || { role: 'user' }}
+          initialValues={editingUser || { role: Roles.USER }}
           layout="vertical"
         >
           <Form.Item
-            name="avatar"
             label={intl.formatMessage({
               id: 'user.form.avatar',
               defaultMessage: '头像',
@@ -399,6 +438,9 @@ const UserManagement: React.FC = () => {
                 </div>
               )}
             </Upload>
+          </Form.Item>
+          <Form.Item name="avatar" hidden>
+            <Input />
           </Form.Item>
           <Form.Item
             name="username"
@@ -481,6 +523,53 @@ const UserManagement: React.FC = () => {
           >
             <Input />
           </Form.Item>
+          {!editingUser && (
+            <Form.Item
+              name="password"
+              label={intl.formatMessage({
+                id: 'user.form.password',
+                defaultMessage: '密码',
+              })}
+              rules={[
+                {
+                  required: !editingUser,
+                  message: intl.formatMessage({
+                    id: 'user.form.passwordRequired',
+                    defaultMessage: '请输入密码',
+                  }),
+                },
+                {
+                  min: 6,
+                  message: intl.formatMessage({
+                    id: 'user.form.passwordMin',
+                    defaultMessage: '密码至少6位',
+                  }),
+                },
+              ]}
+            >
+              <Input.Password />
+            </Form.Item>
+          )}
+          {editingUser && (
+            <Form.Item
+              name="password"
+              label={intl.formatMessage({
+                id: 'user.form.newPassword',
+                defaultMessage: '新密码（留空则不修改）',
+              })}
+              rules={[
+                {
+                  min: 6,
+                  message: intl.formatMessage({
+                    id: 'user.form.passwordMin',
+                    defaultMessage: '密码至少6位',
+                  }),
+                },
+              ]}
+            >
+              <Input.Password />
+            </Form.Item>
+          )}
           <Form.Item
             name="role"
             label={intl.formatMessage({
@@ -489,19 +578,29 @@ const UserManagement: React.FC = () => {
             })}
           >
             <Select>
-              <Select.Option value="user">
+              <Select.Option value={Roles.USER}>
                 {intl.formatMessage({
                   id: 'user.role.user',
                   defaultMessage: '普通用户',
                 })}
               </Select.Option>
-              <Select.Option value="admin">
+              <Select.Option value={Roles.ADMIN}>
                 {intl.formatMessage({
                   id: 'user.role.admin',
                   defaultMessage: '管理员',
                 })}
               </Select.Option>
             </Select>
+          </Form.Item>
+          <Form.Item
+            name="blacklisted"
+            label={intl.formatMessage({
+              id: 'credit.tab.blacklist',
+              defaultMessage: '黑名单',
+            })}
+            valuePropName="checked"
+          >
+            <Switch />
           </Form.Item>
         </Form>
       </Modal>
@@ -510,7 +609,8 @@ const UserManagement: React.FC = () => {
           id: 'user.batchModal.title',
           defaultMessage: '批量设置用户状态',
         })}
-        visible={batchModalVisible}
+        open={batchModalVisible}
+        forceRender
         onCancel={() => {
           setBatchModalVisible(false);
           batchForm.resetFields();
@@ -526,8 +626,8 @@ const UserManagement: React.FC = () => {
             setSelectedRows([]);
             batchForm.resetFields();
             actionRef.current?.reload?.();
-          } catch (e) {
-            message.error('批量更新失败');
+          } catch (e: any) {
+            message.error(e?.message || '批量更新失败');
           }
         }}
       >
@@ -560,12 +660,6 @@ const UserManagement: React.FC = () => {
                 })}
               </Select.Option>
               <Select.Option value="1">
-                {intl.formatMessage({
-                  id: 'user.batch.status.disabled',
-                  defaultMessage: '停用',
-                })}
-              </Select.Option>
-              <Select.Option value="2">
                 {intl.formatMessage({
                   id: 'credit.tab.blacklist',
                   defaultMessage: '黑名单',

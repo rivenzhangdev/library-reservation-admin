@@ -5,6 +5,8 @@ export default {
   'menu.seat': 'Seat Management',
   'menu.activity': 'Activity Management',
   'menu.notification': 'Notification Management',
+  'menu.uploads': 'Image Management',
   'menu.credit': 'Credit Management',
   'menu.management': 'General Management',
+  'menu.feedback': 'Feedback Management',
 };

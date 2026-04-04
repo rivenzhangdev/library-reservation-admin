@@ -121,7 +121,7 @@ const LoginPage: React.FC = () => {
           form={form}
           layout="vertical"
           onFinish={onFinish}
-          initialValues={{ username: 'test', password: 'test' }}
+          initialValues={{}}
         >
           <Form.Item
             name="username"
