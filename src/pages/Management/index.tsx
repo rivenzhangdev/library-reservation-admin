@@ -12,14 +12,14 @@ const Management: React.FC = () => {
     <PageContainer
       title={intl.formatMessage({
         id: 'menu.management',
-        defaultMessage: '综合管理',
+        defaultMessage: 'Management',
       })}
     >
       <Tabs defaultActiveKey="1">
         <Tabs.TabPane
           tab={intl.formatMessage({
             id: 'floor.title',
-            defaultMessage: '楼层管理',
+            defaultMessage: 'Floor Management',
           })}
           key="1"
         >
@@ -28,7 +28,7 @@ const Management: React.FC = () => {
         <Tabs.TabPane
           tab={intl.formatMessage({
             id: 'zone.title',
-            defaultMessage: '区域管理',
+            defaultMessage: 'Zone Management',
           })}
           key="2"
         >

@@ -44,7 +44,7 @@ const LoginPage: React.FC = () => {
                     id: 'right.guest',
                     defaultMessage: intl.formatMessage({
                       id: 'right.guest',
-                      defaultMessage: '游客',
+                      defaultMessage: 'Guest',
                     }),
                   }),
                 currentUser: user,
@@ -52,13 +52,15 @@ const LoginPage: React.FC = () => {
               }));
             });
             message.success(
-              intl.formatMessage({
-                id: 'login.submit',
-                defaultMessage: intl.formatMessage({
-                  id: 'login.submit',
-                  defaultMessage: '登录',
-                }),
-              }) + '成功',
+              intl.formatMessage(
+                { id: 'login.success', defaultMessage: '{action} succeeded' },
+                {
+                  action: intl.formatMessage({
+                    id: 'login.submit',
+                    defaultMessage: 'Login',
+                  }),
+                },
+              ),
             );
             history.replace('/');
             return;
@@ -67,37 +69,43 @@ const LoginPage: React.FC = () => {
           // fallback
         }
         message.success(
-          intl.formatMessage({
-            id: 'login.submit',
-            defaultMessage: intl.formatMessage({
-              id: 'login.submit',
-              defaultMessage: '登录',
-            }),
-          }) + '成功',
+          intl.formatMessage(
+            { id: 'login.success', defaultMessage: '{action} succeeded' },
+            {
+              action: intl.formatMessage({
+                id: 'login.submit',
+                defaultMessage: 'Login',
+              }),
+            },
+          ),
         );
         history.push('/');
         return;
       }
       message.error(
         res?.message ||
-          intl.formatMessage({
-            id: 'login.submit',
-            defaultMessage: intl.formatMessage({
-              id: 'login.submit',
-              defaultMessage: '登录',
-            }),
-          }) + '失败',
+          intl.formatMessage(
+            { id: 'login.failed', defaultMessage: '{action} failed' },
+            {
+              action: intl.formatMessage({
+                id: 'login.submit',
+                defaultMessage: 'Login',
+              }),
+            },
+          ),
       );
     } catch (e: any) {
       message.error(
         e?.message ||
-          intl.formatMessage({
-            id: 'login.submit',
-            defaultMessage: intl.formatMessage({
-              id: 'login.submit',
-              defaultMessage: '登录',
-            }),
-          }) + '接口异常',
+          intl.formatMessage(
+            { id: 'login.exception', defaultMessage: '{action} API error' },
+            {
+              action: intl.formatMessage({
+                id: 'login.submit',
+                defaultMessage: 'Login',
+              }),
+            },
+          ),
       );
     }
   };
@@ -113,7 +121,7 @@ const LoginPage: React.FC = () => {
             id: 'app.title',
             defaultMessage: intl.formatMessage({
               id: 'app.title',
-              defaultMessage: '图书馆管理后台',
+              defaultMessage: 'Library Admin',
             }),
           })}
         </div>
@@ -129,7 +137,7 @@ const LoginPage: React.FC = () => {
               id: 'login.username',
               defaultMessage: intl.formatMessage({
                 id: 'login.username',
-                defaultMessage: '用户名',
+                defaultMessage: 'Username',
               }),
             })}
             rules={[
@@ -139,7 +147,7 @@ const LoginPage: React.FC = () => {
                   id: 'login.username',
                   defaultMessage: intl.formatMessage({
                     id: 'login.username',
-                    defaultMessage: '用户名',
+                    defaultMessage: 'Username',
                   }),
                 }),
               },
@@ -150,7 +158,7 @@ const LoginPage: React.FC = () => {
                 id: 'login.username',
                 defaultMessage: intl.formatMessage({
                   id: 'login.username',
-                  defaultMessage: '用户名',
+                  defaultMessage: 'Username',
                 }),
               })}
             />
@@ -161,7 +169,7 @@ const LoginPage: React.FC = () => {
               id: 'login.password',
               defaultMessage: intl.formatMessage({
                 id: 'login.password',
-                defaultMessage: '密码',
+                defaultMessage: 'Password',
               }),
             })}
             rules={[
@@ -171,7 +179,7 @@ const LoginPage: React.FC = () => {
                   id: 'login.password',
                   defaultMessage: intl.formatMessage({
                     id: 'login.password',
-                    defaultMessage: '密码',
+                    defaultMessage: 'Password',
                   }),
                 }),
               },
@@ -182,7 +190,7 @@ const LoginPage: React.FC = () => {
                 id: 'login.password',
                 defaultMessage: intl.formatMessage({
                   id: 'login.password',
-                  defaultMessage: '密码',
+                  defaultMessage: 'Password',
                 }),
               })}
             />
@@ -193,7 +201,7 @@ const LoginPage: React.FC = () => {
                 id: 'login.submit',
                 defaultMessage: intl.formatMessage({
                   id: 'login.submit',
-                  defaultMessage: '登录',
+                  defaultMessage: 'Login',
                 }),
               })}
             </Button>

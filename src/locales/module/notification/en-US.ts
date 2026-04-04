@@ -13,4 +13,9 @@ export default {
   'notification.sendSuccess': 'Sent',
   'notification.sendFailed': 'Send failed',
   'notification.form.content': 'Content',
+  'notification.detailFailed': 'Failed to get details',
+  'notification.detail.user': 'User',
+  'notification.detail.title': 'Title',
+  'notification.detail.content': 'Content',
+  'notification.detail.time': 'Time',
 };

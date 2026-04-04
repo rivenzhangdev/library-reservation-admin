@@ -78,16 +78,30 @@ const ActivityManagement: React.FC = () => {
     Modal.confirm({
       title: intl.formatMessage({
         id: 'user.confirmDeleteTitle',
-        defaultMessage: '确认删除',
+        defaultMessage: 'Confirm delete',
       }),
-      content: '确定要删除该活动吗？',
+      content: intl.formatMessage({
+        id: 'activity.confirmDeleteContent',
+        defaultMessage: 'Are you sure you want to delete this activity?',
+      }),
       onOk: async () => {
         try {
           await deleteActivity(id);
-          message.success('删除成功');
+          message.success(
+            intl.formatMessage({
+              id: 'common.deleteSuccessRefresh',
+              defaultMessage: 'Deleted successfully, refreshing',
+            }),
+          );
           actionRef.current?.reload?.();
         } catch (e: any) {
-          message.error(e?.message || '删除失败');
+          message.error(
+            e?.message ||
+              intl.formatMessage({
+                id: 'common.deleteFailed',
+                defaultMessage: 'Delete failed, please try again',
+              }),
+          );
         }
       },
     });
@@ -97,7 +111,7 @@ const ActivityManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'activity.column.timeRange',
-        defaultMessage: '时间范围',
+        defaultMessage: 'Time range',
       }),
       dataIndex: 'timeRange',
       valueType: 'dateRange',
@@ -106,7 +120,7 @@ const ActivityManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'activity.column.cover',
-        defaultMessage: '封面',
+        defaultMessage: 'Cover',
       }),
       dataIndex: 'coverImage',
       hideInSearch: true,
@@ -136,7 +150,7 @@ const ActivityManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'activity.form.title',
-        defaultMessage: '标题',
+        defaultMessage: 'Title',
       }),
       dataIndex: 'title',
       copyable: true,
@@ -146,7 +160,7 @@ const ActivityManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'seat.form.floor',
-        defaultMessage: '楼层',
+        defaultMessage: 'Floor',
       }),
       dataIndex: 'floorId',
       valueType: 'select',
@@ -163,7 +177,7 @@ const ActivityManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'activity.form.location',
-        defaultMessage: '地点',
+        defaultMessage: 'Location',
       }),
       dataIndex: 'location',
       width: 120,
@@ -172,7 +186,7 @@ const ActivityManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'table.schedule.startTime',
-        defaultMessage: '开始时间',
+        defaultMessage: 'Start time',
       }),
       dataIndex: 'startTime',
       valueType: 'dateTime',
@@ -182,7 +196,7 @@ const ActivityManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'activity.column.endTime',
-        defaultMessage: '结束时间',
+        defaultMessage: 'End time',
       }),
       dataIndex: 'endTime',
       valueType: 'dateTime',
@@ -192,21 +206,27 @@ const ActivityManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'seat.form.status',
-        defaultMessage: '状态',
+        defaultMessage: 'Status',
       }),
       dataIndex: 'status',
       valueType: 'select',
       valueEnum: {
         [ActivityStatus.Ongoing]: {
-          text: ActivityStatusText[ActivityStatus.Ongoing],
+          text: intl.formatMessage({
+            id: ActivityStatusText[ActivityStatus.Ongoing],
+          }),
           status: 'Success',
         },
         [ActivityStatus.Upcoming]: {
-          text: ActivityStatusText[ActivityStatus.Upcoming],
+          text: intl.formatMessage({
+            id: ActivityStatusText[ActivityStatus.Upcoming],
+          }),
           status: 'Processing',
         },
         [ActivityStatus.Ended]: {
-          text: ActivityStatusText[ActivityStatus.Ended],
+          text: intl.formatMessage({
+            id: ActivityStatusText[ActivityStatus.Ended],
+          }),
           status: 'Default',
         },
       },
@@ -218,7 +238,10 @@ const ActivityManagement: React.FC = () => {
         };
         return (
           <Tag color={statusMap[record.status]}>
-            {ActivityStatusText[record.status]}
+            {intl.formatMessage({
+              id: ActivityStatusText[record.status],
+              defaultMessage: '',
+            })}
           </Tag>
         );
       },
@@ -226,23 +249,47 @@ const ActivityManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'activity.column.participants',
-        defaultMessage: '报名人数',
+        defaultMessage: 'Participants',
       }),
       dataIndex: 'participants',
       hideInSearch: true,
-      width: 100,
+      width: 120,
       render: (_, record) => {
-        const p = record.participants || 0;
-        if (record.maxParticipants && record.maxParticipants > 0) {
-          return `${p} / ${record.maxParticipants} 人`;
-        }
-        return `${p} 人`;
+        const p = Number(record.participants) || 0;
+        return intl.formatMessage(
+          {
+            id: 'activity.participantsCount',
+            defaultMessage: '{count} people',
+          },
+          { count: p },
+        );
+      },
+    },
+    {
+      title: intl.formatMessage({
+        id: 'activity.column.maxParticipants',
+        defaultMessage: 'Max participants',
+      }),
+      dataIndex: 'maxParticipants',
+      hideInSearch: true,
+      width: 120,
+      render: (_, record) => {
+        const m = record.maxParticipants;
+        if (m === undefined || m === null) return '—';
+        const count = Number(m);
+        return intl.formatMessage(
+          {
+            id: 'activity.participantsCount',
+            defaultMessage: '{count} people',
+          },
+          { count: count },
+        );
       },
     },
     {
       title: intl.formatMessage({
         id: 'common.action',
-        defaultMessage: '操作',
+        defaultMessage: 'Action',
       }),
       valueType: 'option',
       width: 150,
@@ -281,7 +328,7 @@ const ActivityManagement: React.FC = () => {
               }
             }}
           >
-            {intl.formatMessage({ id: 'common.edit', defaultMessage: '编辑' })}
+            {intl.formatMessage({ id: 'common.edit', defaultMessage: 'Edit' })}
           </Button>
           <Button
             type="link"
@@ -292,7 +339,7 @@ const ActivityManagement: React.FC = () => {
           >
             {intl.formatMessage({
               id: 'common.delete',
-              defaultMessage: '删除',
+              defaultMessage: 'Delete',
             })}
           </Button>
         </Space>
@@ -304,11 +351,14 @@ const ActivityManagement: React.FC = () => {
     <PageContainer
       title={intl.formatMessage({
         id: 'menu.activity',
-        defaultMessage: '活动管理',
+        defaultMessage: 'Activity management',
       })}
     >
       <ProTable<ActivityType>
-        headerTitle="活动列表"
+        headerTitle={intl.formatMessage({
+          id: 'activity.listTitle',
+          defaultMessage: 'Activity list',
+        })}
         actionRef={actionRef}
         rowKey="id"
         scroll={{ x: 1100 }}
@@ -348,7 +398,7 @@ const ActivityManagement: React.FC = () => {
           >
             {intl.formatMessage({
               id: 'activity.publish',
-              defaultMessage: '发布活动',
+              defaultMessage: 'Publish activity',
             })}
           </Button>,
         ]}
@@ -359,7 +409,7 @@ const ActivityManagement: React.FC = () => {
       <Modal
         title={intl.formatMessage({
           id: 'activity.publish',
-          defaultMessage: '发布活动',
+          defaultMessage: 'Publish activity',
         })}
         open={modalVisible}
         onCancel={() => {
@@ -378,10 +428,20 @@ const ActivityManagement: React.FC = () => {
             }
             if (editingId) {
               await updateActivity(editingId, payload);
-              message.success('更新成功');
+              message.success(
+                intl.formatMessage({
+                  id: 'activity.updateSuccess',
+                  defaultMessage: 'Updated successfully',
+                }),
+              );
             } else {
               await createActivity(payload);
-              message.success('发布成功');
+              message.success(
+                intl.formatMessage({
+                  id: 'activity.publishSuccess',
+                  defaultMessage: 'Published successfully',
+                }),
+              );
             }
             setModalVisible(false);
             form.resetFields();
@@ -389,7 +449,17 @@ const ActivityManagement: React.FC = () => {
             actionRef.current?.reload?.();
           } catch (e: any) {
             if (e?.errorFields) return; // form validation errors shown inline
-            message.error(e?.message || (editingId ? '更新失败' : '发布失败'));
+            message.error(
+              e?.message ||
+                intl.formatMessage({
+                  id: editingId
+                    ? 'activity.updateFailed'
+                    : 'activity.publishFailed',
+                  defaultMessage: editingId
+                    ? 'Update failed'
+                    : 'Publish failed',
+                }),
+            );
           }
         }}
       >
@@ -398,7 +468,7 @@ const ActivityManagement: React.FC = () => {
             name="title"
             label={intl.formatMessage({
               id: 'activity.form.title',
-              defaultMessage: '标题',
+              defaultMessage: 'Title',
             })}
             rules={[{ required: true }]}
           >
@@ -408,7 +478,7 @@ const ActivityManagement: React.FC = () => {
             name="description"
             label={intl.formatMessage({
               id: 'floor.form.description',
-              defaultMessage: '描述',
+              defaultMessage: 'Description',
             })}
           >
             <Input.TextArea rows={3} />
@@ -417,7 +487,7 @@ const ActivityManagement: React.FC = () => {
             name="coverImage"
             label={intl.formatMessage({
               id: 'activity.form.cover',
-              defaultMessage: '封面图片 URL',
+              defaultMessage: 'Cover image URL',
             })}
           >
             <Input />
@@ -426,7 +496,7 @@ const ActivityManagement: React.FC = () => {
             name="location"
             label={intl.formatMessage({
               id: 'activity.form.location',
-              defaultMessage: '地点',
+              defaultMessage: 'Location',
             })}
           >
             <Input />
@@ -435,14 +505,14 @@ const ActivityManagement: React.FC = () => {
             name="time"
             label={intl.formatMessage({
               id: 'activity.form.timeRange',
-              defaultMessage: '开始 / 结束 时间',
+              defaultMessage: 'Start / End time',
             })}
             rules={[
               {
                 required: true,
                 message: intl.formatMessage({
                   id: 'activity.form.timeRequired',
-                  defaultMessage: '请选择开始和结束时间',
+                  defaultMessage: 'Please select start and end time',
                 }),
               },
             ]}
@@ -459,14 +529,14 @@ const ActivityManagement: React.FC = () => {
             name="maxParticipants"
             label={intl.formatMessage({
               id: 'activity.form.maxParticipants',
-              defaultMessage: '最大报名人数',
+              defaultMessage: 'Max participants',
             })}
             rules={[
               {
                 required: true,
                 message: intl.formatMessage({
                   id: 'activity.form.maxParticipantsRequired',
-                  defaultMessage: '请输入最大报名人数',
+                  defaultMessage: 'Please enter max participants',
                 }),
               },
               {
@@ -474,7 +544,7 @@ const ActivityManagement: React.FC = () => {
                 min: 1,
                 message: intl.formatMessage({
                   id: 'activity.form.minValue',
-                  defaultMessage: '最小值为 1',
+                  defaultMessage: 'Minimum value is 1',
                 }),
               },
             ]}
@@ -485,7 +555,7 @@ const ActivityManagement: React.FC = () => {
             name="status"
             label={intl.formatMessage({
               id: 'seat.form.status',
-              defaultMessage: '状态',
+              defaultMessage: 'Status',
             })}
             initialValue={ActivityStatus.Upcoming}
           >
@@ -493,19 +563,19 @@ const ActivityManagement: React.FC = () => {
               <Select.Option value={ActivityStatus.Ongoing}>
                 {intl.formatMessage({
                   id: 'activity.status.ongoing',
-                  defaultMessage: '进行中',
+                  defaultMessage: 'Ongoing',
                 })}
               </Select.Option>
               <Select.Option value={ActivityStatus.Upcoming}>
                 {intl.formatMessage({
                   id: 'activity.status.upcoming',
-                  defaultMessage: '未开始',
+                  defaultMessage: 'Upcoming',
                 })}
               </Select.Option>
               <Select.Option value={ActivityStatus.Ended}>
                 {intl.formatMessage({
                   id: 'activity.status.ended',
-                  defaultMessage: '已结束',
+                  defaultMessage: 'Ended',
                 })}
               </Select.Option>
             </Select>

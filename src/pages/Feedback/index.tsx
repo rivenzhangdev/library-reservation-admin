@@ -10,7 +10,7 @@ import {
 } from '@/services/library/feedback';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
-import { useModel } from '@umijs/max';
+import { useIntl, useModel } from '@umijs/max';
 import {
   Button,
   Card,
@@ -29,24 +29,18 @@ import React, { useRef, useState } from 'react';
 
 const { TextArea } = Input;
 
-const STATUS_MAP: Record<number, { text: string; color: string }> = {
-  1: { text: '待处理', color: 'default' },
-  2: { text: '处理中', color: 'processing' },
-  3: { text: '已解决', color: 'success' },
-  4: { text: '已拒绝', color: 'error' },
+const STATUS_COLOR_MAP: Record<number, string> = {
+  1: 'default',
+  2: 'processing',
+  3: 'success',
+  4: 'error',
 };
 
-const TYPE_MAP: Record<number, string> = {
-  1: '功能建议',
-  2: '问题上报',
-  3: '投诉建议',
-  4: '其他',
-};
-const URGENCY_MAP: Record<number, { text: string; color: string }> = {
-  1: { text: '低', color: 'green' },
-  2: { text: '中', color: 'blue' },
-  3: { text: '高', color: 'orange' },
-  4: { text: '紧急', color: 'red' },
+const URGENCY_COLOR_MAP: Record<number, string> = {
+  1: 'green',
+  2: 'blue',
+  3: 'orange',
+  4: 'red',
 };
 
 interface FeedbackType {
@@ -65,6 +59,7 @@ const FeedbackPage: React.FC = () => {
   const [processForm] = Form.useForm();
   const [replyText, setReplyText] = useState('');
   const { initialState } = useModel('@@initialState');
+  const intl = useIntl();
   const isAdmin = initialState?.currentUser?.role === Roles.ADMIN;
   const actionRef = useRef<ActionType>();
 
@@ -100,12 +95,23 @@ const FeedbackPage: React.FC = () => {
     if (!id) return;
     try {
       await processFeedback(id, { status: values.status, reply: values.reply });
-      message.success('处理成功');
+      message.success(
+        intl.formatMessage({
+          id: 'feedback.processSuccess',
+          defaultMessage: 'Processed successfully',
+        }),
+      );
       processForm.resetFields();
       await reloadDetail();
       actionRef.current?.reload();
     } catch (e: any) {
-      message.error(e?.message || '接口异常');
+      message.error(
+        e?.message ||
+          intl.formatMessage({
+            id: 'feedback.apiError',
+            defaultMessage: 'API error',
+          }),
+      );
     }
   };
 
@@ -114,79 +120,124 @@ const FeedbackPage: React.FC = () => {
     if (!id || !replyText.trim()) return;
     try {
       await addComment(id, { content: replyText });
-      message.success('回复成功');
+      message.success(
+        intl.formatMessage({
+          id: 'feedback.replySuccess',
+          defaultMessage: 'Reply sent',
+        }),
+      );
       setReplyText('');
       await reloadDetail();
     } catch (e: any) {
-      message.error(e?.message || '接口异常');
+      message.error(
+        e?.message ||
+          intl.formatMessage({
+            id: 'feedback.apiError',
+            defaultMessage: 'API error',
+          }),
+      );
     }
   };
 
   const columns: ProColumns<FeedbackType>[] = [
     {
-      title: '标题',
+      title: intl.formatMessage({
+        id: 'feedback.field.title',
+        defaultMessage: 'Title',
+      }),
       dataIndex: 'title',
       render: (v, r) => <a onClick={() => openDetail(r.id)}>{v}</a>,
       ellipsis: true,
       width: 200,
     },
     {
-      title: '类型',
+      title: intl.formatMessage({
+        id: 'feedback.field.type',
+        defaultMessage: 'Type',
+      }),
       dataIndex: 'typeId',
       valueType: 'select',
       valueEnum: {
-        1: { text: '功能建议' },
-        2: { text: '问题上报' },
-        3: { text: '投诉建议' },
-        4: { text: '其他' },
+        1: { text: intl.formatMessage({ id: 'feedback.type.1' }) },
+        2: { text: intl.formatMessage({ id: 'feedback.type.2' }) },
+        3: { text: intl.formatMessage({ id: 'feedback.type.3' }) },
+        4: { text: intl.formatMessage({ id: 'feedback.type.4' }) },
       },
-      render: (_, r) => r.typeName || (r.typeId ? TYPE_MAP[r.typeId] : '-'),
+      render: (_, r) =>
+        r.typeName ||
+        (r.typeId
+          ? intl.formatMessage({ id: `feedback.type.${r.typeId}` })
+          : '-'),
     },
     {
-      title: '紧急度',
+      title: intl.formatMessage({
+        id: 'feedback.field.urgency',
+        defaultMessage: 'Urgency',
+      }),
       dataIndex: 'urgencyId',
       valueType: 'select',
       valueEnum: {
-        1: { text: '低' },
-        2: { text: '中' },
-        3: { text: '高' },
-        4: { text: '紧急' },
+        1: { text: intl.formatMessage({ id: 'feedback.urgency.1' }) },
+        2: { text: intl.formatMessage({ id: 'feedback.urgency.2' }) },
+        3: { text: intl.formatMessage({ id: 'feedback.urgency.3' }) },
+        4: { text: intl.formatMessage({ id: 'feedback.urgency.4' }) },
       },
       render: (_, r) => {
-        const u = URGENCY_MAP[r.urgencyId as number];
-        return u ? <Tag color={u.color}>{u.text}</Tag> : r.urgencyName || '-';
+        const id = Number(r.urgencyId);
+        const color = URGENCY_COLOR_MAP[id];
+        const text = intl.formatMessage({ id: `feedback.urgency.${id}` });
+        return id && color ? (
+          <Tag color={color}>{text}</Tag>
+        ) : (
+          r.urgencyName || '-'
+        );
       },
     },
     {
-      title: '状态',
+      title: intl.formatMessage({
+        id: 'feedback.form.status',
+        defaultMessage: 'Status',
+      }),
       dataIndex: 'status',
       valueType: 'select',
       valueEnum: {
-        1: { text: '待处理' },
-        2: { text: '处理中' },
-        3: { text: '已解决' },
-        4: { text: '已拒绝' },
+        1: { text: intl.formatMessage({ id: 'feedback.status.1' }) },
+        2: { text: intl.formatMessage({ id: 'feedback.status.2' }) },
+        3: { text: intl.formatMessage({ id: 'feedback.status.3' }) },
+        4: { text: intl.formatMessage({ id: 'feedback.status.4' }) },
       },
       render: (_, r) => {
-        const s = STATUS_MAP[r.status as number];
-        return s ? <Tag color={s.color}>{s.text}</Tag> : String(r.status);
+        const id = Number(r.status);
+        const color = STATUS_COLOR_MAP[id];
+        const text = intl.formatMessage({ id: `feedback.status.${id}` });
+        return id && color ? (
+          <Tag color={color}>{text}</Tag>
+        ) : (
+          r.statusName || String(r.status || '-')
+        );
       },
     },
     {
-      title: '创建时间',
+      title: intl.formatMessage({
+        id: 'feedback.field.createdAt',
+        defaultMessage: 'Created at',
+      }),
       dataIndex: 'createdAt',
       valueType: 'dateTime',
       search: false,
     },
     {
-      title: '操作',
+      title: intl.formatMessage({
+        id: 'common.action',
+        defaultMessage: 'Actions',
+      }),
       key: 'option',
       valueType: 'option',
       width: 80,
       fixed: 'right',
       render: (_: any, record: any) => [
         <Button key="detail" type="link" onClick={() => openDetail(record.id)}>
-          详情
+          {intl.formatMessage({ id: 'common.view', defaultMessage: 'Details' })}
         </Button>,
       ],
     },
@@ -195,63 +246,164 @@ const FeedbackPage: React.FC = () => {
   const onSubmit = async (values: any) => {
     try {
       await submitFeedback(values);
-      message.success('提交成功');
+      message.success(
+        intl.formatMessage({
+          id: 'feedback.submitSuccess',
+          defaultMessage: 'Submitted successfully',
+        }),
+      );
       form.resetFields();
       actionRef.current?.reload();
     } catch (e: any) {
-      message.error(e?.message || '提交接口异常');
+      message.error(
+        e?.message ||
+          intl.formatMessage({
+            id: 'feedback.apiError',
+            defaultMessage: 'Submission API error',
+          }),
+      );
     }
   };
 
   return (
     <PageContainer>
       {!isAdmin && (
-        <Card title="提交反馈" style={{ marginBottom: 16 }}>
+        <Card
+          title={intl.formatMessage({
+            id: 'feedback.submitCardTitle',
+            defaultMessage: 'Submit Feedback',
+          })}
+          style={{ marginBottom: 16 }}
+        >
           <Form
             form={form}
             layout="vertical"
             onFinish={onSubmit}
             initialValues={{ typeId: 2, urgencyId: 2 }}
           >
-            <Form.Item name="typeId" label="类型" rules={[{ required: true }]}>
+            <Form.Item
+              name="typeId"
+              label={intl.formatMessage({
+                id: 'feedback.field.type',
+                defaultMessage: 'Type',
+              })}
+              rules={[{ required: true }]}
+            >
               <Select>
-                <Select.Option value={1}>功能建议</Select.Option>
-                <Select.Option value={2}>问题上报</Select.Option>
-                <Select.Option value={3}>投诉建议</Select.Option>
-                <Select.Option value={4}>其他</Select.Option>
+                <Select.Option value={1}>
+                  {intl.formatMessage({
+                    id: 'feedback.type.1',
+                    defaultMessage: 'Feature request',
+                  })}
+                </Select.Option>
+                <Select.Option value={2}>
+                  {intl.formatMessage({
+                    id: 'feedback.type.2',
+                    defaultMessage: 'Bug report',
+                  })}
+                </Select.Option>
+                <Select.Option value={3}>
+                  {intl.formatMessage({
+                    id: 'feedback.type.3',
+                    defaultMessage: 'Complaint',
+                  })}
+                </Select.Option>
+                <Select.Option value={4}>
+                  {intl.formatMessage({
+                    id: 'feedback.type.4',
+                    defaultMessage: 'Other',
+                  })}
+                </Select.Option>
               </Select>
             </Form.Item>
-            <Form.Item name="urgencyId" label="紧急度">
+            <Form.Item
+              name="urgencyId"
+              label={intl.formatMessage({
+                id: 'feedback.field.urgency',
+                defaultMessage: 'Urgency',
+              })}
+            >
               <Select>
-                <Select.Option value={1}>低</Select.Option>
-                <Select.Option value={2}>中</Select.Option>
-                <Select.Option value={3}>高</Select.Option>
-                <Select.Option value={4}>紧急</Select.Option>
+                <Select.Option value={1}>
+                  {intl.formatMessage({
+                    id: 'feedback.urgency.1',
+                    defaultMessage: 'Low',
+                  })}
+                </Select.Option>
+                <Select.Option value={2}>
+                  {intl.formatMessage({
+                    id: 'feedback.urgency.2',
+                    defaultMessage: 'Medium',
+                  })}
+                </Select.Option>
+                <Select.Option value={3}>
+                  {intl.formatMessage({
+                    id: 'feedback.urgency.3',
+                    defaultMessage: 'High',
+                  })}
+                </Select.Option>
+                <Select.Option value={4}>
+                  {intl.formatMessage({
+                    id: 'feedback.urgency.4',
+                    defaultMessage: 'Urgent',
+                  })}
+                </Select.Option>
               </Select>
             </Form.Item>
-            <Form.Item name="title" label="标题" rules={[{ required: true }]}>
+            <Form.Item
+              name="title"
+              label={intl.formatMessage({
+                id: 'feedback.field.title',
+                defaultMessage: 'Title',
+              })}
+              rules={[{ required: true }]}
+            >
               <Input />
             </Form.Item>
             <Form.Item
               name="description"
-              label="描述"
+              label={intl.formatMessage({
+                id: 'feedback.field.description',
+                defaultMessage: 'Description',
+              })}
               rules={[{ required: true }]}
             >
               <TextArea rows={4} />
             </Form.Item>
-            <Form.Item name="contact" label="联系方式(选填)">
+            <Form.Item
+              name="contact"
+              label={intl.formatMessage({
+                id: 'feedback.field.contact',
+                defaultMessage: 'Contact (optional)',
+              })}
+            >
               <Input />
             </Form.Item>
             <Form.Item>
               <Button type="primary" htmlType="submit">
-                提交
+                {intl.formatMessage({
+                  id: 'common.submit',
+                  defaultMessage: 'Submit',
+                })}
               </Button>
             </Form.Item>
           </Form>
         </Card>
       )}
 
-      <Card title={isAdmin ? '全部反馈' : '我的反馈'}>
+      <Card
+        title={
+          isAdmin
+            ? intl.formatMessage({
+                id: 'feedback.all',
+                defaultMessage: 'All Feedback',
+              })
+            : intl.formatMessage({
+                id: 'feedback.mine',
+                defaultMessage: 'My Feedback',
+              })
+        }
+      >
         <ProTable<FeedbackType>
           actionRef={actionRef}
           rowKey="id"
@@ -263,9 +415,12 @@ const FeedbackPage: React.FC = () => {
             const l = Number(params.pageSize || 10);
             const q: any = { page: p, limit: l };
             if (params.title) q.title = params.title;
-            if (params.typeId) q.typeId = params.typeId;
-            if (params.status) q.status = params.status;
-            if (params.urgencyId) q.urgencyId = params.urgencyId;
+            if (params.typeId !== undefined && params.typeId !== '')
+              q.typeId = Number(params.typeId);
+            if (params.status !== undefined && params.status !== '')
+              q.status = Number(params.status);
+            if (params.urgencyId !== undefined && params.urgencyId !== '')
+              q.urgencyId = Number(params.urgencyId);
             try {
               const res: any = isAdmin
                 ? await getAllFeedbacks(q)
@@ -287,9 +442,12 @@ const FeedbackPage: React.FC = () => {
         />
       </Card>
 
-      {/* 反馈详情弹窗 */}
+      {/* Feedback details modal */}
       <Modal
-        title="反馈详情"
+        title={intl.formatMessage({
+          id: 'feedback.detailTitle',
+          defaultMessage: 'Feedback Details',
+        })}
         open={detailOpen}
         onCancel={() => {
           setDetailOpen(false);
@@ -302,17 +460,38 @@ const FeedbackPage: React.FC = () => {
         destroyOnClose
       >
         {detailLoading ? (
-          <div style={{ textAlign: 'center', padding: 40 }}>加载中...</div>
+          <div style={{ textAlign: 'center', padding: 40 }}>
+            {intl.formatMessage({
+              id: 'common.loading',
+              defaultMessage: 'Loading',
+            })}
+          </div>
         ) : detail ? (
           <div>
             <Descriptions column={2} bordered size="small">
-              <Descriptions.Item label="标题" span={2}>
+              <Descriptions.Item
+                label={intl.formatMessage({
+                  id: 'feedback.field.title',
+                  defaultMessage: 'Title',
+                })}
+                span={2}
+              >
                 {detail.title}
               </Descriptions.Item>
-              <Descriptions.Item label="类型">
+              <Descriptions.Item
+                label={intl.formatMessage({
+                  id: 'feedback.field.type',
+                  defaultMessage: 'Type',
+                })}
+              >
                 {detail.typeName || TYPE_MAP[detail.typeId] || '-'}
               </Descriptions.Item>
-              <Descriptions.Item label="紧急度">
+              <Descriptions.Item
+                label={intl.formatMessage({
+                  id: 'feedback.field.urgency',
+                  defaultMessage: 'Urgency',
+                })}
+              >
                 {(() => {
                   const u = URGENCY_MAP[detail.urgencyId];
                   return u ? (
@@ -322,7 +501,12 @@ const FeedbackPage: React.FC = () => {
                   );
                 })()}
               </Descriptions.Item>
-              <Descriptions.Item label="状态">
+              <Descriptions.Item
+                label={intl.formatMessage({
+                  id: 'feedback.form.status',
+                  defaultMessage: 'Status',
+                })}
+              >
                 {(() => {
                   const s = STATUS_MAP[detail.status];
                   return s ? (
@@ -332,25 +516,57 @@ const FeedbackPage: React.FC = () => {
                   );
                 })()}
               </Descriptions.Item>
-              <Descriptions.Item label="创建时间">
+              <Descriptions.Item
+                label={intl.formatMessage({
+                  id: 'feedback.field.createdAt',
+                  defaultMessage: 'Created at',
+                })}
+              >
                 {detail.createdAt
                   ? new Date(detail.createdAt).toLocaleString()
                   : '-'}
               </Descriptions.Item>
-              <Descriptions.Item label="提交人" span={2}>
-                {detail.userId?.name || '游客'}
+              <Descriptions.Item
+                label={intl.formatMessage({
+                  id: 'feedback.field.submitter',
+                  defaultMessage: 'Submitter',
+                })}
+                span={2}
+              >
+                {detail.userId?.name ||
+                  intl.formatMessage({
+                    id: 'right.guest',
+                    defaultMessage: 'Guest',
+                  })}
                 {detail.userId?.studentId
                   ? ` (${detail.userId.studentId})`
                   : ''}
-                {detail.contact ? ` | 联系方式: ${detail.contact}` : ''}
+                {detail.contact
+                  ? ` | ${intl.formatMessage({
+                      id: 'feedback.field.contact',
+                      defaultMessage: 'Contact',
+                    })}: ${detail.contact}`
+                  : ''}
               </Descriptions.Item>
-              <Descriptions.Item label="描述" span={2}>
+              <Descriptions.Item
+                label={intl.formatMessage({
+                  id: 'feedback.field.description',
+                  defaultMessage: 'Description',
+                })}
+                span={2}
+              >
                 <div style={{ whiteSpace: 'pre-wrap' }}>
                   {detail.description}
                 </div>
               </Descriptions.Item>
               {Array.isArray(detail.images) && detail.images.length > 0 && (
-                <Descriptions.Item label="图片" span={2}>
+                <Descriptions.Item
+                  label={intl.formatMessage({
+                    id: 'feedback.field.images',
+                    defaultMessage: 'Images',
+                  })}
+                  span={2}
+                >
                   <Image.PreviewGroup>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                       {detail.images.map((src: string) => (
@@ -373,7 +589,11 @@ const FeedbackPage: React.FC = () => {
                           />
                           {isAdmin && (
                             <Popconfirm
-                              title="确认从该反馈中移除该图片的关联？此操作不会立即删除存储文件，需在“上传管理”中由管理员确认并删除。"
+                              title={intl.formatMessage({
+                                id: 'feedback.removeImageConfirm',
+                                defaultMessage:
+                                  'Confirm removing this image association? This will not delete the stored file immediately; admin must remove it in Upload Management.',
+                              })}
                               onConfirm={async () => {
                                 try {
                                   const res: any = await deleteFeedbackImage(
@@ -381,12 +601,29 @@ const FeedbackPage: React.FC = () => {
                                     { url: src },
                                   );
                                   if (res?.success) {
-                                    message.success('已解除关联');
+                                    message.success(
+                                      intl.formatMessage({
+                                        id: 'common.deleteSuccessRefresh',
+                                        defaultMessage: 'Association removed',
+                                      }),
+                                    );
                                     reloadDetail();
                                   } else
-                                    message.error(res?.message || '操作失败');
+                                    message.error(
+                                      res?.message ||
+                                        intl.formatMessage({
+                                          id: 'common.operationFailed',
+                                          defaultMessage: 'Operation failed',
+                                        }),
+                                    );
                                 } catch (e: any) {
-                                  message.error(e?.message || '接口异常');
+                                  message.error(
+                                    e?.message ||
+                                      intl.formatMessage({
+                                        id: 'feedback.apiError',
+                                        defaultMessage: 'API error',
+                                      }),
+                                  );
                                 }
                               }}
                             >
@@ -426,7 +663,12 @@ const FeedbackPage: React.FC = () => {
 
             {/* 处理记录 */}
             <div style={{ marginTop: 16 }}>
-              <h4>处理记录</h4>
+              <h4>
+                {intl.formatMessage({
+                  id: 'feedback.records',
+                  defaultMessage: 'Processing records',
+                })}
+              </h4>
               {Array.isArray(detail.comments) && detail.comments.length > 0 ? (
                 <Timeline
                   items={detail.comments.map((c: any) => ({
@@ -436,7 +678,10 @@ const FeedbackPage: React.FC = () => {
                           <strong>{c.operator}</strong>
                           {c.isOfficial && (
                             <Tag color="blue" style={{ marginLeft: 8 }}>
-                              官方
+                              {intl.formatMessage({
+                                id: 'feedback.official',
+                                defaultMessage: 'Official',
+                              })}
                             </Tag>
                           )}
                           <span style={{ color: '#999', marginLeft: 8 }}>
@@ -449,7 +694,12 @@ const FeedbackPage: React.FC = () => {
                   }))}
                 />
               ) : (
-                <div style={{ color: '#999' }}>暂无处理记录</div>
+                <div style={{ color: '#999' }}>
+                  {intl.formatMessage({
+                    id: 'feedback.noRecords',
+                    defaultMessage: 'No records',
+                  })}
+                </div>
               )}
             </div>
 
@@ -463,7 +713,12 @@ const FeedbackPage: React.FC = () => {
                     paddingTop: 16,
                   }}
                 >
-                  <h4 style={{ marginBottom: 12 }}>处理反馈</h4>
+                  <h4 style={{ marginBottom: 12 }}>
+                    {intl.formatMessage({
+                      id: 'feedback.processFeedback',
+                      defaultMessage: 'Process feedback',
+                    })}
+                  </h4>
                   <Form
                     form={processForm}
                     onFinish={handleProcess}
@@ -479,27 +734,64 @@ const FeedbackPage: React.FC = () => {
                     >
                       <Form.Item
                         name="status"
-                        label="状态"
+                        label={intl.formatMessage({
+                          id: 'feedback.form.status',
+                          defaultMessage: 'Status',
+                        })}
                         rules={[{ required: true }]}
                         style={{ marginBottom: 0 }}
                       >
                         <Select style={{ width: 120 }}>
-                          <Select.Option value={2}>处理中</Select.Option>
-                          <Select.Option value={3}>已解决</Select.Option>
-                          <Select.Option value={4}>已拒绝</Select.Option>
+                          <Select.Option value={2}>
+                            {intl.formatMessage({
+                              id: 'feedback.status.2',
+                              defaultMessage: 'Processing',
+                            })}
+                          </Select.Option>
+                          <Select.Option value={3}>
+                            {intl.formatMessage({
+                              id: 'feedback.status.3',
+                              defaultMessage: 'Resolved',
+                            })}
+                          </Select.Option>
+                          <Select.Option value={4}>
+                            {intl.formatMessage({
+                              id: 'feedback.status.4',
+                              defaultMessage: 'Rejected',
+                            })}
+                          </Select.Option>
                         </Select>
                       </Form.Item>
                       <Form.Item
                         name="reply"
-                        label="处理意见"
-                        rules={[{ required: true, message: '请填写处理意见' }]}
+                        label={intl.formatMessage({
+                          id: 'feedback.form.reply',
+                          defaultMessage: 'Processing remarks',
+                        })}
+                        rules={[
+                          {
+                            required: true,
+                            message: intl.formatMessage({
+                              id: 'feedback.form.replyRequired',
+                              defaultMessage: 'Please enter processing remarks',
+                            }),
+                          },
+                        ]}
                         style={{ flex: 1, minWidth: 200, marginBottom: 0 }}
                       >
-                        <Input placeholder="请输入处理意见" />
+                        <Input
+                          placeholder={intl.formatMessage({
+                            id: 'feedback.form.replyPlaceholder',
+                            defaultMessage: 'Please enter processing remarks',
+                          })}
+                        />
                       </Form.Item>
                       <Form.Item style={{ marginBottom: 0 }}>
                         <Button type="primary" htmlType="submit">
-                          提交处理
+                          {intl.formatMessage({
+                            id: 'feedback.form.submit',
+                            defaultMessage: 'Submit',
+                          })}
                         </Button>
                       </Form.Item>
                     </div>
@@ -513,7 +805,12 @@ const FeedbackPage: React.FC = () => {
                     paddingTop: 16,
                   }}
                 >
-                  <h4 style={{ marginBottom: 12 }}>添加回复</h4>
+                  <h4 style={{ marginBottom: 12 }}>
+                    {intl.formatMessage({
+                      id: 'feedback.addReply',
+                      defaultMessage: 'Add reply',
+                    })}
+                  </h4>
                   <div
                     style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}
                   >
@@ -521,7 +818,10 @@ const FeedbackPage: React.FC = () => {
                       rows={3}
                       value={replyText}
                       onChange={(e) => setReplyText(e.target.value)}
-                      placeholder="输入回复内容..."
+                      placeholder={intl.formatMessage({
+                        id: 'feedback.replyPlaceholder',
+                        defaultMessage: 'Enter reply...',
+                      })}
                       style={{ flex: 1 }}
                     />
                     <Button
@@ -530,7 +830,10 @@ const FeedbackPage: React.FC = () => {
                       disabled={!replyText.trim()}
                       style={{ flexShrink: 0, alignSelf: 'flex-end' }}
                     >
-                      发送
+                      {intl.formatMessage({
+                        id: 'feedback.send',
+                        defaultMessage: 'Send',
+                      })}
                     </Button>
                   </div>
                 </div>

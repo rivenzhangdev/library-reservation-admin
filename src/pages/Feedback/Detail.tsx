@@ -4,7 +4,7 @@ import {
   getFeedbackDetail,
   processFeedback,
 } from '@/services/library/feedback';
-import { history, useParams } from '@umijs/max';
+import { history, useIntl, useParams } from '@umijs/max';
 import {
   Button,
   Card,
@@ -12,26 +12,46 @@ import {
   Form,
   Image,
   Input,
+  message,
   Popconfirm,
   Select,
   Space,
-  message,
+  Tag,
 } from 'antd';
 import React, { useEffect, useState } from 'react';
 
 const DetailPage: React.FC = () => {
   const params = useParams() as any;
   const id = params.id as string;
+  const intl = useIntl();
   const [data, setData] = useState<any>(null);
-  // loading state removed: not used in UI
+  const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
+  const isAdmin = (() => {
+    try {
+      const raw = localStorage.getItem('currentUser');
+      const cu = raw ? JSON.parse(raw) : null;
+      return cu?.role === Roles.ADMIN;
+    } catch (e) {
+      return false;
+    }
+  })();
+
   async function load() {
+    setLoading(true);
     try {
       const res: any = await getFeedbackDetail(id);
-      setData(res.data);
+      setData(res?.data || null);
     } catch (e: any) {
-      message.error(e?.message || '加载详情失败');
+      message.error(
+        intl.formatMessage({
+          id: 'feedback.loadFailed',
+          defaultMessage: 'Failed to load details',
+        }),
+      );
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -42,123 +62,215 @@ const DetailPage: React.FC = () => {
   const onFinish = async (vals: any) => {
     try {
       await processFeedback(id, { status: vals.status, reply: vals.reply });
-      message.success('处理成功');
+      message.success(
+        intl.formatMessage({
+          id: 'feedback.processSuccess',
+          defaultMessage: 'Processed successfully',
+        }),
+      );
       load();
     } catch (e: any) {
-      message.error(e?.message || '接口异常');
+      message.error(
+        e?.message ||
+          intl.formatMessage({
+            id: 'feedback.apiError',
+            defaultMessage: 'API error',
+          }),
+      );
     }
   };
 
-  if (!data) return <div>加载中...</div>;
+  if (loading)
+    return (
+      <div style={{ textAlign: 'center', padding: 40 }}>
+        {intl.formatMessage({
+          id: 'common.loading',
+          defaultMessage: 'Loading',
+        })}
+      </div>
+    );
+  if (!data) return null;
 
   return (
     <div>
       <Card
-        title="反馈详情"
+        title={intl.formatMessage({
+          id: 'feedback.detailTitle',
+          defaultMessage: 'Feedback Details',
+        })}
         extra={
           <Space>
-            <Button onClick={() => history.back()}>返回</Button>
+            <Button onClick={() => history.back()}>
+              {intl.formatMessage({
+                id: 'common.back',
+                defaultMessage: 'Back',
+              })}
+            </Button>
           </Space>
         }
       >
         <Descriptions column={1} bordered>
-          <Descriptions.Item label="标题">{data.title}</Descriptions.Item>
-          <Descriptions.Item label="类型">
+          <Descriptions.Item
+            label={intl.formatMessage({
+              id: 'feedback.field.title',
+              defaultMessage: 'Title',
+            })}
+          >
+            {data.title}
+          </Descriptions.Item>
+          <Descriptions.Item
+            label={intl.formatMessage({
+              id: 'feedback.field.type',
+              defaultMessage: 'Type',
+            })}
+          >
             {data.typeName || data.typeId}
           </Descriptions.Item>
-          <Descriptions.Item label="紧急度">
+          <Descriptions.Item
+            label={intl.formatMessage({
+              id: 'feedback.field.urgency',
+              defaultMessage: 'Urgency',
+            })}
+          >
             {data.urgencyName || data.urgencyId || '-'}
           </Descriptions.Item>
-          <Descriptions.Item label="提交人">
-            {data.userId?.name || '游客'}
+          <Descriptions.Item
+            label={intl.formatMessage({
+              id: 'feedback.field.submitter',
+              defaultMessage: 'Submitter',
+            })}
+          >
+            {data.userId?.name ||
+              intl.formatMessage({
+                id: 'right.guest',
+                defaultMessage: 'Guest',
+              })}
           </Descriptions.Item>
-          <Descriptions.Item label="联系方式">
-            {data.contact || '无'}
+          <Descriptions.Item
+            label={intl.formatMessage({
+              id: 'feedback.field.contact',
+              defaultMessage: 'Contact',
+            })}
+          >
+            {data.contact ||
+              intl.formatMessage({
+                id: 'common.noData',
+                defaultMessage: 'No data',
+              })}
           </Descriptions.Item>
-          <Descriptions.Item label="描述">{data.description}</Descriptions.Item>
-          <Descriptions.Item label="图片">
-            <Space>
-              {Array.isArray(data.images) && data.images.length > 0 ? (
-                data.images.map((src: string) => {
-                  const currentUserRaw = localStorage.getItem('currentUser');
-                  let isAdmin = false;
-                  try {
-                    const cu = currentUserRaw
-                      ? JSON.parse(currentUserRaw)
-                      : null;
-                    isAdmin = cu?.role === Roles.ADMIN;
-                  } catch (e) {
-                    isAdmin = false;
-                  }
-                  return (
-                    <div
-                      key={src}
-                      style={{ display: 'inline-block', textAlign: 'center' }}
-                    >
+          <Descriptions.Item
+            label={intl.formatMessage({
+              id: 'feedback.field.description',
+              defaultMessage: 'Description',
+            })}
+          >
+            {data.description}
+          </Descriptions.Item>
+          {Array.isArray(data.images) && data.images.length > 0 && (
+            <Descriptions.Item
+              label={intl.formatMessage({
+                id: 'feedback.field.images',
+                defaultMessage: 'Images',
+              })}
+            >
+              <Image.PreviewGroup>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {data.images.map((src: string) => (
+                    <div key={src} style={{ position: 'relative' }}>
                       <Image width={120} src={src} />
-                      {isAdmin ? (
-                        <div style={{ marginTop: 6 }}>
-                          <Popconfirm
-                            title="确认从该反馈中移除该图片的关联？此操作不会立即删除存储文件，需在“上传管理”中由管理员确认并删除。"
-                            onConfirm={async () => {
-                              try {
-                                await deleteFeedbackImage(data.id, {
-                                  url: src,
-                                });
-                                message.success('已解除关联');
+                      {isAdmin && (
+                        <Popconfirm
+                          title={intl.formatMessage({
+                            id: 'feedback.removeImageConfirm',
+                            defaultMessage:
+                              'Confirm removing this image association? This will not delete the stored file immediately; admin must remove it in Upload Management.',
+                          })}
+                          onConfirm={async () => {
+                            try {
+                              const res: any = await deleteFeedbackImage(
+                                data.id || data._id,
+                                { url: src },
+                              );
+                              if (res?.success) {
+                                message.success(
+                                  intl.formatMessage({
+                                    id: 'feedback.imageRemoved',
+                                    defaultMessage: 'Association removed',
+                                  }),
+                                );
                                 load();
-                              } catch (e: any) {
-                                message.error(e?.message || '接口异常');
+                              } else {
+                                message.error(
+                                  res?.message ||
+                                    intl.formatMessage({
+                                      id: 'common.operationFailed',
+                                      defaultMessage: 'Operation failed',
+                                    }),
+                                );
                               }
-                            }}
+                            } catch (e: any) {
+                              message.error(
+                                e?.message ||
+                                  intl.formatMessage({
+                                    id: 'feedback.apiError',
+                                    defaultMessage: 'API error',
+                                  }),
+                              );
+                            }
+                          }}
+                        >
+                          <Button
+                            size="small"
+                            danger
+                            style={{ position: 'absolute', top: 4, right: 4 }}
                           >
-                            <Button size="small" danger>
-                              移除关联
-                            </Button>
-                          </Popconfirm>
-                        </div>
-                      ) : null}
+                            {intl.formatMessage({
+                              id: 'feedback.removeAssociation',
+                              defaultMessage: 'Remove association',
+                            })}
+                          </Button>
+                        </Popconfirm>
+                      )}
                     </div>
-                  );
-                })
-              ) : (
-                <span>无</span>
-              )}
-            </Space>
-          </Descriptions.Item>
-          <Descriptions.Item label="当前状态">
+                  ))}
+                </div>
+              </Image.PreviewGroup>
+            </Descriptions.Item>
+          )}
+
+          <Descriptions.Item
+            label={intl.formatMessage({
+              id: 'feedback.field.currentStatus',
+              defaultMessage: 'Current status',
+            })}
+          >
             {data.status === undefined
               ? '-'
-              : data.status === 1
-              ? '待处理'
-              : data.status === 2
-              ? '处理中'
-              : data.status === 3
-              ? '已解决'
-              : data.status === 4
-              ? '已拒绝'
-              : data.status}
+              : intl.formatMessage({
+                  id: `feedback.status.${data.status}`,
+                  defaultMessage: String(data.status),
+                })}
           </Descriptions.Item>
-          <Descriptions.Item label="处理原因">
-            {data.processedReason || '-'}
-          </Descriptions.Item>
-          <Descriptions.Item label="处理记录">
+
+          <Descriptions.Item
+            label={intl.formatMessage({
+              id: 'feedback.form.reply',
+              defaultMessage: 'Processing remarks',
+            })}
+          >
             {Array.isArray(data.comments) && data.comments.length > 0 ? (
               data.comments.map((c: any, idx: number) => (
                 <div key={idx} style={{ marginBottom: 12 }}>
                   <div style={{ fontWeight: 600 }}>
                     {c.operator}{' '}
-                    {c.isOfficial ? (
-                      <span
-                        style={{
-                          color: '#888',
-                          fontWeight: 400,
-                          marginLeft: 8,
-                        }}
-                      >
-                        （官方）
-                      </span>
-                    ) : null}
+                    {c.isOfficial && (
+                      <Tag color="blue">
+                        {intl.formatMessage({
+                          id: 'feedback.official',
+                          defaultMessage: 'Official',
+                        })}
+                      </Tag>
+                    )}
                   </div>
                   <div style={{ marginTop: 6 }}>{c.content}</div>
                   <div style={{ color: '#888', marginTop: 6 }}>
@@ -167,39 +279,88 @@ const DetailPage: React.FC = () => {
                 </div>
               ))
             ) : (
-              <div>暂无处理记录</div>
+              <div>
+                {intl.formatMessage({
+                  id: 'common.noData',
+                  defaultMessage: 'No data',
+                })}
+              </div>
             )}
           </Descriptions.Item>
         </Descriptions>
 
-        <Card title="处理反馈" style={{ marginTop: 16 }}>
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={onFinish}
-            initialValues={{ status: data.status || 2 }}
+        {isAdmin && (
+          <Card
+            title={intl.formatMessage({
+              id: 'feedback.processFeedback',
+              defaultMessage: 'Process feedback',
+            })}
+            style={{ marginTop: 16 }}
           >
-            <Form.Item name="status" label="状态" rules={[{ required: true }]}>
-              <Select>
-                <Select.Option value={2}>处理中</Select.Option>
-                <Select.Option value={3}>已解决</Select.Option>
-                <Select.Option value={4}>已拒绝</Select.Option>
-              </Select>
-            </Form.Item>
-            <Form.Item
-              name="reply"
-              label="处理意见"
-              rules={[{ required: true, message: '请填写处理意见' }]}
+            <Form
+              form={form}
+              layout="vertical"
+              onFinish={onFinish}
+              initialValues={{ status: data.status || 2 }}
             >
-              <Input.TextArea rows={4} />
-            </Form.Item>
-            <Form.Item>
-              <Button type="primary" htmlType="submit">
-                提交处理
-              </Button>
-            </Form.Item>
-          </Form>
-        </Card>
+              <Form.Item
+                name="status"
+                label={intl.formatMessage({
+                  id: 'feedback.form.status',
+                  defaultMessage: 'Status',
+                })}
+                rules={[{ required: true }]}
+              >
+                <Select>
+                  <Select.Option value={2}>
+                    {intl.formatMessage({
+                      id: 'feedback.status.2',
+                      defaultMessage: 'Processing',
+                    })}
+                  </Select.Option>
+                  <Select.Option value={3}>
+                    {intl.formatMessage({
+                      id: 'feedback.status.3',
+                      defaultMessage: 'Resolved',
+                    })}
+                  </Select.Option>
+                  <Select.Option value={4}>
+                    {intl.formatMessage({
+                      id: 'feedback.status.4',
+                      defaultMessage: 'Rejected',
+                    })}
+                  </Select.Option>
+                </Select>
+              </Form.Item>
+              <Form.Item
+                name="reply"
+                label={intl.formatMessage({
+                  id: 'feedback.form.reply',
+                  defaultMessage: 'Processing remarks',
+                })}
+                rules={[
+                  {
+                    required: true,
+                    message: intl.formatMessage({
+                      id: 'feedback.form.replyRequired',
+                      defaultMessage: 'Please enter processing remarks',
+                    }),
+                  },
+                ]}
+              >
+                <Input.TextArea rows={4} />
+              </Form.Item>
+              <Form.Item>
+                <Button type="primary" htmlType="submit">
+                  {intl.formatMessage({
+                    id: 'feedback.form.submit',
+                    defaultMessage: 'Submit',
+                  })}
+                </Button>
+              </Form.Item>
+            </Form>
+          </Card>
+        )}
       </Card>
     </div>
   );

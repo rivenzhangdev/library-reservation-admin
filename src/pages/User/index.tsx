@@ -25,6 +25,7 @@ import {
   updateUser,
   uploadImage,
 } from '../../services/library/user';
+import './index.less';
 
 /**
  * 用户数据类型
@@ -67,17 +68,31 @@ const UserManagement: React.FC = () => {
     Modal.confirm({
       title: intl.formatMessage({
         id: 'user.confirmDeleteTitle',
-        defaultMessage: '确认删除',
+        defaultMessage: 'Confirm delete',
       }),
-      content: '确定要删除该用户吗？',
+      content: intl.formatMessage({
+        id: 'user.confirmDeleteContent',
+        defaultMessage: 'Are you sure you want to delete this user?',
+      }),
       onOk: () => {
         deleteUser(id)
           .then(() => {
-            message.success('删除成功');
+            message.success(
+              intl.formatMessage({
+                id: 'common.deleteSuccessRefresh',
+                defaultMessage: 'Deleted successfully, refreshing',
+              }),
+            );
             actionRef.current?.reload?.();
           })
           .catch((e: any) => {
-            message.error(e?.message || '删除失败');
+            message.error(
+              e?.message ||
+                intl.formatMessage({
+                  id: 'common.deleteFailed',
+                  defaultMessage: 'Delete failed, please try again',
+                }),
+            );
           });
       },
     });
@@ -87,18 +102,20 @@ const UserManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'user.column.info',
-        defaultMessage: '用户信息',
+        defaultMessage: 'User info',
       }),
       dataIndex: 'username',
       width: 180,
       render: (_, record) => (
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <Avatar src={record.avatar} style={{ marginRight: 12 }}>
-            {!record.avatar && record.name ? record.name.charAt(0) : null}
-          </Avatar>
-          <div>
-            <div style={{ fontWeight: 600 }}>{record.name}</div>
-            <div style={{ color: '#999' }}>{record.username}</div>
+        <div className="user-info-cell">
+          <div className="avatar-wrapper">
+            <Avatar src={record.avatar} size={48}>
+              {!record.avatar && record.name ? record.name.charAt(0) : null}
+            </Avatar>
+          </div>
+          <div className="user-text">
+            <div className="user-name">{record.name}</div>
+            <div className="user-username">{record.username}</div>
           </div>
         </div>
       ),
@@ -106,7 +123,7 @@ const UserManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'user.form.studentId',
-        defaultMessage: '学号',
+        defaultMessage: 'Student ID',
       }),
       dataIndex: 'studentId',
       width: 100,
@@ -114,7 +131,7 @@ const UserManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'user.form.email',
-        defaultMessage: '邮箱',
+        defaultMessage: 'Email',
       }),
       dataIndex: 'email',
       valueType: 'text',
@@ -124,7 +141,7 @@ const UserManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'user.form.phone',
-        defaultMessage: '手机号',
+        defaultMessage: 'Phone',
       }),
       dataIndex: 'phone',
       width: 120,
@@ -132,7 +149,7 @@ const UserManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'user.form.role',
-        defaultMessage: '角色',
+        defaultMessage: 'Role',
       }),
       dataIndex: 'role',
       valueType: 'select',
@@ -140,14 +157,14 @@ const UserManagement: React.FC = () => {
         [Roles.USER]: {
           text: intl.formatMessage({
             id: 'user.role.user',
-            defaultMessage: '普通用户',
+            defaultMessage: 'User',
           }),
           status: 'Default',
         },
         [Roles.ADMIN]: {
           text: intl.formatMessage({
             id: 'user.role.admin',
-            defaultMessage: '管理员',
+            defaultMessage: 'Admin',
           }),
           status: 'Success',
         },
@@ -156,7 +173,7 @@ const UserManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'user.column.creditScore',
-        defaultMessage: '信用分',
+        defaultMessage: 'Credit score',
       }),
       dataIndex: 'creditScore',
       width: 90,
@@ -178,21 +195,23 @@ const UserManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'credit.tab.blacklist',
-        defaultMessage: '黑名单',
+        defaultMessage: 'Blacklisted',
       }),
       dataIndex: 'blacklisted',
       valueType: 'switch',
       width: 100,
       render: (_, record) => (
         <Tag color={record.blacklisted ? 'red' : 'green'}>
-          {record.blacklisted ? '是' : '否'}
+          {record.blacklisted
+            ? intl.formatMessage({ id: 'common.yes', defaultMessage: 'Yes' })
+            : intl.formatMessage({ id: 'common.no', defaultMessage: 'No' })}
         </Tag>
       ),
     },
     {
       title: intl.formatMessage({
         id: 'user.column.createdAt',
-        defaultMessage: '创建时间',
+        defaultMessage: 'Created at',
       }),
       dataIndex: 'createdAt',
       valueType: 'dateTime',
@@ -202,7 +221,7 @@ const UserManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'common.action',
-        defaultMessage: '操作',
+        defaultMessage: 'Action',
       }),
       valueType: 'option',
       width: 150,
@@ -219,7 +238,7 @@ const UserManagement: React.FC = () => {
               setModalVisible(true);
             }}
           >
-            {intl.formatMessage({ id: 'common.edit', defaultMessage: '编辑' })}
+            {intl.formatMessage({ id: 'common.edit', defaultMessage: 'Edit' })}
           </Button>
           <Button
             type="link"
@@ -230,7 +249,7 @@ const UserManagement: React.FC = () => {
           >
             {intl.formatMessage({
               id: 'common.delete',
-              defaultMessage: '删除',
+              defaultMessage: 'Delete',
             })}
           </Button>
         </Space>
@@ -242,11 +261,14 @@ const UserManagement: React.FC = () => {
     <PageContainer
       title={intl.formatMessage({
         id: 'menu.user',
-        defaultMessage: '用户管理',
+        defaultMessage: 'User management',
       })}
     >
       <ProTable<UserType>
-        headerTitle="用户列表"
+        headerTitle={intl.formatMessage({
+          id: 'user.listTitle',
+          defaultMessage: 'User list',
+        })}
         actionRef={actionRef}
         rowKey="id"
         scroll={{ x: 1100 }}
@@ -259,7 +281,12 @@ const UserManagement: React.FC = () => {
             key="export"
             onClick={() => {
               if (!selectedRows || selectedRows.length === 0) {
-                message.info('请先选择要导出的用户（复选框）');
+                message.info(
+                  intl.formatMessage({
+                    id: 'user.export.selectFirst',
+                    defaultMessage: 'Please select users to export (checkbox)',
+                  }),
+                );
                 return;
               }
               // 导出为 CSV
@@ -292,7 +319,7 @@ const UserManagement: React.FC = () => {
           >
             {intl.formatMessage({
               id: 'user.export.csv',
-              defaultMessage: '导出 CSV',
+              defaultMessage: 'Export CSV',
             })}
           </Button>,
           <Button
@@ -305,7 +332,7 @@ const UserManagement: React.FC = () => {
           >
             {intl.formatMessage({
               id: 'user.batchSetStatus',
-              defaultMessage: '批量设置状态',
+              defaultMessage: 'Batch set status',
             })}
           </Button>,
           <Button
@@ -316,7 +343,7 @@ const UserManagement: React.FC = () => {
           >
             {intl.formatMessage({
               id: 'user.newUser',
-              defaultMessage: '新建用户',
+              defaultMessage: 'New user',
             })}
           </Button>,
         ]}
@@ -350,7 +377,17 @@ const UserManagement: React.FC = () => {
         }}
       />
       <Modal
-        title={editingUser ? '编辑用户' : '新建用户'}
+        title={
+          editingUser
+            ? intl.formatMessage({
+                id: 'user.modal.edit',
+                defaultMessage: 'Edit user',
+              })
+            : intl.formatMessage({
+                id: 'user.modal.new',
+                defaultMessage: 'New user',
+              })
+        }
         open={modalVisible}
         onCancel={() => {
           setModalVisible(false);
@@ -374,17 +411,33 @@ const UserManagement: React.FC = () => {
                   uploadRes;
                 values.avatar = avatarUrl;
               } catch (e) {
-                console.error('上传头像失败', e);
+                console.error(
+                  intl.formatMessage({
+                    id: 'userProfile.uploadFailed',
+                    defaultMessage: 'Upload avatar failed',
+                  }),
+                  e,
+                );
               }
             }
             if (editingUser && editingUser.id) {
               // 编辑时不发送密码字段（除非用户填写了新密码）
               if (!values.password) delete values.password;
               await updateUser(editingUser.id, values);
-              message.success('更新成功');
+              message.success(
+                intl.formatMessage({
+                  id: 'user.updateSuccess',
+                  defaultMessage: 'Updated successfully',
+                }),
+              );
             } else {
               await createUser(values);
-              message.success('创建成功');
+              message.success(
+                intl.formatMessage({
+                  id: 'user.createSuccess',
+                  defaultMessage: 'Created successfully',
+                }),
+              );
             }
             setModalVisible(false);
             setEditingUser(null);
@@ -392,7 +445,13 @@ const UserManagement: React.FC = () => {
             actionRef.current?.reload?.();
           } catch (err: any) {
             if (err?.errorFields) return;
-            message.error(err?.message || '操作失败');
+            message.error(
+              err?.message ||
+                intl.formatMessage({
+                  id: 'common.operationFailed',
+                  defaultMessage: 'Operation failed',
+                }),
+            );
           }
         }}
       >
@@ -404,7 +463,7 @@ const UserManagement: React.FC = () => {
           <Form.Item
             label={intl.formatMessage({
               id: 'user.form.avatar',
-              defaultMessage: '头像',
+              defaultMessage: 'Avatar',
             })}
           >
             <Upload
@@ -427,13 +486,18 @@ const UserManagement: React.FC = () => {
                 <img
                   src={form.getFieldValue('avatar')}
                   alt="avatar"
-                  style={{ width: '100%' }}
+                  style={{
+                    width: 96,
+                    height: 96,
+                    objectFit: 'cover',
+                    borderRadius: '50%',
+                  }}
                 />
               ) : (
                 <div>
                   {intl.formatMessage({
                     id: 'user.upload',
-                    defaultMessage: '上传',
+                    defaultMessage: 'Upload',
                   })}
                 </div>
               )}
@@ -446,14 +510,14 @@ const UserManagement: React.FC = () => {
             name="username"
             label={intl.formatMessage({
               id: 'login.username',
-              defaultMessage: '用户名',
+              defaultMessage: 'Username',
             })}
             rules={[
               {
                 required: true,
                 message: intl.formatMessage({
                   id: 'user.form.usernameRequired',
-                  defaultMessage: '请输入用户名',
+                  defaultMessage: 'Please enter username',
                 }),
               },
             ]}
@@ -464,7 +528,7 @@ const UserManagement: React.FC = () => {
             name="name"
             label={intl.formatMessage({
               id: 'user.form.name',
-              defaultMessage: '姓名',
+              defaultMessage: 'Name',
             })}
           >
             <Input />
@@ -473,14 +537,14 @@ const UserManagement: React.FC = () => {
             name="studentId"
             label={intl.formatMessage({
               id: 'user.form.studentId',
-              defaultMessage: '学号',
+              defaultMessage: 'Student ID',
             })}
             rules={[
               {
                 pattern: /^[0-9A-Za-z_-]{4,20}$/,
                 message: intl.formatMessage({
                   id: 'user.form.studentIdInvalid',
-                  defaultMessage: '请输入有效学号',
+                  defaultMessage: 'Please enter valid student ID',
                 }),
               },
             ]}
@@ -491,14 +555,14 @@ const UserManagement: React.FC = () => {
             name="email"
             label={intl.formatMessage({
               id: 'user.form.email',
-              defaultMessage: '邮箱',
+              defaultMessage: 'Email',
             })}
             rules={[
               {
                 type: 'email',
                 message: intl.formatMessage({
                   id: 'user.form.emailInvalid',
-                  defaultMessage: '请输入有效邮箱',
+                  defaultMessage: 'Please enter valid email',
                 }),
               },
             ]}
@@ -509,14 +573,14 @@ const UserManagement: React.FC = () => {
             name="phone"
             label={intl.formatMessage({
               id: 'user.form.phone',
-              defaultMessage: '手机号',
+              defaultMessage: 'Phone',
             })}
             rules={[
               {
                 pattern: /^\d{10,15}$/,
                 message: intl.formatMessage({
                   id: 'user.form.phoneInvalid',
-                  defaultMessage: '请输入有效手机号',
+                  defaultMessage: 'Please enter valid phone number',
                 }),
               },
             ]}
@@ -528,21 +592,21 @@ const UserManagement: React.FC = () => {
               name="password"
               label={intl.formatMessage({
                 id: 'user.form.password',
-                defaultMessage: '密码',
+                defaultMessage: 'Password',
               })}
               rules={[
                 {
                   required: !editingUser,
                   message: intl.formatMessage({
                     id: 'user.form.passwordRequired',
-                    defaultMessage: '请输入密码',
+                    defaultMessage: 'Please enter password',
                   }),
                 },
                 {
                   min: 6,
                   message: intl.formatMessage({
                     id: 'user.form.passwordMin',
-                    defaultMessage: '密码至少6位',
+                    defaultMessage: 'Password must be at least 6 characters',
                   }),
                 },
               ]}
@@ -555,14 +619,14 @@ const UserManagement: React.FC = () => {
               name="password"
               label={intl.formatMessage({
                 id: 'user.form.newPassword',
-                defaultMessage: '新密码（留空则不修改）',
+                defaultMessage: 'New password (leave blank to keep unchanged)',
               })}
               rules={[
                 {
                   min: 6,
                   message: intl.formatMessage({
                     id: 'user.form.passwordMin',
-                    defaultMessage: '密码至少6位',
+                    defaultMessage: 'Password must be at least 6 characters',
                   }),
                 },
               ]}
@@ -574,20 +638,20 @@ const UserManagement: React.FC = () => {
             name="role"
             label={intl.formatMessage({
               id: 'user.form.role',
-              defaultMessage: '角色',
+              defaultMessage: 'Role',
             })}
           >
             <Select>
               <Select.Option value={Roles.USER}>
                 {intl.formatMessage({
                   id: 'user.role.user',
-                  defaultMessage: '普通用户',
+                  defaultMessage: 'User',
                 })}
               </Select.Option>
               <Select.Option value={Roles.ADMIN}>
                 {intl.formatMessage({
                   id: 'user.role.admin',
-                  defaultMessage: '管理员',
+                  defaultMessage: 'Admin',
                 })}
               </Select.Option>
             </Select>
@@ -596,7 +660,7 @@ const UserManagement: React.FC = () => {
             name="blacklisted"
             label={intl.formatMessage({
               id: 'credit.tab.blacklist',
-              defaultMessage: '黑名单',
+              defaultMessage: 'Blacklisted',
             })}
             valuePropName="checked"
           >
@@ -607,7 +671,7 @@ const UserManagement: React.FC = () => {
       <Modal
         title={intl.formatMessage({
           id: 'user.batchModal.title',
-          defaultMessage: '批量设置用户状态',
+          defaultMessage: 'Batch set user status',
         })}
         open={batchModalVisible}
         forceRender
@@ -621,13 +685,24 @@ const UserManagement: React.FC = () => {
             const statusNum = Number(values.status);
             const ids = selectedRows.map((r) => r.id);
             await batchUpdateUserStatus(ids, statusNum);
-            message.success('批量更新成功');
+            message.success(
+              intl.formatMessage({
+                id: 'user.batch.updateSuccess',
+                defaultMessage: 'Batch update succeeded',
+              }),
+            );
             setBatchModalVisible(false);
             setSelectedRows([]);
             batchForm.resetFields();
             actionRef.current?.reload?.();
           } catch (e: any) {
-            message.error(e?.message || '批量更新失败');
+            message.error(
+              e?.message ||
+                intl.formatMessage({
+                  id: 'user.batch.updateFailed',
+                  defaultMessage: 'Batch update failed',
+                }),
+            );
           }
         }}
       >
@@ -640,14 +715,14 @@ const UserManagement: React.FC = () => {
             name="status"
             label={intl.formatMessage({
               id: 'seat.form.status',
-              defaultMessage: '状态',
+              defaultMessage: 'Status',
             })}
             rules={[
               {
                 required: true,
                 message: intl.formatMessage({
                   id: 'user.batch.statusRequired',
-                  defaultMessage: '请选择状态',
+                  defaultMessage: 'Please select a status',
                 }),
               },
             ]}
@@ -656,13 +731,13 @@ const UserManagement: React.FC = () => {
               <Select.Option value="0">
                 {intl.formatMessage({
                   id: 'user.batch.status.normal',
-                  defaultMessage: '正常',
+                  defaultMessage: 'Normal',
                 })}
               </Select.Option>
               <Select.Option value="1">
                 {intl.formatMessage({
                   id: 'credit.tab.blacklist',
-                  defaultMessage: '黑名单',
+                  defaultMessage: 'Blacklisted',
                 })}
               </Select.Option>
             </Select>

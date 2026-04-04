@@ -23,21 +23,21 @@ const ZoneManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'zone.column.name',
-        defaultMessage: '区域名称',
+        defaultMessage: 'Zone Name',
       }),
       dataIndex: 'name',
     },
     {
       title: intl.formatMessage({
         id: 'floor.form.description',
-        defaultMessage: '描述',
+        defaultMessage: 'Description',
       }),
       dataIndex: 'description',
     },
     {
       title: intl.formatMessage({
         id: 'common.action',
-        defaultMessage: '操作',
+        defaultMessage: 'Actions',
       }),
       valueType: 'option',
       width: 150,
@@ -52,7 +52,7 @@ const ZoneManagement: React.FC = () => {
               setModalVisible(true);
             }}
           >
-            {intl.formatMessage({ id: 'common.edit', defaultMessage: '编辑' })}
+            {intl.formatMessage({ id: 'common.edit', defaultMessage: 'Edit' })}
           </Button>
           <Button
             type="link"
@@ -60,17 +60,34 @@ const ZoneManagement: React.FC = () => {
             icon={<DeleteOutlined />}
             onClick={() => {
               Modal.confirm({
-                title: '确认删除',
-                content: '确定要删除该区域吗？',
+                title: intl.formatMessage({
+                  id: 'common.confirm',
+                  defaultMessage: 'Confirm',
+                }),
+                content: intl.formatMessage({
+                  id: 'zone.confirmDelete',
+                  defaultMessage: 'Are you sure you want to delete this zone?',
+                }),
                 onOk: async () => {
                   try {
                     await request(`/api/zones/${record.id}`, {
                       method: 'DELETE',
                     });
-                    message.success('删除成功');
+                    message.success(
+                      intl.formatMessage({
+                        id: 'zone.deleted',
+                        defaultMessage: 'Deleted successfully',
+                      }),
+                    );
                     actionRef.current?.reload?.();
                   } catch (e: any) {
-                    message.error(e?.message || '删除失败');
+                    message.error(
+                      e?.message ||
+                        intl.formatMessage({
+                          id: 'common.deleteFailed',
+                          defaultMessage: 'Delete failed, please try again',
+                        }),
+                    );
                   }
                 },
               });
@@ -78,7 +95,7 @@ const ZoneManagement: React.FC = () => {
           >
             {intl.formatMessage({
               id: 'common.delete',
-              defaultMessage: '删除',
+              defaultMessage: 'Delete',
             })}
           </Button>
         </Space>
@@ -90,11 +107,14 @@ const ZoneManagement: React.FC = () => {
     <PageContainer
       title={intl.formatMessage({
         id: 'zone.title',
-        defaultMessage: '区域管理',
+        defaultMessage: 'Zone Management',
       })}
     >
       <ProTable<ZoneType>
-        headerTitle="区域列表"
+        headerTitle={intl.formatMessage({
+          id: 'zone.listTitle',
+          defaultMessage: 'Zone List',
+        })}
         actionRef={actionRef}
         rowKey="id"
         request={async (params) => {
@@ -128,13 +148,20 @@ const ZoneManagement: React.FC = () => {
               setModalVisible(true);
             }}
           >
-            {intl.formatMessage({ id: 'zone.new', defaultMessage: '新建区域' })}
+            {intl.formatMessage({ id: 'zone.new', defaultMessage: 'New Zone' })}
           </Button>,
         ]}
       />
 
       <Modal
-        title={editing ? '编辑区域' : '新建区域'}
+        title={
+          editing
+            ? intl.formatMessage({
+                id: 'zone.modal.edit',
+                defaultMessage: 'Edit Zone',
+              })
+            : intl.formatMessage({ id: 'zone.new', defaultMessage: 'New Zone' })
+        }
         open={modalVisible}
         onCancel={() => {
           setModalVisible(false);
@@ -149,10 +176,20 @@ const ZoneManagement: React.FC = () => {
                 method: 'PUT',
                 data: values,
               });
-              message.success('更新成功');
+              message.success(
+                intl.formatMessage({
+                  id: 'zone.updateSuccess',
+                  defaultMessage: 'Updated successfully',
+                }),
+              );
             } else {
               await request('/api/zones', { method: 'POST', data: values });
-              message.success('创建成功');
+              message.success(
+                intl.formatMessage({
+                  id: 'zone.createSuccess',
+                  defaultMessage: 'Created successfully',
+                }),
+              );
             }
             setModalVisible(false);
             setEditing(null);
@@ -160,7 +197,13 @@ const ZoneManagement: React.FC = () => {
             actionRef.current?.reload?.();
           } catch (err: any) {
             if (err?.errorFields) return;
-            message.error(err?.message || '操作失败');
+            message.error(
+              err?.message ||
+                intl.formatMessage({
+                  id: 'common.operationFailed',
+                  defaultMessage: 'Operation failed',
+                }),
+            );
           }
         }}
       >
@@ -169,14 +212,14 @@ const ZoneManagement: React.FC = () => {
             name="name"
             label={intl.formatMessage({
               id: 'zone.column.name',
-              defaultMessage: '区域名称',
+              defaultMessage: 'Zone Name',
             })}
             rules={[
               {
                 required: true,
                 message: intl.formatMessage({
                   id: 'zone.form.nameRequired',
-                  defaultMessage: '请输入区域名称',
+                  defaultMessage: 'Please enter zone name',
                 }),
               },
             ]}
@@ -188,7 +231,7 @@ const ZoneManagement: React.FC = () => {
             name="description"
             label={intl.formatMessage({
               id: 'floor.form.description',
-              defaultMessage: '描述',
+              defaultMessage: 'Description',
             })}
           >
             {' '}

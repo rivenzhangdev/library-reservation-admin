@@ -11,5 +11,10 @@ export default {
   'notification.send': '发送通知',
   'notification.sendSuccess': '发送成功',
   'notification.sendFailed': '发送失败',
+  'notification.detailFailed': '获取详情失败',
   'notification.form.content': '内容',
+  'notification.detail.user': '用户',
+  'notification.detail.title': '标题',
+  'notification.detail.content': '内容',
+  'notification.detail.time': '时间',
 };

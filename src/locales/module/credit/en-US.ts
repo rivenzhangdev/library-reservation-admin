@@ -20,6 +20,10 @@ export default {
   'credit.adjustFailed': 'Adjust failed',
   'credit.type.add': 'Add',
   'credit.type.deduct': 'Deduct',
+  'credit.column.violationType': 'Violation Type',
+  'credit.column.deductPoints': 'Deducted Points',
+  'credit.confirmDeleteViolation':
+    'Are you sure you want to delete this violation record?',
   'credit.column.points': 'Points Change',
   'credit.column.date': 'Date',
   'credit.form.userId': 'User ID',

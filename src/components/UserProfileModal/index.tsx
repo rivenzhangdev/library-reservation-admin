@@ -1,4 +1,5 @@
 import { UploadOutlined } from '@ant-design/icons';
+import { useIntl } from '@umijs/max';
 import { Button, Form, Input, Modal, Upload, message } from 'antd';
 import type { RcFile } from 'antd/es/upload';
 import React, { useEffect, useState } from 'react';
@@ -32,6 +33,7 @@ const UserProfileModal: React.FC<{
     initialValues?.avatar,
   );
   const [uploading, setUploading] = useState(false);
+  const intl = useIntl();
 
   useEffect(() => {
     form.setFieldsValue(initialValues || {});
@@ -41,7 +43,12 @@ const UserProfileModal: React.FC<{
   const handleBeforeUpload = async (file: RcFile) => {
     const isLt2M = file.size / 1024 / 1024 < 2;
     if (!isLt2M) {
-      message.error('图片必须小于 2MB');
+      message.error(
+        intl.formatMessage({
+          id: 'userProfile.imageTooLarge',
+          defaultMessage: '图片必须小于 2MB',
+        }),
+      );
       return Upload.LIST_IGNORE;
     }
     const base64 = await getBase64(file);
@@ -60,7 +67,12 @@ const UserProfileModal: React.FC<{
         avatar: avatarPreview,
       };
       await onSave(payload);
-      message.success('保存成功');
+      message.success(
+        intl.formatMessage({
+          id: 'userProfile.saveSuccess',
+          defaultMessage: '保存成功',
+        }),
+      );
       onClose();
     } catch (err) {
       // validation errors handled by Form
@@ -71,7 +83,10 @@ const UserProfileModal: React.FC<{
 
   return (
     <Modal
-      title="编辑个人信息"
+      title={intl.formatMessage({
+        id: 'userProfile.title',
+        defaultMessage: '编辑个人信息',
+      })}
       open={visible}
       onCancel={onClose}
       onOk={handleOk}
@@ -79,7 +94,12 @@ const UserProfileModal: React.FC<{
       destroyOnHidden
     >
       <Form form={form} layout="vertical">
-        <Form.Item label="头像">
+        <Form.Item
+          label={intl.formatMessage({
+            id: 'userProfile.avatar',
+            defaultMessage: '头像',
+          })}
+        >
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <div
               style={{
@@ -103,36 +123,81 @@ const UserProfileModal: React.FC<{
               showUploadList={false}
               accept="image/*"
             >
-              <Button icon={<UploadOutlined />}>上传头像</Button>
+              <Button icon={<UploadOutlined />}>
+                {intl.formatMessage({
+                  id: 'userProfile.upload',
+                  defaultMessage: '上传头像',
+                })}
+              </Button>
             </Upload>
           </div>
         </Form.Item>
 
         <Form.Item
           name="username"
-          label="用户名"
-          rules={[{ required: true, message: '请输入用户名' }]}
+          label={intl.formatMessage({
+            id: 'userProfile.username',
+            defaultMessage: '用户名',
+          })}
+          rules={[
+            {
+              required: true,
+              message: intl.formatMessage({
+                id: 'userProfile.usernameRequired',
+                defaultMessage: '请输入用户名',
+              }),
+            },
+          ]}
         >
           <Input />
         </Form.Item>
 
-        <Form.Item name="name" label="姓名">
+        <Form.Item
+          name="name"
+          label={intl.formatMessage({
+            id: 'userProfile.name',
+            defaultMessage: '姓名',
+          })}
+        >
           <Input />
         </Form.Item>
 
         <Form.Item
           name="email"
-          label="邮箱"
-          rules={[{ type: 'email', message: '请输入正确的邮箱' }]}
+          label={intl.formatMessage({
+            id: 'userProfile.email',
+            defaultMessage: '邮箱',
+          })}
+          rules={[
+            {
+              type: 'email',
+              message: intl.formatMessage({
+                id: 'userProfile.emailInvalid',
+                defaultMessage: '请输入正确的邮箱',
+              }),
+            },
+          ]}
         >
           <Input />
         </Form.Item>
 
-        <Form.Item name="phone" label="手机号">
+        <Form.Item
+          name="phone"
+          label={intl.formatMessage({
+            id: 'userProfile.phone',
+            defaultMessage: '手机号',
+          })}
+        >
           <Input />
         </Form.Item>
 
-        <Form.Item name="studentId" label="学号/工号">
+        <Form.Item
+          name="studentId"
+          label={intl.formatMessage({
+            id: 'userProfile.studentId',
+            defaultMessage: '学号/工号',
+          })}
+        >
           <Input />
         </Form.Item>
       </Form>

@@ -91,7 +91,7 @@ const Dashboard: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'dashboard.totalUsers',
-        defaultMessage: '总用户数',
+        defaultMessage: 'Total users',
       }),
       value: dashboardData.totalUsers || 0,
       icon: <UserOutlined />,
@@ -101,7 +101,7 @@ const Dashboard: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'dashboard.totalBookings',
-        defaultMessage: '总预约数',
+        defaultMessage: 'Total bookings',
       }),
       value: dashboardData.totalBookings || 0,
       icon: <CalendarOutlined />,
@@ -111,7 +111,7 @@ const Dashboard: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'dashboard.activeToday',
-        defaultMessage: '今日预约',
+        defaultMessage: 'Bookings today',
       }),
       value: dashboardData.todayBookings || 0,
       icon: <FireOutlined />,
@@ -121,7 +121,7 @@ const Dashboard: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'credit.header.blacklist',
-        defaultMessage: '黑名单用户',
+        defaultMessage: 'Blacklisted users',
       }),
       value: dashboardData.blacklistedUsers || 0,
       icon: <StopOutlined />,
@@ -140,13 +140,19 @@ const Dashboard: React.FC = () => {
 
   const bookingStatusData = [
     {
-      type: '总预约',
+      type: intl.formatMessage({ id: 'dashboard.bookingType.total' }),
       value: statisticsData.totalBookings || dashboardData.totalBookings || 0,
     },
-    { type: '完成', value: statisticsData.completedBookings || 0 },
-    { type: '取消', value: statisticsData.canceledBookings || 0 },
     {
-      type: '违约',
+      type: intl.formatMessage({ id: 'dashboard.bookingType.completed' }),
+      value: statisticsData.completedBookings || 0,
+    },
+    {
+      type: intl.formatMessage({ id: 'dashboard.bookingType.canceled' }),
+      value: statisticsData.canceledBookings || 0,
+    },
+    {
+      type: intl.formatMessage({ id: 'dashboard.bookingType.violated' }),
       value:
         statisticsData.violatedBookings || dashboardData.violationCount || 0,
     },
@@ -177,16 +183,27 @@ const Dashboard: React.FC = () => {
   };
 
   const floorColumns = [
-    { title: '楼层', dataIndex: 'floor', key: 'floor', width: 100 },
     {
-      title: '总座位',
+      title: intl.formatMessage({
+        id: 'seat.form.floor',
+        defaultMessage: 'Floor',
+      }),
+      dataIndex: 'floor',
+      key: 'floor',
+      width: 100,
+    },
+    {
+      title: intl.formatMessage({ id: 'dashboard.column.totalSeats' }),
       dataIndex: 'totalSeats',
       key: 'totalSeats',
       width: 80,
       align: 'center' as const,
     },
     {
-      title: '可用',
+      title: intl.formatMessage({
+        id: 'dashboard.column.availableSeats',
+        defaultMessage: 'Available',
+      }),
       dataIndex: 'availableSeats',
       key: 'availableSeats',
       width: 80,
@@ -194,7 +211,10 @@ const Dashboard: React.FC = () => {
       render: (v: number) => <span style={{ color: '#52c41a' }}>{v}</span>,
     },
     {
-      title: '今日占用',
+      title: intl.formatMessage({
+        id: 'dashboard.column.occupiedSeats',
+        defaultMessage: 'Occupied today',
+      }),
       dataIndex: 'occupiedSeats',
       key: 'occupiedSeats',
       width: 80,
@@ -202,7 +222,7 @@ const Dashboard: React.FC = () => {
       render: (v: number) => <span style={{ color: '#1890ff' }}>{v}</span>,
     },
     {
-      title: '使用率',
+      title: intl.formatMessage({ id: 'dashboard.column.usageRate' }),
       dataIndex: 'usageRate',
       key: 'usageRate',
       width: 160,
@@ -221,20 +241,48 @@ const Dashboard: React.FC = () => {
       ),
     },
     {
-      title: '操作',
+      title: intl.formatMessage({ id: 'common.action' }),
       key: 'action',
       width: 80,
       align: 'center' as const,
-      render: () => <a onClick={() => history.push('/seat')}>查看</a>,
+      render: () => (
+        <a onClick={() => history.push('/seat')}>
+          {intl.formatMessage({ id: 'dashboard.view' })}
+        </a>
+      ),
     },
   ];
 
   const bookingColumns = [
-    { title: '用户', dataIndex: 'user', key: 'user' },
-    { title: '座位', dataIndex: 'seat', key: 'seat' },
-    { title: '日期', dataIndex: 'date', key: 'date' },
     {
-      title: '状态',
+      title: intl.formatMessage({
+        id: 'credit.tab.users',
+        defaultMessage: 'User',
+      }),
+      dataIndex: 'user',
+      key: 'user',
+    },
+    {
+      title: intl.formatMessage({
+        id: 'booking.column.seat',
+        defaultMessage: 'Seat',
+      }),
+      dataIndex: 'seat',
+      key: 'seat',
+    },
+    {
+      title: intl.formatMessage({
+        id: 'booking.form.date',
+        defaultMessage: 'Date',
+      }),
+      dataIndex: 'date',
+      key: 'date',
+    },
+    {
+      title: intl.formatMessage({
+        id: 'seat.form.status',
+        defaultMessage: 'Status',
+      }),
       dataIndex: 'status',
       key: 'status',
       render: (status: string, record: any) => {
@@ -248,9 +296,16 @@ const Dashboard: React.FC = () => {
       },
     },
     {
-      title: '操作',
+      title: intl.formatMessage({
+        id: 'common.action',
+        defaultMessage: 'Action',
+      }),
       key: 'action',
-      render: () => <a onClick={() => history.push('/booking')}>查看</a>,
+      render: () => (
+        <a onClick={() => history.push('/booking')}>
+          {intl.formatMessage({ id: 'dashboard.view' })}
+        </a>
+      ),
     },
   ];
 
@@ -275,7 +330,7 @@ const Dashboard: React.FC = () => {
         header={{
           title: intl.formatMessage({
             id: 'menu.dashboard',
-            defaultMessage: '数据概览',
+            defaultMessage: 'Dashboard',
           }),
           ghost: true,
           extra: isAdmin
@@ -285,24 +340,24 @@ const Dashboard: React.FC = () => {
                   type={timeRange === 'today' ? 'primary' : 'default'}
                   onClick={() => setTimeRange('today')}
                 >
-                  今日
+                  {intl.formatMessage({ id: 'dashboard.range.today' })}
                 </Button>,
                 <Button
                   key="2"
                   type={timeRange === 'week' ? 'primary' : 'default'}
                   onClick={() => setTimeRange('week')}
                 >
-                  本周
+                  {intl.formatMessage({ id: 'dashboard.range.week' })}
                 </Button>,
                 <Button
                   key="3"
                   type={timeRange === 'month' ? 'primary' : 'default'}
                   onClick={() => setTimeRange('month')}
                 >
-                  本月
+                  {intl.formatMessage({ id: 'dashboard.range.month' })}
                 </Button>,
                 <Button key="4" type="primary" icon={<DownloadOutlined />}>
-                  导出报表
+                  {intl.formatMessage({ id: 'dashboard.export' })}
                 </Button>,
               ]
             : [],
@@ -352,7 +407,7 @@ const Dashboard: React.FC = () => {
           <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
             <Col xs={24} lg={12}>
               <Card
-                title="预约趋势（近7天）"
+                title={intl.formatMessage({ id: 'dashboard.card.usageTrend' })}
                 bordered={false}
                 style={{ height: 400 }}
               >
@@ -361,13 +416,18 @@ const Dashboard: React.FC = () => {
                     <Line {...lineConfig} style={{ height: 300 }} />
                   </div>
                 ) : (
-                  <Empty description="暂无数据" style={{ paddingTop: 80 }} />
+                  <Empty
+                    description={intl.formatMessage({ id: 'common.noData' })}
+                    style={{ paddingTop: 80 }}
+                  />
                 )}
               </Card>
             </Col>
             <Col xs={24} lg={12}>
               <Card
-                title="预约状态分布"
+                title={intl.formatMessage({
+                  id: 'dashboard.card.bookingStatus',
+                })}
                 bordered={false}
                 style={{ height: 400 }}
               >
@@ -384,10 +444,14 @@ const Dashboard: React.FC = () => {
           <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
             <Col xs={24} lg={14}>
               <Card
-                title="楼层座位状态"
+                title={intl.formatMessage({ id: 'dashboard.card.floorStatus' })}
                 bordered={false}
                 style={{ minHeight: 360 }}
-                extra={<a onClick={() => history.push('/seat')}>查看全部</a>}
+                extra={
+                  <a onClick={() => history.push('/seat')}>
+                    {intl.formatMessage({ id: 'dashboard.viewAll' })}
+                  </a>
+                }
               >
                 {floorData.length > 0 ? (
                   <Table
@@ -398,17 +462,21 @@ const Dashboard: React.FC = () => {
                     scroll={{ x: 600 }}
                   />
                 ) : (
-                  <Empty description="暂无楼层数据" />
+                  <Empty
+                    description={intl.formatMessage({ id: 'common.noData' })}
+                  />
                 )}
               </Card>
             </Col>
             <Col xs={24} lg={10}>
               <Card
-                title="今日热门区域"
+                title={intl.formatMessage({ id: 'dashboard.card.hotAreas' })}
                 bordered={false}
                 style={{ minHeight: 360 }}
                 extra={
-                  <a onClick={() => history.push('/management')}>查看全部</a>
+                  <a onClick={() => history.push('/management')}>
+                    {intl.formatMessage({ id: 'dashboard.viewAll' })}
+                  </a>
                 }
               >
                 {hotAreasData.length > 0 ? (
@@ -447,14 +515,19 @@ const Dashboard: React.FC = () => {
                             showInfo={false}
                           />
                           <Text type="secondary">
-                            今日预约：{area.count} 次
+                            {intl.formatMessage({
+                              id: 'dashboard.label.bookings',
+                            })}
+                            : {area.count}
                           </Text>
                         </Space>
                       </Card>
                     ))}
                   </Space>
                 ) : (
-                  <Empty description="暂无数据" />
+                  <Empty
+                    description={intl.formatMessage({ id: 'common.noData' })}
+                  />
                 )}
               </Card>
             </Col>
@@ -466,10 +539,16 @@ const Dashboard: React.FC = () => {
           <Row gutter={[16, 16]}>
             <Col xs={24} lg={14}>
               <Card
-                title="最近预约记录"
+                title={intl.formatMessage({
+                  id: 'dashboard.card.recentBookings',
+                })}
                 bordered={false}
                 style={{ minHeight: 360 }}
-                extra={<a onClick={() => history.push('/booking')}>查看全部</a>}
+                extra={
+                  <a onClick={() => history.push('/booking')}>
+                    {intl.formatMessage({ id: 'dashboard.viewAll' })}
+                  </a>
+                }
               >
                 {recentBookings.length > 0 ? (
                   <Table
@@ -479,16 +558,22 @@ const Dashboard: React.FC = () => {
                     size="middle"
                   />
                 ) : (
-                  <Empty description="暂无预约记录" />
+                  <Empty
+                    description={intl.formatMessage({ id: 'common.noData' })}
+                  />
                 )}
               </Card>
             </Col>
             <Col xs={24} lg={10}>
               <Card
-                title="活跃用户"
+                title={intl.formatMessage({ id: 'dashboard.card.activeUsers' })}
                 bordered={false}
                 style={{ minHeight: 360 }}
-                extra={<a onClick={() => history.push('/user')}>查看全部</a>}
+                extra={
+                  <a onClick={() => history.push('/user')}>
+                    {intl.formatMessage({ id: 'dashboard.viewAll' })}
+                  </a>
+                }
               >
                 {activeUsers.length > 0 ? (
                   <Space
@@ -517,8 +602,14 @@ const Dashboard: React.FC = () => {
                               <Text type="secondary">{user.username}</Text>
                             </div>
                             <Text type="secondary">
-                              预约 {user.bookings} 次 | 最后活跃：
-                              {user.lastActive}
+                              {intl.formatMessage({
+                                id: 'dashboard.label.bookings',
+                              })}
+                              : {user.bookings} |{' '}
+                              {intl.formatMessage({
+                                id: 'dashboard.label.lastActive',
+                              })}
+                              : {user.lastActive}
                             </Text>
                           </div>
                         </Space>
@@ -526,7 +617,9 @@ const Dashboard: React.FC = () => {
                     ))}
                   </Space>
                 ) : (
-                  <Empty description="暂无数据" />
+                  <Empty
+                    description={intl.formatMessage({ id: 'common.noData' })}
+                  />
                 )}
               </Card>
             </Col>

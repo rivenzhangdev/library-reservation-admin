@@ -55,6 +55,17 @@ interface SeatType {
 const SeatManagement: React.FC = () => {
   const intl = useIntl();
 
+  const seatStatusDefault: Record<number, string> = {
+    [SeatStatus.Available]: 'Available',
+    [SeatStatus.Maintenance]: 'Maintenance',
+  };
+
+  const seatTypeDefault: Record<number, string> = {
+    [SeatTypeEnum.Single]: 'Single',
+    [SeatTypeEnum.Double]: 'Double',
+    [SeatTypeEnum.Group]: 'Group',
+  };
+
   const actionRef = useRef<ActionType>();
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [batchModalVisible, setBatchModalVisible] = useState(false);
@@ -106,16 +117,30 @@ const SeatManagement: React.FC = () => {
     Modal.confirm({
       title: intl.formatMessage({
         id: 'user.confirmDeleteTitle',
-        defaultMessage: '确认删除',
+        defaultMessage: 'Confirm delete',
       }),
-      content: '确定要删除该座位吗？',
+      content: intl.formatMessage({
+        id: 'seat.confirmDeleteContent',
+        defaultMessage: 'Are you sure you want to delete this seat?',
+      }),
       onOk: async () => {
         try {
           await deleteSeat(id);
-          message.success('删除成功');
+          message.success(
+            intl.formatMessage({
+              id: 'common.deleteSuccessRefresh',
+              defaultMessage: 'Deleted successfully, refreshing...',
+            }),
+          );
           actionRef.current?.reload?.();
         } catch (e: any) {
-          message.error(e?.message || '删除失败');
+          message.error(
+            e?.message ||
+              intl.formatMessage({
+                id: 'common.deleteFailed',
+                defaultMessage: 'Delete failed, please try again',
+              }),
+          );
         }
       },
     });
@@ -128,10 +153,21 @@ const SeatManagement: React.FC = () => {
         : SeatStatus.Available;
     try {
       await updateSeat(record.id, { status: newStatus });
-      message.success('更新成功');
+      message.success(
+        intl.formatMessage({
+          id: 'seat.updateSuccess',
+          defaultMessage: 'Updated successfully',
+        }),
+      );
       actionRef.current?.reload?.();
     } catch (e: any) {
-      message.error(e?.message || '更新失败');
+      message.error(
+        e?.message ||
+          intl.formatMessage({
+            id: 'seat.updateFailed',
+            defaultMessage: 'Update failed',
+          }),
+      );
     }
   };
 
@@ -145,7 +181,7 @@ const SeatManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'seat.form.floor',
-        defaultMessage: '楼层',
+        defaultMessage: 'Floor',
       }),
       dataIndex: 'floorId',
       valueType: 'select',
@@ -163,17 +199,27 @@ const SeatManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'seat.column.position',
-        defaultMessage: '位置',
+        defaultMessage: 'Position',
       }),
       dataIndex: 'position',
       hideInSearch: true,
       width: 140,
-      render: (_, record) => `第${record.rowNum}行 - 第${record.colNum}列`,
+      render: (_, record) =>
+        `${intl.formatMessage({
+          id: 'seat.position.row',
+          defaultMessage: 'Row ',
+        })}${record.rowNum}${intl.formatMessage({
+          id: 'seat.position.rowSuffix',
+          defaultMessage: ' - Col ',
+        })}${record.colNum}${intl.formatMessage({
+          id: 'seat.position.colSuffix',
+          defaultMessage: '',
+        })}`,
     },
     {
       title: intl.formatMessage({
         id: 'seat.form.row',
-        defaultMessage: '行号',
+        defaultMessage: 'Row',
       }),
       dataIndex: 'rowNum',
       sorter: true,
@@ -183,7 +229,7 @@ const SeatManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'seat.form.col',
-        defaultMessage: '列号',
+        defaultMessage: 'Column',
       }),
       dataIndex: 'colNum',
       sorter: true,
@@ -193,43 +239,67 @@ const SeatManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'seat.form.status',
-        defaultMessage: '状态',
+        defaultMessage: 'Status',
       }),
       dataIndex: 'status',
       valueType: 'select',
       valueEnum: {
         [SeatStatus.Available]: {
-          text: SeatStatusText[SeatStatus.Available],
+          text: intl.formatMessage({
+            id: SeatStatusText[SeatStatus.Available],
+            defaultMessage: seatStatusDefault[SeatStatus.Available],
+          }),
           status: 'Success',
         },
         [SeatStatus.Maintenance]: {
-          text: SeatStatusText[SeatStatus.Maintenance],
+          text: intl.formatMessage({
+            id: SeatStatusText[SeatStatus.Maintenance],
+            defaultMessage: seatStatusDefault[SeatStatus.Maintenance],
+          }),
           status: 'Error',
         },
       },
       render: (_, record) => (
         <Tag color={record.status === SeatStatus.Available ? 'green' : 'red'}>
-          {SeatStatusText[record.status]}
+          {intl.formatMessage({
+            id: SeatStatusText[record.status],
+            defaultMessage: seatStatusDefault[record.status] || 'Unknown',
+          })}
         </Tag>
       ),
     },
     {
       title: intl.formatMessage({
         id: 'seat.form.type',
-        defaultMessage: '类型',
+        defaultMessage: 'Type',
       }),
       dataIndex: 'type',
       valueType: 'select',
       valueEnum: {
-        [SeatTypeEnum.Single]: { text: SeatTypeText[SeatTypeEnum.Single] },
-        [SeatTypeEnum.Double]: { text: SeatTypeText[SeatTypeEnum.Double] },
-        [SeatTypeEnum.Group]: { text: SeatTypeText[SeatTypeEnum.Group] },
+        [SeatTypeEnum.Single]: {
+          text: intl.formatMessage({
+            id: SeatTypeText[SeatTypeEnum.Single],
+            defaultMessage: seatTypeDefault[SeatTypeEnum.Single],
+          }),
+        },
+        [SeatTypeEnum.Double]: {
+          text: intl.formatMessage({
+            id: SeatTypeText[SeatTypeEnum.Double],
+            defaultMessage: seatTypeDefault[SeatTypeEnum.Double],
+          }),
+        },
+        [SeatTypeEnum.Group]: {
+          text: intl.formatMessage({
+            id: SeatTypeText[SeatTypeEnum.Group],
+            defaultMessage: seatTypeDefault[SeatTypeEnum.Group],
+          }),
+        },
       },
     },
     {
       title: intl.formatMessage({
         id: 'seat.column.facility',
-        defaultMessage: '设施',
+        defaultMessage: 'Facilities',
       }),
       hideInSearch: true,
       render: (_, record) => (
@@ -238,7 +308,7 @@ const SeatManagement: React.FC = () => {
             <Tag color="blue">
               {intl.formatMessage({
                 id: 'seat.facility.socket',
-                defaultMessage: '插座',
+                defaultMessage: 'Socket',
               })}
             </Tag>
           )}
@@ -246,7 +316,7 @@ const SeatManagement: React.FC = () => {
             <Tag color="green">
               {intl.formatMessage({
                 id: 'seat.form.isWindow',
-                defaultMessage: '靠窗',
+                defaultMessage: 'Window seat',
               })}
             </Tag>
           )}
@@ -256,7 +326,7 @@ const SeatManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'seat.form.zone',
-        defaultMessage: '区域',
+        defaultMessage: 'Zone',
       }),
       dataIndex: 'zoneName',
       render: (_, record) => (
@@ -266,7 +336,7 @@ const SeatManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'common.action',
-        defaultMessage: '操作',
+        defaultMessage: 'Actions',
       }),
       valueType: 'option',
       width: 260,
@@ -279,14 +349,22 @@ const SeatManagement: React.FC = () => {
             size="small"
             onClick={() => handleEdit(record)}
           >
-            {intl.formatMessage({ id: 'common.edit', defaultMessage: '编辑' })}
+            {intl.formatMessage({ id: 'common.edit', defaultMessage: 'Edit' })}
           </Button>
           <Button
             type="link"
             size="small"
             onClick={() => handleToggleStatus(record as SeatType)}
           >
-            {record.status === SeatStatus.Available ? '设为维护' : '设为可用'}
+            {record.status === SeatStatus.Available
+              ? intl.formatMessage({
+                  id: 'seat.action.setMaintenance',
+                  defaultMessage: 'Set maintenance',
+                })
+              : intl.formatMessage({
+                  id: 'seat.action.setAvailable',
+                  defaultMessage: 'Set available',
+                })}
           </Button>
           <Button
             type="link"
@@ -297,7 +375,7 @@ const SeatManagement: React.FC = () => {
           >
             {intl.formatMessage({
               id: 'common.delete',
-              defaultMessage: '删除',
+              defaultMessage: 'Delete',
             })}
           </Button>
         </Space>
@@ -309,11 +387,14 @@ const SeatManagement: React.FC = () => {
     <PageContainer
       title={intl.formatMessage({
         id: 'menu.seat',
-        defaultMessage: '座位管理',
+        defaultMessage: 'Seat Management',
       })}
     >
       <ProTable<SeatType>
-        headerTitle="座位列表"
+        headerTitle={intl.formatMessage({
+          id: 'seat.listTitle',
+          defaultMessage: 'Seat List',
+        })}
         actionRef={actionRef}
         rowKey="id"
         scroll={{ x: 1300 }}
@@ -328,7 +409,7 @@ const SeatManagement: React.FC = () => {
           <Button key="batchCreate" onClick={() => setBatchModalVisible(true)}>
             {intl.formatMessage({
               id: 'seat.batchCreate',
-              defaultMessage: '批量建座位',
+              defaultMessage: 'Batch create seats',
             })}
           </Button>,
           <Button
@@ -338,7 +419,7 @@ const SeatManagement: React.FC = () => {
           >
             {intl.formatMessage({
               id: 'user.batchSetStatus',
-              defaultMessage: '批量设置状态',
+              defaultMessage: 'Batch set status',
             })}
           </Button>,
           <Button
@@ -351,7 +432,7 @@ const SeatManagement: React.FC = () => {
               setEditModalVisible(true);
             }}
           >
-            {intl.formatMessage({ id: 'seat.new', defaultMessage: '新建座位' })}
+            {intl.formatMessage({ id: 'seat.new', defaultMessage: 'New Seat' })}
           </Button>,
         ]}
         request={async (params) => {
@@ -376,7 +457,7 @@ const SeatManagement: React.FC = () => {
       <Modal
         title={intl.formatMessage({
           id: 'seat.batchStatusModal.title',
-          defaultMessage: '批量设置座位状态',
+          defaultMessage: 'Batch update seat status',
         })}
         open={batchStatusModalVisible}
         onCancel={() => {
@@ -386,7 +467,12 @@ const SeatManagement: React.FC = () => {
         onOk={async () => {
           try {
             if (!selectedSeatIds || selectedSeatIds.length === 0) {
-              message.info('请先选择座位');
+              message.info(
+                intl.formatMessage({
+                  id: 'seat.pleaseSelectSeat',
+                  defaultMessage: 'Please select seats first',
+                }),
+              );
               return;
             }
             // 动态导入服务以避免循环依赖问题
@@ -394,12 +480,23 @@ const SeatManagement: React.FC = () => {
               '../../services/library/seat'
             );
             await batchUpdateSeatStatus(selectedSeatIds, batchStatus);
-            message.success('批量更新成功');
+            message.success(
+              intl.formatMessage({
+                id: 'seat.batchUpdateSuccess',
+                defaultMessage: 'Batch update successful',
+              }),
+            );
             setSelectedSeatIds([]);
             setBatchStatusModalVisible(false);
             actionRef.current?.reload?.();
           } catch (e: any) {
-            message.error(e?.message || '批量更新失败');
+            message.error(
+              e?.message ||
+                intl.formatMessage({
+                  id: 'seat.batchUpdateFailed',
+                  defaultMessage: 'Batch update failed',
+                }),
+            );
           }
         }}
       >
@@ -407,7 +504,7 @@ const SeatManagement: React.FC = () => {
           <Form.Item
             label={intl.formatMessage({
               id: 'seat.form.status',
-              defaultMessage: '状态',
+              defaultMessage: 'Status',
             })}
           >
             <Select
@@ -417,13 +514,13 @@ const SeatManagement: React.FC = () => {
               <Select.Option value={SeatStatus.Available}>
                 {intl.formatMessage({
                   id: 'seat.status.available',
-                  defaultMessage: '可用',
+                  defaultMessage: 'Available',
                 })}
               </Select.Option>
               <Select.Option value={SeatStatus.Maintenance}>
                 {intl.formatMessage({
                   id: 'seat.status.maintenance',
-                  defaultMessage: '维护中',
+                  defaultMessage: 'Maintenance',
                 })}
               </Select.Option>
             </Select>
@@ -432,7 +529,17 @@ const SeatManagement: React.FC = () => {
       </Modal>
 
       <Modal
-        title={editingSeat ? '编辑座位' : '新建座位'}
+        title={
+          editingSeat
+            ? intl.formatMessage({
+                id: 'seat.modal.edit',
+                defaultMessage: 'Edit Seat',
+              })
+            : intl.formatMessage({
+                id: 'seat.modal.new',
+                defaultMessage: 'New Seat',
+              })
+        }
         open={editModalVisible}
         onCancel={() => {
           setEditModalVisible(false);
@@ -444,10 +551,20 @@ const SeatManagement: React.FC = () => {
             const values = await form.validateFields();
             if (editingSeat && editingSeat.id) {
               await updateSeat(editingSeat.id, values);
-              message.success('更新成功');
+              message.success(
+                intl.formatMessage({
+                  id: 'seat.updateSuccess',
+                  defaultMessage: 'Updated successfully',
+                }),
+              );
             } else {
               await createSeat(values);
-              message.success('创建成功');
+              message.success(
+                intl.formatMessage({
+                  id: 'seat.createSuccess',
+                  defaultMessage: 'Created successfully',
+                }),
+              );
             }
             setEditModalVisible(false);
             setEditingSeat(null);
@@ -455,7 +572,13 @@ const SeatManagement: React.FC = () => {
             actionRef.current?.reload?.();
           } catch (e: any) {
             if (e?.errorFields) return;
-            message.error(e?.message || '操作失败');
+            message.error(
+              e?.message ||
+                intl.formatMessage({
+                  id: 'common.operationFailed',
+                  defaultMessage: 'Operation failed',
+                }),
+            );
           }
         }}
       >
@@ -474,14 +597,14 @@ const SeatManagement: React.FC = () => {
             name="floorId"
             label={intl.formatMessage({
               id: 'seat.form.floor',
-              defaultMessage: '楼层',
+              defaultMessage: 'Floor',
             })}
             rules={[
               {
                 required: true,
                 message: intl.formatMessage({
                   id: 'seat.form.floorRequired',
-                  defaultMessage: '请选择楼层',
+                  defaultMessage: 'Please select a floor',
                 }),
               },
             ]}
@@ -498,7 +621,7 @@ const SeatManagement: React.FC = () => {
             name="rowNum"
             label={intl.formatMessage({
               id: 'seat.form.row',
-              defaultMessage: '行号',
+              defaultMessage: 'Row',
             })}
             rules={[{ required: true }]}
           >
@@ -508,7 +631,7 @@ const SeatManagement: React.FC = () => {
             name="colNum"
             label={intl.formatMessage({
               id: 'seat.form.col',
-              defaultMessage: '列号',
+              defaultMessage: 'Column',
             })}
             rules={[{ required: true }]}
           >
@@ -518,7 +641,7 @@ const SeatManagement: React.FC = () => {
             name="zone"
             label={intl.formatMessage({
               id: 'seat.form.zone',
-              defaultMessage: '区域',
+              defaultMessage: 'Zone',
             })}
           >
             <Select>
@@ -533,26 +656,26 @@ const SeatManagement: React.FC = () => {
             name="type"
             label={intl.formatMessage({
               id: 'seat.form.type',
-              defaultMessage: '类型',
+              defaultMessage: 'Type',
             })}
           >
             <Select>
               <Select.Option value={SeatTypeEnum.Single}>
                 {intl.formatMessage({
                   id: 'seat.type.single',
-                  defaultMessage: '单人桌',
+                  defaultMessage: 'Single',
                 })}
               </Select.Option>
               <Select.Option value={SeatTypeEnum.Double}>
                 {intl.formatMessage({
                   id: 'seat.type.double',
-                  defaultMessage: '双人桌',
+                  defaultMessage: 'Double',
                 })}
               </Select.Option>
               <Select.Option value={SeatTypeEnum.Group}>
                 {intl.formatMessage({
                   id: 'seat.type.group',
-                  defaultMessage: '多人桌',
+                  defaultMessage: 'Group',
                 })}
               </Select.Option>
             </Select>
@@ -561,7 +684,7 @@ const SeatManagement: React.FC = () => {
             name="hasSocket"
             label={intl.formatMessage({
               id: 'seat.form.hasSocket',
-              defaultMessage: '有无插座',
+              defaultMessage: 'Has socket',
             })}
             valuePropName="checked"
           >
@@ -571,7 +694,7 @@ const SeatManagement: React.FC = () => {
             name="isWindow"
             label={intl.formatMessage({
               id: 'seat.form.isWindow',
-              defaultMessage: '靠窗',
+              defaultMessage: 'Window seat',
             })}
             valuePropName="checked"
           >
@@ -581,20 +704,20 @@ const SeatManagement: React.FC = () => {
             name="status"
             label={intl.formatMessage({
               id: 'seat.form.status',
-              defaultMessage: '状态',
+              defaultMessage: 'Status',
             })}
           >
             <Select>
               <Select.Option value={SeatStatus.Available}>
                 {intl.formatMessage({
                   id: 'seat.status.available',
-                  defaultMessage: '可用',
+                  defaultMessage: 'Available',
                 })}
               </Select.Option>
               <Select.Option value={SeatStatus.Maintenance}>
                 {intl.formatMessage({
                   id: 'seat.status.maintenance',
-                  defaultMessage: '维护中',
+                  defaultMessage: 'Maintenance',
                 })}
               </Select.Option>
             </Select>
@@ -605,7 +728,7 @@ const SeatManagement: React.FC = () => {
       <Modal
         title={intl.formatMessage({
           id: 'seat.batchCreateModal.title',
-          defaultMessage: '批量创建座位',
+          defaultMessage: 'Batch create seats',
         })}
         open={batchModalVisible}
         onCancel={() => {
@@ -627,7 +750,13 @@ const SeatManagement: React.FC = () => {
               isWindow,
             } = values;
             if (startRow > endRow || startCol > endCol)
-              throw new Error('行/列范围无效，起始不得大于结束');
+              throw new Error(
+                intl.formatMessage({
+                  id: 'seat.batch.invalidRange',
+                  defaultMessage:
+                    'Invalid row/column range: start must not be greater than end',
+                }),
+              );
             const seats = [] as any[];
             for (let r = startRow; r <= endRow; r++) {
               for (let c = startCol; c <= endCol; c++) {
@@ -646,13 +775,24 @@ const SeatManagement: React.FC = () => {
               }
             }
             await batchCreateSeats(seats);
-            message.success('批量创建成功');
+            message.success(
+              intl.formatMessage({
+                id: 'seat.batchCreateSuccess',
+                defaultMessage: 'Batch created successfully',
+              }),
+            );
             setBatchModalVisible(false);
             batchForm.resetFields();
             actionRef.current?.reload?.();
           } catch (err: any) {
             if (err?.errorFields) return;
-            message.error(err?.message || '创建失败');
+            message.error(
+              err?.message ||
+                intl.formatMessage({
+                  id: 'seat.createFailed',
+                  defaultMessage: 'Create failed',
+                }),
+            );
           }
         }}
       >
@@ -670,7 +810,7 @@ const SeatManagement: React.FC = () => {
             name="floorId"
             label={intl.formatMessage({
               id: 'seat.form.floor',
-              defaultMessage: '楼层',
+              defaultMessage: 'Floor',
             })}
           >
             <Select>
@@ -685,7 +825,7 @@ const SeatManagement: React.FC = () => {
             name="zone"
             label={intl.formatMessage({
               id: 'seat.form.zone',
-              defaultMessage: '区域',
+              defaultMessage: 'Zone',
             })}
           >
             <Select>
@@ -699,7 +839,7 @@ const SeatManagement: React.FC = () => {
           <Form.Item
             label={intl.formatMessage({
               id: 'seat.form.rowRange',
-              defaultMessage: '行范围',
+              defaultMessage: 'Row range',
             })}
           >
             <Input.Group compact>
@@ -711,12 +851,18 @@ const SeatManagement: React.FC = () => {
                     required: true,
                     message: intl.formatMessage({
                       id: 'seat.form.startRowRequired',
-                      defaultMessage: '请输入起始行',
+                      defaultMessage: 'Please enter start row',
                     }),
                   },
                 ]}
               >
-                <InputNumber min={1} placeholder="起始行" />
+                <InputNumber
+                  min={1}
+                  placeholder={intl.formatMessage({
+                    id: 'seat.placeholder.startRow',
+                    defaultMessage: 'Start row',
+                  })}
+                />
               </Form.Item>
               <Form.Item
                 name="endRow"
@@ -726,19 +872,25 @@ const SeatManagement: React.FC = () => {
                     required: true,
                     message: intl.formatMessage({
                       id: 'seat.form.endRowRequired',
-                      defaultMessage: '请输入结束行',
+                      defaultMessage: 'Please enter end row',
                     }),
                   },
                 ]}
               >
-                <InputNumber min={1} placeholder="结束行" />
+                <InputNumber
+                  min={1}
+                  placeholder={intl.formatMessage({
+                    id: 'seat.placeholder.endRow',
+                    defaultMessage: 'End row',
+                  })}
+                />
               </Form.Item>
             </Input.Group>
           </Form.Item>
           <Form.Item
             label={intl.formatMessage({
               id: 'seat.form.colRange',
-              defaultMessage: '列范围',
+              defaultMessage: 'Column range',
             })}
           >
             <Input.Group compact>
@@ -750,12 +902,18 @@ const SeatManagement: React.FC = () => {
                     required: true,
                     message: intl.formatMessage({
                       id: 'seat.form.startColRequired',
-                      defaultMessage: '请输入起始列',
+                      defaultMessage: 'Please enter start column',
                     }),
                   },
                 ]}
               >
-                <InputNumber min={1} placeholder="起始列" />
+                <InputNumber
+                  min={1}
+                  placeholder={intl.formatMessage({
+                    id: 'seat.placeholder.startCol',
+                    defaultMessage: 'Start column',
+                  })}
+                />
               </Form.Item>
               <Form.Item
                 name="endCol"
@@ -765,12 +923,18 @@ const SeatManagement: React.FC = () => {
                     required: true,
                     message: intl.formatMessage({
                       id: 'seat.form.endColRequired',
-                      defaultMessage: '请输入结束列',
+                      defaultMessage: 'Please enter end column',
                     }),
                   },
                 ]}
               >
-                <InputNumber min={1} placeholder="结束列" />
+                <InputNumber
+                  min={1}
+                  placeholder={intl.formatMessage({
+                    id: 'seat.placeholder.endCol',
+                    defaultMessage: 'End column',
+                  })}
+                />
               </Form.Item>
             </Input.Group>
           </Form.Item>
@@ -778,26 +942,26 @@ const SeatManagement: React.FC = () => {
             name="type"
             label={intl.formatMessage({
               id: 'seat.form.type',
-              defaultMessage: '类型',
+              defaultMessage: 'Type',
             })}
           >
             <Select>
               <Select.Option value={SeatTypeEnum.Single}>
                 {intl.formatMessage({
                   id: 'seat.type.single',
-                  defaultMessage: '单人桌',
+                  defaultMessage: 'Single',
                 })}
               </Select.Option>
               <Select.Option value={SeatTypeEnum.Double}>
                 {intl.formatMessage({
                   id: 'seat.type.double',
-                  defaultMessage: '双人桌',
+                  defaultMessage: 'Double',
                 })}
               </Select.Option>
               <Select.Option value={SeatTypeEnum.Group}>
                 {intl.formatMessage({
                   id: 'seat.type.group',
-                  defaultMessage: '多人桌',
+                  defaultMessage: 'Group',
                 })}
               </Select.Option>
             </Select>
@@ -806,7 +970,7 @@ const SeatManagement: React.FC = () => {
             name="hasSocket"
             label={intl.formatMessage({
               id: 'seat.form.hasSocket',
-              defaultMessage: '有无插座',
+              defaultMessage: 'Has socket',
             })}
             valuePropName="checked"
           >
@@ -816,7 +980,7 @@ const SeatManagement: React.FC = () => {
             name="isWindow"
             label={intl.formatMessage({
               id: 'seat.form.isWindow',
-              defaultMessage: '靠窗',
+              defaultMessage: 'Window seat',
             })}
             valuePropName="checked"
           >

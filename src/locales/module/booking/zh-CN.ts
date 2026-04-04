@@ -18,5 +18,10 @@ export default {
   'booking.form.dateRequired': '请选择日期',
   'booking.form.timeSlot': '时段',
   'booking.form.timeSlotRequired': '请选择时段',
+  'booking.createSuccess': '创建成功',
+  'booking.createFailed': '创建失败',
+  'booking.detailFailed': '获取详情失败',
+  'booking.detail.time': '时间',
+  'booking.userSearchPlaceholder': '输入用户名/姓名搜索并选择用户',
   // booking status
 };

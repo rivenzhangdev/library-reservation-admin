@@ -28,6 +28,7 @@ import {
   getBookingList,
 } from '../../services/library/booking';
 import { getFloors } from '../../services/library/floor';
+import { getUserList } from '../../services/library/user';
 
 /**
  * 预约数据类型
@@ -58,6 +59,9 @@ const BookingManagement: React.FC = () => {
   const [detailVisible, setDetailVisible] = useState<boolean>(false);
   const [detailData, setDetailData] = useState<any>(null);
   const [floors, setFloors] = useState<Array<{ id: string; name: string }>>([]);
+  const [userOptions, setUserOptions] = useState<
+    Array<{ label: string; value: string }>
+  >([]);
 
   useEffect(() => {
     (async () => {
@@ -82,16 +86,30 @@ const BookingManagement: React.FC = () => {
     Modal.confirm({
       title: intl.formatMessage({
         id: 'booking.confirmCancelTitle',
-        defaultMessage: '确认取消',
+        defaultMessage: 'Confirm cancellation',
       }),
-      content: '确定要取消该预约吗？',
+      content: intl.formatMessage({
+        id: 'booking.confirmCancelContent',
+        defaultMessage: 'Are you sure you want to cancel this booking?',
+      }),
       onOk: async () => {
         try {
           await cancelBooking(id);
-          message.success('取消成功');
+          message.success(
+            intl.formatMessage({
+              id: 'booking.cancelSuccess',
+              defaultMessage: 'Cancelled successfully',
+            }),
+          );
           actionRef.current?.reload?.();
         } catch (e: any) {
-          message.error(e?.message || '取消失败');
+          message.error(
+            e?.message ||
+              intl.formatMessage({
+                id: 'booking.cancelFailed',
+                defaultMessage: 'Cancellation failed',
+              }),
+          );
         }
       },
     });
@@ -104,7 +122,13 @@ const BookingManagement: React.FC = () => {
       setDetailData(raw);
       setDetailVisible(true);
     } catch (e: any) {
-      message.error(e?.message || '获取详情失败');
+      message.error(
+        e?.message ||
+          intl.formatMessage({
+            id: 'booking.detailFailed',
+            defaultMessage: 'Failed to fetch details',
+          }),
+      );
     }
   };
 
@@ -112,7 +136,7 @@ const BookingManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'seat.form.floor',
-        defaultMessage: '楼层',
+        defaultMessage: 'Floor',
       }),
       dataIndex: 'floorId',
       valueType: 'select',
@@ -129,7 +153,7 @@ const BookingManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'credit.tab.users',
-        defaultMessage: '用户',
+        defaultMessage: 'User',
       }),
       dataIndex: 'userName',
       width: 100,
@@ -139,7 +163,7 @@ const BookingManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'booking.column.seat',
-        defaultMessage: '座位',
+        defaultMessage: 'Seat',
       }),
       dataIndex: 'seatName',
       width: 120,
@@ -148,7 +172,7 @@ const BookingManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'booking.form.date',
-        defaultMessage: '日期',
+        defaultMessage: 'Date',
       }),
       dataIndex: 'date',
       valueType: 'date',
@@ -157,7 +181,7 @@ const BookingManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'booking.column.dateRange',
-        defaultMessage: '日期范围',
+        defaultMessage: 'Date range',
       }),
       dataIndex: 'dateRange',
       valueType: 'dateRange',
@@ -166,20 +190,26 @@ const BookingManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'booking.form.timeSlot',
-        defaultMessage: '时段',
+        defaultMessage: 'Time slot',
       }),
       dataIndex: 'timeSlot',
       valueType: 'select',
       valueEnum: {
-        [TimeSlot.Morning]: { text: TimeSlotText[TimeSlot.Morning] },
-        [TimeSlot.Afternoon]: { text: TimeSlotText[TimeSlot.Afternoon] },
-        [TimeSlot.Evening]: { text: TimeSlotText[TimeSlot.Evening] },
+        [TimeSlot.Morning]: {
+          text: intl.formatMessage({ id: TimeSlotText[TimeSlot.Morning] }),
+        },
+        [TimeSlot.Afternoon]: {
+          text: intl.formatMessage({ id: TimeSlotText[TimeSlot.Afternoon] }),
+        },
+        [TimeSlot.Evening]: {
+          text: intl.formatMessage({ id: TimeSlotText[TimeSlot.Evening] }),
+        },
       },
     },
     {
       title: intl.formatMessage({
         id: 'credit.column.date',
-        defaultMessage: '时间',
+        defaultMessage: 'Time',
       }),
       hideInSearch: true,
       width: 160,
@@ -193,29 +223,39 @@ const BookingManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'seat.form.status',
-        defaultMessage: '状态',
+        defaultMessage: 'Status',
       }),
       dataIndex: 'status',
       valueType: 'select',
       valueEnum: {
         [BookingStatus.Upcoming]: {
-          text: BookingStatusText[BookingStatus.Upcoming],
+          text: intl.formatMessage({
+            id: BookingStatusText[BookingStatus.Upcoming],
+          }),
           status: 'Processing',
         },
         [BookingStatus.Ongoing]: {
-          text: BookingStatusText[BookingStatus.Ongoing],
+          text: intl.formatMessage({
+            id: BookingStatusText[BookingStatus.Ongoing],
+          }),
           status: 'Success',
         },
         [BookingStatus.Completed]: {
-          text: BookingStatusText[BookingStatus.Completed],
+          text: intl.formatMessage({
+            id: BookingStatusText[BookingStatus.Completed],
+          }),
           status: 'Default',
         },
         [BookingStatus.Canceled]: {
-          text: BookingStatusText[BookingStatus.Canceled],
+          text: intl.formatMessage({
+            id: BookingStatusText[BookingStatus.Canceled],
+          }),
           status: 'Error',
         },
         [BookingStatus.Violated]: {
-          text: BookingStatusText[BookingStatus.Violated],
+          text: intl.formatMessage({
+            id: BookingStatusText[BookingStatus.Violated],
+          }),
           status: 'Error',
         },
       },
@@ -229,7 +269,7 @@ const BookingManagement: React.FC = () => {
         };
         return (
           <Tag color={statusMap[record.status]}>
-            {BookingStatusText[record.status]}
+            {intl.formatMessage({ id: BookingStatusText[record.status] })}
           </Tag>
         );
       },
@@ -237,7 +277,7 @@ const BookingManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'common.action',
-        defaultMessage: '操作',
+        defaultMessage: 'Action',
       }),
       valueType: 'option',
       width: 140,
@@ -252,7 +292,7 @@ const BookingManagement: React.FC = () => {
           >
             {intl.formatMessage({
               id: 'booking.action.details',
-              defaultMessage: '详情',
+              defaultMessage: 'Details',
             })}
           </Button>
           {record.status === BookingStatus.Upcoming && (
@@ -264,7 +304,7 @@ const BookingManagement: React.FC = () => {
             >
               {intl.formatMessage({
                 id: 'common.cancel',
-                defaultMessage: '取消',
+                defaultMessage: 'Cancel',
               })}
             </Button>
           )}
@@ -277,11 +317,14 @@ const BookingManagement: React.FC = () => {
     <PageContainer
       title={intl.formatMessage({
         id: 'menu.booking',
-        defaultMessage: '预约管理',
+        defaultMessage: 'Booking management',
       })}
     >
       <ProTable<BookingType>
-        headerTitle="预约列表"
+        headerTitle={intl.formatMessage({
+          id: 'booking.listTitle',
+          defaultMessage: 'Booking list',
+        })}
         actionRef={actionRef}
         rowKey="id"
         scroll={{ x: 1000 }}
@@ -301,17 +344,35 @@ const BookingManagement: React.FC = () => {
               Modal.confirm({
                 title: intl.formatMessage({
                   id: 'booking.confirmBatchCancelTitle',
-                  defaultMessage: '确认批量取消',
+                  defaultMessage: 'Confirm batch cancellation',
                 }),
-                content: `确定要取消 ${selectedRows.length} 条预约吗？`,
+                content: intl.formatMessage(
+                  {
+                    id: 'booking.confirmBatchCancelContent',
+                    defaultMessage:
+                      'Are you sure you want to cancel {count} bookings?',
+                  },
+                  { count: selectedRows.length },
+                ),
                 onOk: async () => {
                   try {
                     await batchCancelBookings(selectedRows);
-                    message.success('批量取消成功');
+                    message.success(
+                      intl.formatMessage({
+                        id: 'booking.batchCancelSuccess',
+                        defaultMessage: 'Batch cancellation successful',
+                      }),
+                    );
                     setSelectedRows([]);
                     actionRef.current?.reload?.();
                   } catch (e: any) {
-                    message.error(e?.message || '批量取消失败');
+                    message.error(
+                      e?.message ||
+                        intl.formatMessage({
+                          id: 'booking.batchCancelFailed',
+                          defaultMessage: 'Batch cancellation failed',
+                        }),
+                    );
                   }
                 },
               });
@@ -319,7 +380,7 @@ const BookingManagement: React.FC = () => {
           >
             {intl.formatMessage({
               id: 'booking.batchCancel',
-              defaultMessage: '批量取消',
+              defaultMessage: 'Batch cancel',
             })}
           </Button>,
           <Button
@@ -330,7 +391,7 @@ const BookingManagement: React.FC = () => {
           >
             {intl.formatMessage({
               id: 'booking.new',
-              defaultMessage: '新增预约',
+              defaultMessage: 'New booking',
             })}
           </Button>,
         ]}
@@ -357,7 +418,7 @@ const BookingManagement: React.FC = () => {
       <Modal
         title={intl.formatMessage({
           id: 'booking.action.details',
-          defaultMessage: '详情',
+          defaultMessage: 'Details',
         })}
         open={detailVisible}
         onCancel={() => {
@@ -369,39 +430,74 @@ const BookingManagement: React.FC = () => {
         {detailData ? (
           <div>
             <p>
-              <strong>用户：</strong>
+              <strong>
+                {intl.formatMessage({
+                  id: 'common.user',
+                  defaultMessage: 'User',
+                })}
+                ：
+              </strong>
               {detailData.userName ||
                 detailData.user?.name ||
                 detailData.user?.username ||
                 '-'}
             </p>
             <p>
-              <strong>座位：</strong>
+              <strong>
+                {intl.formatMessage({
+                  id: 'booking.column.seat',
+                  defaultMessage: 'Seat',
+                })}
+                ：
+              </strong>
               {detailData.seatName || detailData.seat?.name || '-'}
             </p>
             <p>
-              <strong>日期：</strong>
+              <strong>
+                {intl.formatMessage({
+                  id: 'booking.form.date',
+                  defaultMessage: 'Date',
+                })}
+                ：
+              </strong>
               {detailData.date || detailData.book_date || '-'}
             </p>
             <p>
-              <strong>时间：</strong>
+              <strong>
+                {intl.formatMessage({
+                  id: 'booking.detail.time',
+                  defaultMessage: 'Time',
+                })}
+                ：
+              </strong>
               {(detailData.startTime ?? detailData.start ?? '-') +
                 ' - ' +
                 (detailData.endTime ?? detailData.end ?? '-')}
             </p>
             <p>
-              <strong>状态：</strong>
+              <strong>
+                {intl.formatMessage({
+                  id: 'seat.form.status',
+                  defaultMessage: 'Status',
+                })}
+                ：
+              </strong>
               {detailData.status}
             </p>
           </div>
         ) : (
-          <div>加载中...</div>
+          <div>
+            {intl.formatMessage({
+              id: 'common.loading',
+              defaultMessage: 'Loading',
+            })}
+          </div>
         )}
       </Modal>
       <Modal
         title={intl.formatMessage({
           id: 'booking.new',
-          defaultMessage: '新增预约',
+          defaultMessage: 'New booking',
         })}
         open={modalVisible}
         onCancel={() => {
@@ -412,40 +508,85 @@ const BookingManagement: React.FC = () => {
           try {
             const values = await form.validateFields();
             await createBooking(values);
-            message.success('创建成功');
+            message.success(
+              intl.formatMessage({
+                id: 'booking.createSuccess',
+                defaultMessage: 'Created successfully',
+              }),
+            );
             setModalVisible(false);
             form.resetFields();
             actionRef.current?.reload?.();
           } catch (e: any) {
             if (e?.errorFields) return;
-            message.error(e?.message || '创建失败');
+            message.error(
+              e?.message ||
+                intl.formatMessage({
+                  id: 'booking.createFailed',
+                  defaultMessage: 'Creation failed',
+                }),
+            );
           }
         }}
       >
         <Form form={form} layout="vertical">
           <Form.Item
-            name="userName"
+            name="userId"
             label={intl.formatMessage({
               id: 'login.username',
-              defaultMessage: '用户名',
+              defaultMessage: 'Username',
             })}
             rules={[
               {
                 required: true,
                 message: intl.formatMessage({
                   id: 'user.form.usernameRequired',
-                  defaultMessage: '请输入用户名',
+                  defaultMessage: 'Please enter username',
                 }),
               },
             ]}
           >
-            <Input />
+            <Select
+              showSearch
+              placeholder={intl.formatMessage({
+                id: 'booking.userSearchPlaceholder',
+                defaultMessage: 'Type username/name to search and select user',
+              })}
+              filterOption={false}
+              onSearch={async (val: string) => {
+                try {
+                  const res: any = await getUserList({
+                    q: val,
+                    page: 1,
+                    limit: 10,
+                  });
+                  const raw = res?.data || {};
+                  const list = raw.list || raw.users || [];
+                  setUserOptions(
+                    list.map((u: any) => ({
+                      label: `${u.name || u.username}${
+                        u.studentId ? ' (' + u.studentId + ')' : ''
+                      }`,
+                      value: u.id || u._id,
+                    })),
+                  );
+                } catch (e) {
+                  setUserOptions([]);
+                }
+              }}
+            >
+              {userOptions.map((o) => (
+                <Select.Option key={o.value} value={o.value}>
+                  {o.label}
+                </Select.Option>
+              ))}
+            </Select>
           </Form.Item>
           <Form.Item
             name="floorId"
             label={intl.formatMessage({
               id: 'seat.form.floor',
-              defaultMessage: '楼层',
+              defaultMessage: 'Floor',
             })}
           >
             <Select>
@@ -460,14 +601,14 @@ const BookingManagement: React.FC = () => {
             name="seatName"
             label={intl.formatMessage({
               id: 'booking.column.seat',
-              defaultMessage: '座位',
+              defaultMessage: 'Seat',
             })}
             rules={[
               {
                 required: true,
                 message: intl.formatMessage({
                   id: 'booking.form.seatNameRequired',
-                  defaultMessage: '请选择座位',
+                  defaultMessage: 'Please select a seat',
                 }),
               },
             ]}
@@ -478,14 +619,14 @@ const BookingManagement: React.FC = () => {
             name="date"
             label={intl.formatMessage({
               id: 'booking.form.date',
-              defaultMessage: '日期',
+              defaultMessage: 'Date',
             })}
             rules={[
               {
                 required: true,
                 message: intl.formatMessage({
                   id: 'booking.form.dateRequired',
-                  defaultMessage: '请选择日期',
+                  defaultMessage: 'Please select a date',
                 }),
               },
             ]}
@@ -501,14 +642,14 @@ const BookingManagement: React.FC = () => {
             name="timeSlot"
             label={intl.formatMessage({
               id: 'booking.form.timeSlot',
-              defaultMessage: '时段',
+              defaultMessage: 'Time slot',
             })}
             rules={[
               {
                 required: true,
                 message: intl.formatMessage({
                   id: 'booking.form.timeSlotRequired',
-                  defaultMessage: '请选择时段',
+                  defaultMessage: 'Please select a time slot',
                 }),
               },
             ]}
@@ -517,19 +658,19 @@ const BookingManagement: React.FC = () => {
               <Select.Option value={TimeSlot.Morning}>
                 {intl.formatMessage({
                   id: 'timeslot.morning',
-                  defaultMessage: '上午',
+                  defaultMessage: 'Morning',
                 })}
               </Select.Option>
               <Select.Option value={TimeSlot.Afternoon}>
                 {intl.formatMessage({
                   id: 'timeslot.afternoon',
-                  defaultMessage: '下午',
+                  defaultMessage: 'Afternoon',
                 })}
               </Select.Option>
               <Select.Option value={TimeSlot.Evening}>
                 {intl.formatMessage({
                   id: 'timeslot.evening',
-                  defaultMessage: '晚上',
+                  defaultMessage: 'Evening',
                 })}
               </Select.Option>
             </Select>

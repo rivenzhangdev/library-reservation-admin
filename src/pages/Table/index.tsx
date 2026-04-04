@@ -16,75 +16,105 @@ import UpdateForm, { FormValueType } from './components/UpdateForm';
 const { addUser, queryUserList, deleteUser, modifyUser } =
   services.UserController;
 
-/**
- * 添加节点
- * @param fields
- */
-const handleAdd = async (fields: API.UserInfo) => {
-  const hide = message.loading('正在添加');
-  try {
-    await addUser({ ...fields });
-    hide();
-    message.success('添加成功');
-    return true;
-  } catch (error) {
-    hide();
-    message.error('添加失败请重试！');
-    return false;
-  }
-};
-
-/**
- * 更新节点
- * @param fields
- */
-const handleUpdate = async (fields: FormValueType) => {
-  const hide = message.loading('正在配置');
-  try {
-    await modifyUser(
-      {
-        userId: fields.id || '',
-      },
-      {
-        name: fields.name || '',
-        nickName: fields.nickName || '',
-        email: fields.email || '',
-      },
-    );
-    hide();
-
-    message.success('配置成功');
-    return true;
-  } catch (error) {
-    hide();
-    message.error('配置失败请重试！');
-    return false;
-  }
-};
-
-/**
- *  删除节点
- * @param selectedRows
- */
-const handleRemove = async (selectedRows: API.UserInfo[]) => {
-  const hide = message.loading('正在删除');
-  if (!selectedRows) return true;
-  try {
-    await deleteUser({
-      userId: selectedRows.find((row) => row.id)?.id || '',
-    });
-    hide();
-    message.success('删除成功，即将刷新');
-    return true;
-  } catch (error) {
-    hide();
-    message.error('删除失败，请重试');
-    return false;
-  }
-};
-
 const TableList: React.FC<unknown> = () => {
   const intl = useIntl();
+
+  // helper functions moved inside component to access intl
+  const handleAdd = async (fields: API.UserInfo) => {
+    const hide = message.loading(
+      intl.formatMessage({ id: 'common.adding', defaultMessage: 'Adding...' }),
+    );
+    try {
+      await addUser({ ...fields });
+      hide();
+      message.success(
+        intl.formatMessage({
+          id: 'common.addSuccess',
+          defaultMessage: 'Added successfully',
+        }),
+      );
+      return true;
+    } catch (error) {
+      hide();
+      message.error(
+        intl.formatMessage({
+          id: 'common.addFailed',
+          defaultMessage: 'Add failed, please try again!',
+        }),
+      );
+      return false;
+    }
+  };
+
+  const handleUpdate = async (fields: FormValueType) => {
+    const hide = message.loading(
+      intl.formatMessage({
+        id: 'common.configuring',
+        defaultMessage: 'Configuring...',
+      }),
+    );
+    try {
+      await modifyUser(
+        {
+          userId: fields.id || '',
+        },
+        {
+          name: fields.name || '',
+          nickName: fields.nickName || '',
+          email: fields.email || '',
+        },
+      );
+      hide();
+      message.success(
+        intl.formatMessage({
+          id: 'common.configSuccess',
+          defaultMessage: 'Configured successfully',
+        }),
+      );
+      return true;
+    } catch (error) {
+      hide();
+      message.error(
+        intl.formatMessage({
+          id: 'common.configFailed',
+          defaultMessage: 'Config failed, please try again!',
+        }),
+      );
+      return false;
+    }
+  };
+
+  const handleRemove = async (selectedRows: API.UserInfo[]) => {
+    const hide = message.loading(
+      intl.formatMessage({
+        id: 'common.deleting',
+        defaultMessage: 'Deleting...',
+      }),
+    );
+    if (!selectedRows) return true;
+    try {
+      await deleteUser({
+        userId: selectedRows.find((row) => row.id)?.id || '',
+      });
+      hide();
+      message.success(
+        intl.formatMessage({
+          id: 'common.deleteSuccessRefresh',
+          defaultMessage: 'Deleted successfully, refreshing',
+        }),
+      );
+      return true;
+    } catch (error) {
+      hide();
+      message.error(
+        intl.formatMessage({
+          id: 'common.deleteFailed',
+          defaultMessage: 'Delete failed, please try again',
+        }),
+      );
+      return false;
+    }
+  };
 
   const [createModalVisible, handleModalVisible] = useState<boolean>(false);
   const [updateModalVisible, handleUpdateModalVisible] =
@@ -95,16 +125,19 @@ const TableList: React.FC<unknown> = () => {
   const [selectedRowsState, setSelectedRows] = useState<API.UserInfo[]>([]);
   const columns: ProColumns<API.UserInfo>[] = [
     {
-      title: intl.formatMessage({ id: 'table.name', defaultMessage: '名称' }),
+      title: intl.formatMessage({ id: 'table.name', defaultMessage: 'Name' }),
       dataIndex: 'name',
-      tip: '名称是唯一的 key',
+      tip: intl.formatMessage({
+        id: 'table.nameTip',
+        defaultMessage: 'Name is a unique key',
+      }),
       formItemProps: {
         rules: [
           {
             required: true,
             message: intl.formatMessage({
               id: 'table.nameRequired',
-              defaultMessage: '名称为必填项',
+              defaultMessage: 'Name is required',
             }),
           },
         ],
@@ -113,27 +146,30 @@ const TableList: React.FC<unknown> = () => {
     {
       title: intl.formatMessage({
         id: 'table.nickname',
-        defaultMessage: '昵称',
+        defaultMessage: 'Nickname',
       }),
       dataIndex: 'nickName',
       valueType: 'text',
     },
     {
-      title: intl.formatMessage({ id: 'table.gender', defaultMessage: '性别' }),
+      title: intl.formatMessage({
+        id: 'table.gender',
+        defaultMessage: 'Gender',
+      }),
       dataIndex: 'gender',
       hideInForm: true,
       valueEnum: {
         0: {
           text: intl.formatMessage({
             id: 'table.gender.male',
-            defaultMessage: '男',
+            defaultMessage: 'Male',
           }),
           status: 'MALE',
         },
         1: {
           text: intl.formatMessage({
             id: 'table.gender.female',
-            defaultMessage: '女',
+            defaultMessage: 'Female',
           }),
           status: 'FEMALE',
         },
@@ -142,7 +178,7 @@ const TableList: React.FC<unknown> = () => {
     {
       title: intl.formatMessage({
         id: 'common.action',
-        defaultMessage: '操作',
+        defaultMessage: 'Action',
       }),
       dataIndex: 'option',
       valueType: 'option',
@@ -154,10 +190,15 @@ const TableList: React.FC<unknown> = () => {
               setStepFormValues(record);
             }}
           >
-            配置
+            {intl.formatMessage({ id: 'common.edit', defaultMessage: 'Edit' })}
           </a>
           <Divider type="vertical" />
-          <a href="">订阅警报</a>
+          <a href="">
+            {intl.formatMessage({
+              id: 'table.subscribeAlerts',
+              defaultMessage: 'Subscribe alerts',
+            })}
+          </a>
         </>
       ),
     },
@@ -166,11 +207,17 @@ const TableList: React.FC<unknown> = () => {
   return (
     <PageContainer
       header={{
-        title: 'CRUD 示例',
+        title: intl.formatMessage({
+          id: 'table.demoTitle',
+          defaultMessage: 'CRUD example',
+        }),
       }}
     >
       <ProTable<API.UserInfo>
-        headerTitle="查询表格"
+        headerTitle={intl.formatMessage({
+          id: 'table.headerTitle',
+          defaultMessage: 'Query table',
+        })}
         actionRef={actionRef}
         rowKey="id"
         search={{
@@ -183,7 +230,7 @@ const TableList: React.FC<unknown> = () => {
             type="primary"
             onClick={() => handleModalVisible(true)}
           >
-            {intl.formatMessage({ id: 'common.new', defaultMessage: '新建' })}
+            {intl.formatMessage({ id: 'common.new', defaultMessage: 'New' })}
           </Button>,
         ]}
         request={async (params, sorter, filter) => {
@@ -208,9 +255,13 @@ const TableList: React.FC<unknown> = () => {
         <FooterToolbar
           extra={
             <div>
-              已选择{' '}
-              <a style={{ fontWeight: 600 }}>{selectedRowsState.length}</a>{' '}
-              项&nbsp;&nbsp;
+              {intl.formatMessage(
+                {
+                  id: 'common.selectedItems',
+                  defaultMessage: 'Selected {count} items',
+                },
+                { count: selectedRowsState.length },
+              )}
             </div>
           }
         >
@@ -223,13 +274,13 @@ const TableList: React.FC<unknown> = () => {
           >
             {intl.formatMessage({
               id: 'common.bulkDelete',
-              defaultMessage: '批量删除',
+              defaultMessage: 'Bulk delete',
             })}
           </Button>
           <Button type="primary">
             {intl.formatMessage({
               id: 'common.bulkApprove',
-              defaultMessage: '批量审批',
+              defaultMessage: 'Bulk approve',
             })}
           </Button>
         </FooterToolbar>

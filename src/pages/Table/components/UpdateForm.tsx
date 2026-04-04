@@ -40,7 +40,7 @@ const UpdateForm: React.FC<UpdateFormProps> = (props) => {
             destroyOnClose
             title={intl.formatMessage({
               id: 'table.update.title',
-              defaultMessage: '规则配置',
+              defaultMessage: 'Rule configuration',
             })}
             open={props.updateModalVisible}
             footer={submitter}
@@ -59,7 +59,7 @@ const UpdateForm: React.FC<UpdateFormProps> = (props) => {
         }}
         title={intl.formatMessage({
           id: 'table.update.step.basic',
-          defaultMessage: '基本信息',
+          defaultMessage: 'Basic info',
         })}
       >
         <ProFormText
@@ -67,14 +67,14 @@ const UpdateForm: React.FC<UpdateFormProps> = (props) => {
           name="name"
           label={intl.formatMessage({
             id: 'table.update.field.name',
-            defaultMessage: '规则名称',
+            defaultMessage: 'Rule name',
           })}
           rules={[
             {
               required: true,
               message: intl.formatMessage({
                 id: 'table.update.field.nameRequired',
-                defaultMessage: '请输入规则名称！',
+                defaultMessage: 'Please enter rule name!',
               }),
             },
           ]}
@@ -84,15 +84,19 @@ const UpdateForm: React.FC<UpdateFormProps> = (props) => {
           width="md"
           label={intl.formatMessage({
             id: 'table.update.field.desc',
-            defaultMessage: '规则描述',
+            defaultMessage: 'Rule description',
           })}
-          placeholder="请输入至少五个字符"
+          placeholder={intl.formatMessage({
+            id: 'table.update.field.descPlaceholder',
+            defaultMessage: 'Please enter at least five characters',
+          })}
           rules={[
             {
               required: true,
               message: intl.formatMessage({
                 id: 'table.update.field.descRequired',
-                defaultMessage: '请输入至少五个字符的规则描述！',
+                defaultMessage:
+                  'Please enter a rule description at least five characters long!',
               }),
               min: 5,
             },
@@ -106,7 +110,7 @@ const UpdateForm: React.FC<UpdateFormProps> = (props) => {
         }}
         title={intl.formatMessage({
           id: 'table.update.step.config',
-          defaultMessage: '配置规则属性',
+          defaultMessage: 'Configure rule properties',
         })}
       >
         <ProFormSelect
@@ -114,11 +118,17 @@ const UpdateForm: React.FC<UpdateFormProps> = (props) => {
           name="target"
           label={intl.formatMessage({
             id: 'table.update.field.target',
-            defaultMessage: '监控对象',
+            defaultMessage: 'Target',
           })}
           valueEnum={{
-            0: '表一',
-            1: '表二',
+            0: intl.formatMessage({
+              id: 'table.value.tableOne',
+              defaultMessage: 'Table one',
+            }),
+            1: intl.formatMessage({
+              id: 'table.value.tableTwo',
+              defaultMessage: 'Table two',
+            }),
           }}
         />
         <ProFormSelect
@@ -126,11 +136,17 @@ const UpdateForm: React.FC<UpdateFormProps> = (props) => {
           name="template"
           label={intl.formatMessage({
             id: 'table.update.field.template',
-            defaultMessage: '规则模板',
+            defaultMessage: 'Rule template',
           })}
           valueEnum={{
-            0: '规则模板一',
-            1: '规则模板二',
+            0: intl.formatMessage({
+              id: 'table.value.templateOne',
+              defaultMessage: 'Template one',
+            }),
+            1: intl.formatMessage({
+              id: 'table.value.templateTwo',
+              defaultMessage: 'Template two',
+            }),
           }}
         />
         <ProFormRadio.Group
@@ -138,21 +154,21 @@ const UpdateForm: React.FC<UpdateFormProps> = (props) => {
           width="md"
           label={intl.formatMessage({
             id: 'table.update.field.type',
-            defaultMessage: '规则类型',
+            defaultMessage: 'Rule type',
           })}
           options={[
             {
               value: '0',
               label: intl.formatMessage({
                 id: 'table.value.strong',
-                defaultMessage: '强',
+                defaultMessage: 'Strong',
               }),
             },
             {
               value: '1',
               label: intl.formatMessage({
                 id: 'table.value.weak',
-                defaultMessage: '弱',
+                defaultMessage: 'Weak',
               }),
             },
           ]}
@@ -165,21 +181,21 @@ const UpdateForm: React.FC<UpdateFormProps> = (props) => {
         }}
         title={intl.formatMessage({
           id: 'table.update.step.schedule',
-          defaultMessage: '设定调度周期',
+          defaultMessage: 'Set schedule',
         })}
       >
         <ProFormDateTimePicker
           name="time"
           label={intl.formatMessage({
             id: 'table.schedule.startTime',
-            defaultMessage: '开始时间',
+            defaultMessage: 'Start time',
           })}
           rules={[
             {
               required: true,
               message: intl.formatMessage({
                 id: 'table.schedule.startTimeRequired',
-                defaultMessage: '请选择开始时间！',
+                defaultMessage: 'Please select start time!',
               }),
             },
           ]}
@@ -188,12 +204,18 @@ const UpdateForm: React.FC<UpdateFormProps> = (props) => {
           name="frequency"
           label={intl.formatMessage({
             id: 'table.update.field.target',
-            defaultMessage: '监控对象',
+            defaultMessage: 'Target',
           })}
           width="xs"
           valueEnum={{
-            month: '月',
-            week: '周',
+            month: intl.formatMessage({
+              id: 'table.value.month',
+              defaultMessage: 'Month',
+            }),
+            week: intl.formatMessage({
+              id: 'table.value.week',
+              defaultMessage: 'Week',
+            }),
           }}
         />
       </StepsForm.StepForm>

@@ -16,4 +16,16 @@ export default {
   'seat.batchUpdateSuccess': 'Batch update successful',
   'seat.updateFailed': 'Update failed',
   'seat.batchUpdateFailed': 'Batch update failed',
+  'seat.updateSuccess': 'Update successful',
+  'seat.createSuccess': 'Created successfully',
+  'seat.modal.edit': 'Edit Seat',
+  'seat.modal.new': 'New Seat',
+  'seat.batch.invalidRange':
+    'Invalid row/column range; start must not be greater than end',
+  'seat.batchCreateSuccess': 'Batch create successful',
+  'seat.createFailed': 'Create failed',
+  'seat.placeholder.startRow': 'Start Row',
+  'seat.placeholder.endRow': 'End Row',
+  'seat.placeholder.startCol': 'Start Col',
+  'seat.placeholder.endCol': 'End Col',
 };

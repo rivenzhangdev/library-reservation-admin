@@ -26,4 +26,6 @@ export default {
   'table.schedule.startTimeRequired': 'Please select start time!',
   'table.value.month': 'Month',
   'table.value.week': 'Week',
+  'table.subscribeAlerts': 'Subscribe alerts',
+  'table.demoTitle': 'CRUD Example',
 };

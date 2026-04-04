@@ -1,16 +1,21 @@
 import { deleteUpload, getUploads } from '@/services/library/uploads';
 import type { ActionType } from '@ant-design/pro-components';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
+import { useIntl } from '@umijs/max';
 import { Button, Image, Modal, Popconfirm, message } from 'antd';
 import React, { useRef, useState } from 'react';
 
 const UploadsPage: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [preview, setPreview] = useState<string | null>(null);
+  const intl = useIntl();
 
   const columns = [
     {
-      title: '预览',
+      title: intl.formatMessage({
+        id: 'uploads.column.preview',
+        defaultMessage: 'Preview',
+      }),
       dataIndex: 'url',
       render: (_: any, record: any) => (
         <Image
@@ -25,15 +30,34 @@ const UploadsPage: React.FC = () => {
         />
       ),
     },
-    { title: '文件名', dataIndex: 'filename' },
+    {
+      title: intl.formatMessage({
+        id: 'uploads.column.filename',
+        defaultMessage: 'Filename',
+      }),
+      dataIndex: 'filename',
+    },
     { title: 'MIME', dataIndex: 'mime' },
     {
-      title: '大小 (bytes)',
+      title: intl.formatMessage({
+        id: 'uploads.column.sizeBytes',
+        defaultMessage: 'Size (bytes)',
+      }),
       dataIndex: 'size',
     },
-    { title: '上传时间', dataIndex: 'createdAt', valueType: 'dateTime' },
     {
-      title: '操作',
+      title: intl.formatMessage({
+        id: 'uploads.column.uploadedAt',
+        defaultMessage: 'Uploaded at',
+      }),
+      dataIndex: 'createdAt',
+      valueType: 'dateTime',
+    },
+    {
+      title: intl.formatMessage({
+        id: 'common.action',
+        defaultMessage: 'Action',
+      }),
       valueType: 'option',
       render: (_: any, record: any) => [
         <Button
@@ -41,23 +65,43 @@ const UploadsPage: React.FC = () => {
           type="link"
           onClick={() => setPreview(record.url)}
         >
-          预览
+          {intl.formatMessage({
+            id: 'uploads.preview',
+            defaultMessage: 'Preview',
+          })}
         </Button>,
         <Popconfirm
           key="del"
-          title="确认删除该文件吗？"
+          title={intl.formatMessage({
+            id: 'uploads.confirmDelete',
+            defaultMessage: 'Confirm delete this file?',
+          })}
           onConfirm={async () => {
             try {
               await deleteUpload(record._id);
-              message.success('删除成功');
+              message.success(
+                intl.formatMessage({
+                  id: 'common.deleteSuccessRefresh',
+                  defaultMessage: 'Deleted successfully, refreshing',
+                }),
+              );
               actionRef.current?.reload();
             } catch (e: any) {
-              message.error(e?.message || '删除失败');
+              message.error(
+                e?.message ||
+                  intl.formatMessage({
+                    id: 'common.deleteFailed',
+                    defaultMessage: 'Delete failed, please try again',
+                  }),
+              );
             }
           }}
         >
           <Button type="link" danger>
-            删除
+            {intl.formatMessage({
+              id: 'common.delete',
+              defaultMessage: 'Delete',
+            })}
           </Button>
         </Popconfirm>,
       ],
@@ -65,10 +109,16 @@ const UploadsPage: React.FC = () => {
   ];
 
   return (
-    <PageContainer title="图片管理">
+    <PageContainer
+      title={intl.formatMessage({
+        id: 'uploads.title',
+        defaultMessage: 'Image management',
+      })}
+    >
       <ProTable
         actionRef={actionRef}
         rowKey={(r) => r._id}
+        search={{ labelWidth: 'auto', defaultCollapsed: false }}
         request={async (params) => {
           try {
             const p = Number(params.current || 1);

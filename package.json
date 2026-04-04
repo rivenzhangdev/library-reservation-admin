@@ -36,6 +36,7 @@
     "@ant-design/charts": "^2.6.7",
     "@ant-design/icons": "^5.0.1",
     "@ant-design/pro-components": "^2.4.4",
+    "@antv/g2-extension-plot": "0.2.2",
     "@umijs/max": "^4.6.35",
     "antd": "^5.4.0",
     "dayjs": "^1.11.8",

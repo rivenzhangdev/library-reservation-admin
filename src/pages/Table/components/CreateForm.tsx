@@ -15,7 +15,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
   return (
     <Modal
       destroyOnClose
-      title={intl.formatMessage({ id: 'common.new', defaultMessage: '新建' })}
+      title={intl.formatMessage({ id: 'common.new', defaultMessage: 'New' })}
       width={420}
       open={modalVisible}
       onCancel={() => onCancel()}

@@ -25,4 +25,6 @@ export default {
   'table.schedule.startTimeRequired': '请选择开始时间！',
   'table.value.month': '月',
   'table.value.week': '周',
+  'table.subscribeAlerts': '订阅警报',
+  'table.demoTitle': 'CRUD 示例',
 };

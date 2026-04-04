@@ -1,6 +1,7 @@
 import booking from './module/booking/en-US';
 import common from './module/common/en-US';
 import credit from './module/credit/en-US';
+import feedback from './module/feedback/en-US';
 import floor from './module/floor/en-US';
 import global from './module/global/en-US';
 import management from './module/management/en-US';
@@ -13,6 +14,7 @@ import zone from './module/zone/en-US';
 export default {
   ...booking,
   ...common,
+  ...feedback,
   ...credit,
   ...floor,
   ...global,

@@ -24,28 +24,28 @@ const FloorManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'floor.form.name',
-        defaultMessage: '楼层名称',
+        defaultMessage: 'Floor Name',
       }),
       dataIndex: 'name',
     },
     {
       title: intl.formatMessage({
         id: 'floor.form.description',
-        defaultMessage: '描述',
+        defaultMessage: 'Description',
       }),
       dataIndex: 'description',
     },
     {
       title: intl.formatMessage({
         id: 'floor.form.totalSeats',
-        defaultMessage: '总座位数',
+        defaultMessage: 'Total Seats',
       }),
       dataIndex: 'totalSeats',
     },
     {
       title: intl.formatMessage({
         id: 'common.action',
-        defaultMessage: '操作',
+        defaultMessage: 'Actions',
       }),
       valueType: 'option',
       width: 150,
@@ -60,7 +60,7 @@ const FloorManagement: React.FC = () => {
               setModalVisible(true);
             }}
           >
-            {intl.formatMessage({ id: 'common.edit', defaultMessage: '编辑' })}
+            {intl.formatMessage({ id: 'common.edit', defaultMessage: 'Edit' })}
           </Button>
           <Button
             type="link"
@@ -68,17 +68,34 @@ const FloorManagement: React.FC = () => {
             icon={<DeleteOutlined />}
             onClick={() => {
               Modal.confirm({
-                title: '确认删除',
-                content: '确定要删除该楼层吗？',
+                title: intl.formatMessage({
+                  id: 'common.confirm',
+                  defaultMessage: 'Confirm',
+                }),
+                content: intl.formatMessage({
+                  id: 'floor.confirmDelete',
+                  defaultMessage: 'Are you sure you want to delete this floor?',
+                }),
                 onOk: async () => {
                   try {
                     await request(`/api/floors/${record.id}`, {
                       method: 'DELETE',
                     });
-                    message.success('删除成功');
+                    message.success(
+                      intl.formatMessage({
+                        id: 'common.deleteSuccessRefresh',
+                        defaultMessage: 'Deleted successfully, refreshing...',
+                      }),
+                    );
                     actionRef.current?.reload?.();
                   } catch (e: any) {
-                    message.error(e?.message || '删除失败');
+                    message.error(
+                      e?.message ||
+                        intl.formatMessage({
+                          id: 'common.deleteFailed',
+                          defaultMessage: 'Delete failed, please try again',
+                        }),
+                    );
                   }
                 },
               });
@@ -86,7 +103,7 @@ const FloorManagement: React.FC = () => {
           >
             {intl.formatMessage({
               id: 'common.delete',
-              defaultMessage: '删除',
+              defaultMessage: 'Delete',
             })}
           </Button>
         </Space>
@@ -98,11 +115,14 @@ const FloorManagement: React.FC = () => {
     <PageContainer
       title={intl.formatMessage({
         id: 'floor.title',
-        defaultMessage: '楼层管理',
+        defaultMessage: 'Floor Management',
       })}
     >
       <ProTable<FloorType>
-        headerTitle="楼层列表"
+        headerTitle={intl.formatMessage({
+          id: 'floor.listTitle',
+          defaultMessage: 'Floor List',
+        })}
         actionRef={actionRef}
         rowKey="id"
         request={async (params) => {
@@ -136,14 +156,24 @@ const FloorManagement: React.FC = () => {
           >
             {intl.formatMessage({
               id: 'floor.new',
-              defaultMessage: '新建楼层',
+              defaultMessage: 'New Floor',
             })}
           </Button>,
         ]}
       />
 
       <Modal
-        title={editing ? '编辑楼层' : '新建楼层'}
+        title={
+          editing
+            ? intl.formatMessage({
+                id: 'floor.modal.edit',
+                defaultMessage: 'Edit Floor',
+              })
+            : intl.formatMessage({
+                id: 'floor.modal.new',
+                defaultMessage: 'New Floor',
+              })
+        }
         open={modalVisible}
         onCancel={() => {
           setModalVisible(false);
@@ -158,10 +188,20 @@ const FloorManagement: React.FC = () => {
                 method: 'PUT',
                 data: values,
               });
-              message.success('更新成功');
+              message.success(
+                intl.formatMessage({
+                  id: 'floor.updateSuccess',
+                  defaultMessage: 'Updated successfully',
+                }),
+              );
             } else {
               await request('/api/floors', { method: 'POST', data: values });
-              message.success('创建成功');
+              message.success(
+                intl.formatMessage({
+                  id: 'floor.createSuccess',
+                  defaultMessage: 'Created successfully',
+                }),
+              );
             }
             setModalVisible(false);
             setEditing(null);
@@ -169,7 +209,13 @@ const FloorManagement: React.FC = () => {
             actionRef.current?.reload?.();
           } catch (err: any) {
             if (err?.errorFields) return;
-            message.error(err?.message || '操作失败');
+            message.error(
+              err?.message ||
+                intl.formatMessage({
+                  id: 'common.operationFailed',
+                  defaultMessage: 'Operation failed',
+                }),
+            );
           }
         }}
       >
@@ -178,14 +224,14 @@ const FloorManagement: React.FC = () => {
             name="name"
             label={intl.formatMessage({
               id: 'floor.form.name',
-              defaultMessage: '楼层名称',
+              defaultMessage: 'Floor Name',
             })}
             rules={[
               {
                 required: true,
                 message: intl.formatMessage({
                   id: 'floor.form.nameRequired',
-                  defaultMessage: '请输入楼层名称',
+                  defaultMessage: 'Please enter floor name',
                 }),
               },
             ]}
@@ -196,7 +242,7 @@ const FloorManagement: React.FC = () => {
             name="description"
             label={intl.formatMessage({
               id: 'floor.form.description',
-              defaultMessage: '描述',
+              defaultMessage: 'Description',
             })}
           >
             <Input />
@@ -205,7 +251,7 @@ const FloorManagement: React.FC = () => {
             name="totalSeats"
             label={intl.formatMessage({
               id: 'floor.form.totalSeats',
-              defaultMessage: '总座位数',
+              defaultMessage: 'Total Seats',
             })}
           >
             <InputNumber min={0} style={{ width: '100%' }} />

@@ -1,0 +1,44 @@
+.user-info-cell {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+}
+
+.user-info-cell .avatar-wrapper {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-info-cell .avatar-wrapper .ant-avatar {
+  width: 48px;
+  height: 48px;
+  line-height: 48px;
+}
+
+.user-info-cell .user-text {
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 48px;
+}
+
+.user-info-cell .user-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-info-cell .user-username {
+  color: #999;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

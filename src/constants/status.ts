@@ -30,35 +30,37 @@ export enum ActivityStatus {
 }
 
 // Helper maps for display (optional usage in UI)
+// Map enum values to i18n message ids. Components should call
+// `intl.formatMessage({ id: BookingStatusText[value] })` to get localized labels.
 export const BookingStatusText: Record<number, string> = {
-  [BookingStatus.Upcoming]: '待使用',
-  [BookingStatus.Ongoing]: '使用中',
-  [BookingStatus.Completed]: '已完成',
-  [BookingStatus.Canceled]: '已取消',
-  [BookingStatus.Violated]: '已违约',
+  [BookingStatus.Upcoming]: 'booking.status.upcoming',
+  [BookingStatus.Ongoing]: 'booking.status.ongoing',
+  [BookingStatus.Completed]: 'booking.status.completed',
+  [BookingStatus.Canceled]: 'booking.status.canceled',
+  [BookingStatus.Violated]: 'booking.status.violated',
 };
 
 export const TimeSlotText: Record<number, string> = {
-  [TimeSlot.Morning]: '上午',
-  [TimeSlot.Afternoon]: '下午',
-  [TimeSlot.Evening]: '晚上',
+  [TimeSlot.Morning]: 'timeslot.morning',
+  [TimeSlot.Afternoon]: 'timeslot.afternoon',
+  [TimeSlot.Evening]: 'timeslot.evening',
 };
 
 export const SeatTypeText: Record<number, string> = {
-  [SeatType.Single]: '单人桌',
-  [SeatType.Double]: '双人桌',
-  [SeatType.Group]: '多人桌',
+  [SeatType.Single]: 'seat.type.single',
+  [SeatType.Double]: 'seat.type.double',
+  [SeatType.Group]: 'seat.type.group',
 };
 
 export const SeatStatusText: Record<number, string> = {
-  [SeatStatus.Available]: '可用',
-  [SeatStatus.Maintenance]: '维护中',
+  [SeatStatus.Available]: 'seat.status.available',
+  [SeatStatus.Maintenance]: 'seat.status.maintenance',
 };
 
 export const ActivityStatusText: Record<number, string> = {
-  [ActivityStatus.Upcoming]: '未开始',
-  [ActivityStatus.Ongoing]: '进行中',
-  [ActivityStatus.Ended]: '已结束',
+  [ActivityStatus.Upcoming]: 'activity.status.upcoming',
+  [ActivityStatus.Ongoing]: 'activity.status.ongoing',
+  [ActivityStatus.Ended]: 'activity.status.ended',
 };
 
 export enum NotificationType {
@@ -69,10 +71,10 @@ export enum NotificationType {
 }
 
 export const NotificationTypeText: Record<number, string> = {
-  [NotificationType.System]: '系统通知',
-  [NotificationType.Booking]: '预约通知',
-  [NotificationType.Activity]: '活动通知',
-  [NotificationType.Marketing]: '营销通知',
+  [NotificationType.System]: 'notification.type.system',
+  [NotificationType.Booking]: 'notification.type.booking',
+  [NotificationType.Activity]: 'notification.type.activity',
+  [NotificationType.Marketing]: 'notification.type.marketing',
 };
 
 export enum CreditType {
@@ -81,6 +83,6 @@ export enum CreditType {
 }
 
 export const CreditTypeText: Record<number, string> = {
-  [CreditType.Add]: '加分',
-  [CreditType.Deduct]: '减分',
+  [CreditType.Add]: 'credit.type.add',
+  [CreditType.Deduct]: 'credit.type.deduct',
 };

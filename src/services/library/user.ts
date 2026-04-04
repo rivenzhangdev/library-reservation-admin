@@ -43,7 +43,7 @@ export async function updateUser(id: string, data: any) {
  * 上传 base64 图片，返回 { url }
  */
 export async function uploadImage(base64: string) {
-  return request('/api/upload', {
+  return request('/api/uploads', {
     method: 'POST',
     data: { dataUrl: base64 },
   });

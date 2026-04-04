@@ -1,6 +1,7 @@
 import booking from './module/booking/zh-CN';
 import common from './module/common/zh-CN';
 import credit from './module/credit/zh-CN';
+import feedback from './module/feedback/zh-CN';
 import floor from './module/floor/zh-CN';
 import global from './module/global/zh-CN';
 import management from './module/management/zh-CN';
@@ -13,6 +14,7 @@ import zone from './module/zone/zh-CN';
 export default {
   ...booking,
   ...common,
+  ...feedback,
   ...credit,
   ...floor,
   ...global,

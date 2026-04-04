@@ -19,5 +19,11 @@ export default {
   'booking.form.dateRequired': 'Please select date',
   'booking.form.timeSlot': 'Time Slot',
   'booking.form.timeSlotRequired': 'Please select time slot',
+  'booking.createSuccess': 'Created successfully',
+  'booking.createFailed': 'Create failed',
+  'booking.detailFailed': 'Failed to load details',
+  'booking.detail.time': 'Time',
+  'booking.userSearchPlaceholder':
+    'Type username/name to search and select a user',
   // booking status
 };

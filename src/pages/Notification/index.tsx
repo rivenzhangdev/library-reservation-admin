@@ -68,16 +68,30 @@ const NotificationManagement: React.FC = () => {
     Modal.confirm({
       title: intl.formatMessage({
         id: 'user.confirmDeleteTitle',
-        defaultMessage: '确认删除',
+        defaultMessage: 'Confirm delete',
       }),
-      content: '确定要删除该通知吗？',
+      content: intl.formatMessage({
+        id: 'notification.confirmDeleteContent',
+        defaultMessage: 'Are you sure you want to delete this notification?',
+      }),
       onOk: async () => {
         try {
           await deleteNotification(id);
-          message.success('删除成功');
+          message.success(
+            intl.formatMessage({
+              id: 'common.deleteSuccessRefresh',
+              defaultMessage: 'Deleted successfully, refreshing',
+            }),
+          );
           actionRef.current?.reload?.();
         } catch (e: any) {
-          message.error(e?.message || '删除失败');
+          message.error(
+            e?.message ||
+              intl.formatMessage({
+                id: 'common.deleteFailed',
+                defaultMessage: 'Delete failed, please try again',
+              }),
+          );
         }
       },
     });
@@ -87,7 +101,7 @@ const NotificationManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'credit.tab.users',
-        defaultMessage: '用户',
+        defaultMessage: 'User',
       }),
       dataIndex: 'userName',
       width: 100,
@@ -95,7 +109,7 @@ const NotificationManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'seat.form.type',
-        defaultMessage: '类型',
+        defaultMessage: 'Type',
       }),
       dataIndex: 'type',
       valueType: 'select',
@@ -103,40 +117,52 @@ const NotificationManagement: React.FC = () => {
         [NotificationTypeEnum.System]: {
           text: intl.formatMessage({
             id: 'notification.type.system',
-            defaultMessage: '系统通知',
+            defaultMessage: 'System',
           }),
           status: 'Default',
         },
         [NotificationTypeEnum.Booking]: {
           text: intl.formatMessage({
             id: 'notification.type.booking',
-            defaultMessage: '预约通知',
+            defaultMessage: 'Booking',
           }),
           status: 'Processing',
         },
         [NotificationTypeEnum.Activity]: {
           text: intl.formatMessage({
             id: 'notification.type.activity',
-            defaultMessage: '活动通知',
+            defaultMessage: 'Activity',
           }),
           status: 'Success',
         },
         [NotificationTypeEnum.Marketing]: {
           text: intl.formatMessage({
             id: 'notification.type.marketing',
-            defaultMessage: '营销通知',
+            defaultMessage: 'Marketing',
           }),
           status: 'Warning',
         },
       },
       render: (_, record) => {
-        return <Tag>{NotificationTypeText[record.type] || '未知'}</Tag>;
+        return (
+          <Tag>
+            {NotificationTypeText[record.type]
+              ? intl.formatMessage({
+                  id: NotificationTypeText[record.type],
+                  defaultMessage: 'Unknown',
+                })
+              : intl.formatMessage({
+                  id: 'common.unknown',
+                  defaultMessage: 'Unknown',
+                })}
+          </Tag>
+        );
       },
     },
     {
       title: intl.formatMessage({
         id: 'seat.form.floor',
-        defaultMessage: '楼层',
+        defaultMessage: 'Floor',
       }),
       dataIndex: 'floorId',
       valueType: 'select',
@@ -153,7 +179,7 @@ const NotificationManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'activity.form.title',
-        defaultMessage: '标题',
+        defaultMessage: 'Title',
       }),
       dataIndex: 'title',
       copyable: true,
@@ -163,7 +189,7 @@ const NotificationManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'notification.form.content',
-        defaultMessage: '内容',
+        defaultMessage: 'Content',
       }),
       dataIndex: 'content',
       ellipsis: true,
@@ -173,7 +199,7 @@ const NotificationManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'credit.column.date',
-        defaultMessage: '时间',
+        defaultMessage: 'Time',
       }),
       dataIndex: 'time',
       valueType: 'dateTime',
@@ -183,7 +209,7 @@ const NotificationManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'activity.column.timeRange',
-        defaultMessage: '时间范围',
+        defaultMessage: 'Time range',
       }),
       dataIndex: 'timeRange',
       valueType: 'dateRange',
@@ -192,7 +218,7 @@ const NotificationManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'seat.form.status',
-        defaultMessage: '状态',
+        defaultMessage: 'Status',
       }),
       dataIndex: 'isRead',
       valueType: 'select',
@@ -200,28 +226,32 @@ const NotificationManagement: React.FC = () => {
         true: {
           text: intl.formatMessage({
             id: 'notification.status.read',
-            defaultMessage: '已读',
+            defaultMessage: 'Read',
           }),
           status: 'Default',
         },
         false: {
           text: intl.formatMessage({
             id: 'notification.status.unread',
-            defaultMessage: '未读',
+            defaultMessage: 'Unread',
           }),
           status: 'Processing',
         },
       },
       render: (_, record) => (
         <Tag color={record.isRead ? 'default' : 'processing'}>
-          {record.isRead ? '已读' : '未读'}
+          {intl.formatMessage({
+            id: record.isRead
+              ? 'notification.status.read'
+              : 'notification.status.unread',
+          })}
         </Tag>
       ),
     },
     {
       title: intl.formatMessage({
         id: 'common.action',
-        defaultMessage: '操作',
+        defaultMessage: 'Action',
       }),
       valueType: 'option',
       width: 140,
@@ -239,13 +269,19 @@ const NotificationManagement: React.FC = () => {
                 setDetailData(raw);
                 setDetailVisible(true);
               } catch (e: any) {
-                message.error(e?.message || '获取详情失败');
+                message.error(
+                  e?.message ||
+                    intl.formatMessage({
+                      id: 'notification.detailFailed',
+                      defaultMessage: 'Failed to fetch details',
+                    }),
+                );
               }
             }}
           >
             {intl.formatMessage({
               id: 'dashboard.view',
-              defaultMessage: '查看',
+              defaultMessage: 'View',
             })}
           </Button>
           <Button
@@ -257,7 +293,7 @@ const NotificationManagement: React.FC = () => {
           >
             {intl.formatMessage({
               id: 'common.delete',
-              defaultMessage: '删除',
+              defaultMessage: 'Delete',
             })}
           </Button>
         </Space>
@@ -269,11 +305,14 @@ const NotificationManagement: React.FC = () => {
     <PageContainer
       title={intl.formatMessage({
         id: 'menu.notification',
-        defaultMessage: '通知管理',
+        defaultMessage: 'Notification management',
       })}
     >
       <ProTable<NotificationRecord>
-        headerTitle="通知列表"
+        headerTitle={intl.formatMessage({
+          id: 'notification.listTitle',
+          defaultMessage: 'Notification list',
+        })}
         actionRef={actionRef}
         rowKey="id"
         scroll={{ x: 1000 }}
@@ -317,7 +356,7 @@ const NotificationManagement: React.FC = () => {
           >
             {intl.formatMessage({
               id: 'notification.send',
-              defaultMessage: '发送通知',
+              defaultMessage: 'Send notification',
             })}
           </Button>,
         ]}
@@ -328,7 +367,7 @@ const NotificationManagement: React.FC = () => {
       <Modal
         title={intl.formatMessage({
           id: 'dashboard.view',
-          defaultMessage: '查看',
+          defaultMessage: 'View',
         })}
         open={detailVisible}
         onCancel={() => {
@@ -340,33 +379,62 @@ const NotificationManagement: React.FC = () => {
         {detailData ? (
           <div>
             <p>
-              <strong>用户：</strong>
+              <strong>
+                {intl.formatMessage({
+                  id: 'notification.detail.user',
+                  defaultMessage: 'User',
+                })}
+                ：
+              </strong>
               {detailData.userName ||
                 detailData.user?.name ||
                 detailData.user?.username ||
                 '-'}
             </p>
             <p>
-              <strong>标题：</strong>
+              <strong>
+                {intl.formatMessage({
+                  id: 'notification.detail.title',
+                  defaultMessage: 'Title',
+                })}
+                ：
+              </strong>
               {detailData.title}
             </p>
             <p>
-              <strong>内容：</strong>
+              <strong>
+                {intl.formatMessage({
+                  id: 'notification.detail.content',
+                  defaultMessage: 'Content',
+                })}
+                ：
+              </strong>
               {detailData.content}
             </p>
             <p>
-              <strong>时间：</strong>
+              <strong>
+                {intl.formatMessage({
+                  id: 'notification.detail.time',
+                  defaultMessage: 'Time',
+                })}
+                ：
+              </strong>
               {detailData.time || detailData.createdAt || '-'}
             </p>
           </div>
         ) : (
-          <div>加载中...</div>
+          <div>
+            {intl.formatMessage({
+              id: 'common.loading',
+              defaultMessage: 'Loading',
+            })}
+          </div>
         )}
       </Modal>
       <Modal
         title={intl.formatMessage({
           id: 'notification.send',
-          defaultMessage: '发送通知',
+          defaultMessage: 'Send notification',
         })}
         open={modalVisible}
         onCancel={() => {
@@ -377,13 +445,24 @@ const NotificationManagement: React.FC = () => {
           try {
             const values = await form.validateFields();
             await sendNotification(values);
-            message.success('发送成功');
+            message.success(
+              intl.formatMessage({
+                id: 'notification.sendSuccess',
+                defaultMessage: 'Sent successfully',
+              }),
+            );
             setModalVisible(false);
             form.resetFields();
             actionRef.current?.reload?.();
           } catch (e: any) {
             if (e?.errorFields) return;
-            message.error(e?.message || '发送失败');
+            message.error(
+              e?.message ||
+                intl.formatMessage({
+                  id: 'notification.sendFailed',
+                  defaultMessage: 'Send failed',
+                }),
+            );
           }
         }}
       >
@@ -392,7 +471,7 @@ const NotificationManagement: React.FC = () => {
             name="userId"
             label={intl.formatMessage({
               id: 'credit.form.userId',
-              defaultMessage: '用户 ID',
+              defaultMessage: 'User ID',
             })}
           >
             <Input />
@@ -401,7 +480,7 @@ const NotificationManagement: React.FC = () => {
             name="type"
             label={intl.formatMessage({
               id: 'seat.form.type',
-              defaultMessage: '类型',
+              defaultMessage: 'Type',
             })}
             initialValue={NotificationTypeEnum.System}
           >
@@ -409,25 +488,25 @@ const NotificationManagement: React.FC = () => {
               <Select.Option value={NotificationTypeEnum.System}>
                 {intl.formatMessage({
                   id: 'notification.type.system',
-                  defaultMessage: '系统通知',
+                  defaultMessage: 'System',
                 })}
               </Select.Option>
               <Select.Option value={NotificationTypeEnum.Booking}>
                 {intl.formatMessage({
                   id: 'notification.type.booking',
-                  defaultMessage: '预约通知',
+                  defaultMessage: 'Booking',
                 })}
               </Select.Option>
               <Select.Option value={NotificationTypeEnum.Activity}>
                 {intl.formatMessage({
                   id: 'notification.type.activity',
-                  defaultMessage: '活动通知',
+                  defaultMessage: 'Activity',
                 })}
               </Select.Option>
               <Select.Option value={NotificationTypeEnum.Marketing}>
                 {intl.formatMessage({
                   id: 'notification.type.marketing',
-                  defaultMessage: '营销通知',
+                  defaultMessage: 'Marketing',
                 })}
               </Select.Option>
             </Select>
@@ -436,7 +515,7 @@ const NotificationManagement: React.FC = () => {
             name="title"
             label={intl.formatMessage({
               id: 'activity.form.title',
-              defaultMessage: '标题',
+              defaultMessage: 'Title',
             })}
             rules={[{ required: true }]}
           >
@@ -446,7 +525,7 @@ const NotificationManagement: React.FC = () => {
             name="content"
             label={intl.formatMessage({
               id: 'notification.form.content',
-              defaultMessage: '内容',
+              defaultMessage: 'Content',
             })}
             rules={[{ required: true }]}
           >

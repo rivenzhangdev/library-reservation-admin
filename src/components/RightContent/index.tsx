@@ -1,21 +1,43 @@
 import '@/assets/styles/global.less';
 import UserProfileModal, { UserProfile } from '@/components/UserProfileModal';
+import {
+  BACKEND_ENVS,
+  detectBackendStatuses,
+  getBackendEnvKey,
+  setBackendEnv,
+} from '@/config/backendEnvs';
 import { updateUser, uploadImage } from '@/services/library/user';
-import { LogoutOutlined, UserOutlined } from '@ant-design/icons';
-import { history, SelectLang } from '@umijs/max';
+import {
+  DownOutlined,
+  LogoutOutlined,
+  ReloadOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
+import { history, SelectLang, useIntl } from '@umijs/max';
 import type { MenuProps } from 'antd';
-import { Dropdown, message, Space, Tooltip } from 'antd';
+import {
+  Button,
+  Dropdown,
+  message,
+  Popover,
+  Select,
+  Space,
+  Tag,
+  Tooltip,
+} from 'antd';
 import React, { useEffect, useState } from 'react';
 
 const RightContent: React.FC = () => {
   // theme tokens currently unused
+
+  const intl = useIntl();
 
   // 用户菜单
   const userMenuItems: MenuProps['items'] = [
     {
       key: 'profile',
       icon: <UserOutlined />,
-      label: '个人中心',
+      label: intl.formatMessage({ id: 'right.personalCenter' }),
     },
 
     {
@@ -24,12 +46,23 @@ const RightContent: React.FC = () => {
     {
       key: 'logout',
       icon: <LogoutOutlined />,
-      label: '退出登录',
+      label: intl.formatMessage({ id: 'right.logout' }),
       danger: true,
     },
   ];
 
   const [profileVisible, setProfileVisible] = useState(false);
+  const [selectedEnv, setSelectedEnv] = useState<string>(() => {
+    try {
+      return (
+        getBackendEnvKey() ||
+        (BACKEND_ENVS[0] && BACKEND_ENVS[0].key) ||
+        'development'
+      );
+    } catch (e) {
+      return 'development';
+    }
+  });
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
     try {
       const raw = localStorage.getItem('currentUser');
@@ -40,7 +73,10 @@ const RightContent: React.FC = () => {
     return {
       id: '1',
       username: 'admin',
-      name: '管理员',
+      name: intl.formatMessage({
+        id: 'user.role.admin',
+        defaultMessage: 'Administrator',
+      }),
       avatar: undefined,
     };
   });
@@ -52,6 +88,27 @@ const RightContent: React.FC = () => {
       // ignore
     }
   }, [currentUser]);
+
+  const [backendStatuses, setBackendStatuses] = useState<
+    Record<string, { status: 'down' | 'partial' | 'ok' }>
+  >({});
+
+  const loadBackendStatuses = async () => {
+    try {
+      // short timeout for UI
+      const s = await detectBackendStatuses(2000);
+      setBackendStatuses(s || {});
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    loadBackendStatuses();
+    // refresh every 60s while mounted
+    const id = setInterval(() => loadBackendStatuses(), 60000);
+    return () => clearInterval(id);
+  }, []);
 
   const handleUserMenuClick: MenuProps['onClick'] = async (info) => {
     const { key } = info;
@@ -65,7 +122,7 @@ const RightContent: React.FC = () => {
       } catch (e) {
         // ignore
       }
-      message.success('已退出登录');
+      message.success(intl.formatMessage({ id: 'right.logout.success' }));
       history.push('/login');
     }
   };
@@ -87,7 +144,13 @@ const RightContent: React.FC = () => {
             uploadRes;
           data.avatar = avatarUrl;
         } catch (e) {
-          console.error('上传头像失败', e);
+          console.error(
+            intl.formatMessage({
+              id: 'userProfile.uploadFailed',
+              defaultMessage: '上传头像失败',
+            }),
+            e,
+          );
         }
       }
 
@@ -98,11 +161,33 @@ const RightContent: React.FC = () => {
     } catch (e) {
       // 回退到本地保存
       setCurrentUser((prev) => ({ ...prev, ...data }));
-      message.warning('更新后端失败，已保存到本地（演示）');
+      message.warning(intl.formatMessage({ id: 'right.updateBackendFailed' }));
     }
   };
 
   // （通知已移除 — 如需显示请在此恢复）
+
+  const handleEnvChange = (value: string) => {
+    try {
+      setBackendEnv(value as any);
+      setSelectedEnv(value);
+      message.success(
+        intl.formatMessage({
+          id: 'right.backend.switchSuccess',
+          defaultMessage: '已切换后端环境',
+        }),
+      );
+      // reload to ensure new base URL takes effect
+      setTimeout(() => window.location.reload(), 300);
+    } catch (e) {
+      message.error(
+        intl.formatMessage({
+          id: 'common.saveFailed',
+          defaultMessage: '切换失败',
+        }),
+      );
+    }
+  };
 
   return (
     <Space
@@ -113,6 +198,75 @@ const RightContent: React.FC = () => {
       {/* 语言切换（独立部分）*/}
       <div className="rc-lang">
         <SelectLang />
+      </div>
+
+      {/* 后端环境选择 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Select
+          value={selectedEnv}
+          onChange={handleEnvChange}
+          style={{ width: 140 }}
+        >
+          {BACKEND_ENVS.map((e) => (
+            <Select.Option key={e.key} value={e.key}>
+              {intl.formatMessage({
+                id: `backend.env.${e.key}`,
+                defaultMessage: e.label,
+              })}
+            </Select.Option>
+          ))}
+        </Select>
+        <Popover
+          placement="bottomRight"
+          title={intl.formatMessage({
+            id: 'right.backend.statusTitle',
+            defaultMessage: 'Backend Status',
+          })}
+          content={
+            <div style={{ minWidth: 220 }}>
+              {BACKEND_ENVS.map((e) => {
+                const s = backendStatuses[e.key]?.status || 'down';
+                const color =
+                  s === 'ok' ? 'green' : s === 'partial' ? 'orange' : 'red';
+                return (
+                  <div
+                    key={e.key}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '4px 0',
+                    }}
+                  >
+                    <div>
+                      {intl.formatMessage({
+                        id: `backend.env.${e.key}`,
+                        defaultMessage: e.label,
+                      })}
+                    </div>
+                    <Tag color={color} style={{ textTransform: 'capitalize' }}>
+                      {s}
+                    </Tag>
+                  </div>
+                );
+              })}
+              <div style={{ marginTop: 8, textAlign: 'right' }}>
+                <Button
+                  size="small"
+                  icon={<ReloadOutlined />}
+                  onClick={() => loadBackendStatuses()}
+                >
+                  {intl.formatMessage({
+                    id: 'right.backend.refresh',
+                    defaultMessage: 'Refresh',
+                  })}
+                </Button>
+              </div>
+            </div>
+          }
+        >
+          <Button type="text" icon={<DownOutlined />} />
+        </Popover>
       </div>
 
       {/* 用户信息组：头像 + 名称 + 角色（点击弹出菜单） */}
@@ -136,12 +290,29 @@ const RightContent: React.FC = () => {
           <div className="rc-user-meta">
             <div className="rc-username">
               <Tooltip
-                title={currentUser?.name || currentUser?.username || '管理员'}
+                title={
+                  currentUser?.name ||
+                  currentUser?.username ||
+                  intl.formatMessage({
+                    id: 'user.role.admin',
+                    defaultMessage: '管理员',
+                  })
+                }
               >
-                {currentUser?.name || currentUser?.username || '管理员'}
+                {currentUser?.name ||
+                  currentUser?.username ||
+                  intl.formatMessage({
+                    id: 'user.role.admin',
+                    defaultMessage: '管理员',
+                  })}
               </Tooltip>
             </div>
-            <div className="rc-role">管理员</div>
+            <div className="rc-role">
+              {intl.formatMessage({
+                id: 'user.role.admin',
+                defaultMessage: '管理员',
+              })}
+            </div>
           </div>
         </div>
       </Dropdown>

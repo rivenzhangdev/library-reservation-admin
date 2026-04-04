@@ -81,7 +81,7 @@ const CreditManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'credit.tab.users',
-        defaultMessage: '用户',
+        defaultMessage: 'Users',
       }),
       dataIndex: 'userName',
       render: (_: any, r: any) => (
@@ -94,7 +94,7 @@ const CreditManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'seat.form.type',
-        defaultMessage: '类型',
+        defaultMessage: 'Type',
       }),
       dataIndex: 'type',
       valueType: 'select',
@@ -102,28 +102,36 @@ const CreditManagement: React.FC = () => {
         [CreditType.Add]: {
           text: intl.formatMessage({
             id: 'credit.type.add',
-            defaultMessage: '加分',
+            defaultMessage: 'Add',
           }),
           status: 'Success',
         },
         [CreditType.Deduct]: {
           text: intl.formatMessage({
             id: 'credit.type.deduct',
-            defaultMessage: '减分',
+            defaultMessage: 'Deduct',
           }),
           status: 'Error',
         },
       },
       render: (_, record) => (
         <Tag color={record.type === CreditType.Add ? 'green' : 'red'}>
-          {CreditTypeText[record.type] || '未知'}
+          {CreditTypeText[record.type]
+            ? intl.formatMessage({
+                id: CreditTypeText[record.type],
+                defaultMessage: 'Unknown',
+              })
+            : intl.formatMessage({
+                id: 'common.unknown',
+                defaultMessage: 'Unknown',
+              })}
         </Tag>
       ),
     },
     {
       title: intl.formatMessage({
         id: 'credit.column.points',
-        defaultMessage: '积分变化',
+        defaultMessage: 'Points Change',
       }),
       dataIndex: 'points',
       sorter: true,
@@ -142,7 +150,7 @@ const CreditManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'credit.column.date',
-        defaultMessage: '时间',
+        defaultMessage: 'Date',
       }),
       dataIndex: 'date',
       valueType: 'dateTime',
@@ -152,7 +160,7 @@ const CreditManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'credit.form.reason',
-        defaultMessage: '原因',
+        defaultMessage: 'Reason',
       }),
       dataIndex: 'reason',
       ellipsis: true,
@@ -161,7 +169,7 @@ const CreditManagement: React.FC = () => {
     {
       title: intl.formatMessage({
         id: 'common.action',
-        defaultMessage: '操作',
+        defaultMessage: 'Actions',
       }),
       valueType: 'option',
       width: 120,
@@ -183,7 +191,7 @@ const CreditManagement: React.FC = () => {
           >
             {intl.formatMessage({
               id: 'credit.modal.adjust',
-              defaultMessage: '调整积分',
+              defaultMessage: 'Adjust Credit',
             })}
           </Button>
         </Space>
@@ -195,7 +203,7 @@ const CreditManagement: React.FC = () => {
     <PageContainer
       title={intl.formatMessage({
         id: 'menu.credit',
-        defaultMessage: '信用管理',
+        defaultMessage: 'Credit Management',
       })}
     >
       <Tabs
@@ -206,14 +214,14 @@ const CreditManagement: React.FC = () => {
         <Tabs.TabPane
           tab={intl.formatMessage({
             id: 'credit.tab.records',
-            defaultMessage: '信用记录',
+            defaultMessage: 'Credit Records',
           })}
           key="records"
         >
           <ProTable<CreditRecordType>
             headerTitle={intl.formatMessage({
               id: 'credit.header.records',
-              defaultMessage: '信用记录列表',
+              defaultMessage: 'Credit Records',
             })}
             actionRef={actionRef}
             rowKey="id"
@@ -247,7 +255,7 @@ const CreditManagement: React.FC = () => {
         <Tabs.TabPane
           tab={intl.formatMessage({
             id: 'credit.tab.users',
-            defaultMessage: '用户',
+            defaultMessage: 'Users',
           })}
           key="users"
         >
@@ -279,7 +287,7 @@ const CreditManagement: React.FC = () => {
               {
                 title: intl.formatMessage({
                   id: 'credit.tab.users',
-                  defaultMessage: '用户',
+                  defaultMessage: 'Users',
                 }),
                 dataIndex: 'name',
                 render: (_: any, r: any) => (
@@ -288,7 +296,12 @@ const CreditManagement: React.FC = () => {
                   >
                     <img
                       src={r.avatar}
-                      style={{ width: 36, height: 36, borderRadius: 18 }}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        objectFit: 'cover',
+                      }}
                       alt=""
                     />
                     <div>
@@ -301,14 +314,14 @@ const CreditManagement: React.FC = () => {
               {
                 title: intl.formatMessage({
                   id: 'user.form.studentId',
-                  defaultMessage: '学号',
+                  defaultMessage: 'Student ID',
                 }),
                 dataIndex: 'studentId',
               },
               {
                 title: intl.formatMessage({
                   id: 'user.column.creditScore',
-                  defaultMessage: '信用分',
+                  defaultMessage: 'Credit Score',
                 }),
                 dataIndex: 'creditScore',
                 render: (_: any, r: any) => (
@@ -328,7 +341,7 @@ const CreditManagement: React.FC = () => {
               {
                 title: intl.formatMessage({
                   id: 'common.action',
-                  defaultMessage: '操作',
+                  defaultMessage: 'Actions',
                 }),
                 valueType: 'option',
                 render: (_: any, record: any) => (
@@ -344,7 +357,7 @@ const CreditManagement: React.FC = () => {
                     >
                       {intl.formatMessage({
                         id: 'credit.action.adjust',
-                        defaultMessage: '调整信用分',
+                        defaultMessage: 'Adjust Credit',
                       })}
                     </a>
                     {record.blacklisted ? (
@@ -355,18 +368,24 @@ const CreditManagement: React.FC = () => {
                             message.success(
                               intl.formatMessage({
                                 id: 'credit.message.removed',
-                                defaultMessage: '已移出黑名单',
+                                defaultMessage: 'Removed from blacklist',
                               }),
                             );
                             usersActionRef.current?.reload?.();
                           } catch (e: any) {
-                            message.error(e?.message || '操作失败');
+                            message.error(
+                              e?.message ||
+                                intl.formatMessage({
+                                  id: 'common.operationFailed',
+                                  defaultMessage: 'Operation failed',
+                                }),
+                            );
                           }
                         }}
                       >
                         {intl.formatMessage({
                           id: 'credit.blacklist.remove',
-                          defaultMessage: '移出黑名单',
+                          defaultMessage: 'Remove from blacklist',
                         })}
                       </a>
                     ) : (
@@ -377,48 +396,28 @@ const CreditManagement: React.FC = () => {
                             message.success(
                               intl.formatMessage({
                                 id: 'credit.message.added',
-                                defaultMessage: '已加入黑名单',
+                                defaultMessage: 'Added to blacklist',
                               }),
                             );
                             usersActionRef.current?.reload?.();
                           } catch (e: any) {
-                            message.error(e?.message || '操作失败');
+                            message.error(
+                              e?.message ||
+                                intl.formatMessage({
+                                  id: 'common.operationFailed',
+                                  defaultMessage: 'Operation failed',
+                                }),
+                            );
                           }
                         }}
                       >
                         {intl.formatMessage({
                           id: 'credit.blacklist.add',
-                          defaultMessage: '加入黑名单',
+                          defaultMessage: 'Add to blacklist',
                         })}
                       </a>
                     )}
-                    <a
-                      onClick={() => {
-                        Modal.confirm({
-                          title: '确认删除',
-                          content: '确定要删除该记录吗？',
-                          onOk: async () => {
-                            try {
-                              await deleteViolation(record.id);
-                              message.success(
-                                intl.formatMessage({
-                                  id: 'common.deleted',
-                                  defaultMessage: '已删除',
-                                }),
-                              );
-                              usersActionRef.current?.reload?.();
-                            } catch (e: any) {
-                              message.error(e?.message || '删除失败');
-                            }
-                          },
-                        });
-                      }}
-                    >
-                      {intl.formatMessage({
-                        id: 'common.delete',
-                        defaultMessage: '删除',
-                      })}
-                    </a>
+                    {/* 删除操作已移除：用户不可在此处被删除 */}
                   </Space>
                 ),
               },
@@ -430,7 +429,7 @@ const CreditManagement: React.FC = () => {
         <Tabs.TabPane
           tab={intl.formatMessage({
             id: 'credit.tab.violations',
-            defaultMessage: '违规记录',
+            defaultMessage: 'Violations',
           })}
           key="violations"
         >
@@ -438,7 +437,7 @@ const CreditManagement: React.FC = () => {
             actionRef={violationsActionRef}
             headerTitle={intl.formatMessage({
               id: 'credit.header.violations',
-              defaultMessage: '违规记录',
+              defaultMessage: 'Violations',
             })}
             rowKey="id"
             search={{ labelWidth: 'auto', defaultCollapsed: false }}
@@ -466,28 +465,37 @@ const CreditManagement: React.FC = () => {
               {
                 title: intl.formatMessage({
                   id: 'credit.tab.users',
-                  defaultMessage: '用户',
+                  defaultMessage: 'Users',
                 }),
                 dataIndex: 'userName',
               },
               {
                 title: intl.formatMessage({
                   id: 'user.form.studentId',
-                  defaultMessage: '学号',
+                  defaultMessage: 'Student ID',
                 }),
                 dataIndex: 'studentId',
               },
-              { title: '违规类型', dataIndex: 'type' },
+              {
+                title: intl.formatMessage({
+                  id: 'credit.column.violationType',
+                  defaultMessage: 'Violation Type',
+                }),
+                dataIndex: 'type',
+              },
               {
                 title: intl.formatMessage({
                   id: 'floor.form.description',
-                  defaultMessage: '描述',
+                  defaultMessage: 'Description',
                 }),
                 dataIndex: 'description',
                 ellipsis: true,
               },
               {
-                title: '扣除分数',
+                title: intl.formatMessage({
+                  id: 'credit.column.deductPoints',
+                  defaultMessage: 'Deducted Points',
+                }),
                 dataIndex: 'points',
                 render: (_: any, r: any) => (
                   <span style={{ color: '#f5222d' }}>{r.points}</span>
@@ -496,14 +504,14 @@ const CreditManagement: React.FC = () => {
               {
                 title: intl.formatMessage({
                   id: 'booking.form.date',
-                  defaultMessage: '日期',
+                  defaultMessage: 'Date',
                 }),
                 dataIndex: 'date',
               },
               {
                 title: intl.formatMessage({
                   id: 'common.action',
-                  defaultMessage: '操作',
+                  defaultMessage: 'Actions',
                 }),
                 valueType: 'option',
                 render: (_: any, record: any) => (
@@ -511,20 +519,34 @@ const CreditManagement: React.FC = () => {
                     <a
                       onClick={() => {
                         Modal.confirm({
-                          title: '确认删除',
-                          content: '确定要删除该违规记录吗？',
+                          title: intl.formatMessage({
+                            id: 'common.confirm',
+                            defaultMessage: 'Confirm',
+                          }),
+                          content: intl.formatMessage({
+                            id: 'credit.confirmDeleteViolation',
+                            defaultMessage:
+                              'Are you sure you want to delete this violation?',
+                          }),
                           onOk: async () => {
                             try {
                               await deleteViolation(record.id);
                               message.success(
                                 intl.formatMessage({
-                                  id: 'common.deleted',
-                                  defaultMessage: '已删除',
+                                  id: 'credit.deleted',
+                                  defaultMessage: 'Deleted',
                                 }),
                               );
                               violationsActionRef.current?.reload?.();
                             } catch (e: any) {
-                              message.error(e?.message || '删除失败');
+                              message.error(
+                                e?.message ||
+                                  intl.formatMessage({
+                                    id: 'common.deleteFailed',
+                                    defaultMessage:
+                                      'Delete failed, please try again',
+                                  }),
+                              );
                             }
                           },
                         });
@@ -532,7 +554,7 @@ const CreditManagement: React.FC = () => {
                     >
                       {intl.formatMessage({
                         id: 'common.delete',
-                        defaultMessage: '删除',
+                        defaultMessage: 'Delete',
                       })}
                     </a>
                   </Space>
@@ -545,7 +567,7 @@ const CreditManagement: React.FC = () => {
         <Tabs.TabPane
           tab={intl.formatMessage({
             id: 'credit.tab.blacklist',
-            defaultMessage: '黑名单',
+            defaultMessage: 'Blacklist',
           })}
           key="blacklist"
         >
@@ -553,7 +575,7 @@ const CreditManagement: React.FC = () => {
             actionRef={blacklistActionRef}
             headerTitle={intl.formatMessage({
               id: 'credit.header.blacklist',
-              defaultMessage: '黑名单用户',
+              defaultMessage: 'Blacklisted Users',
             })}
             rowKey="id"
             search={{ labelWidth: 'auto', defaultCollapsed: false }}
@@ -582,7 +604,7 @@ const CreditManagement: React.FC = () => {
               {
                 title: intl.formatMessage({
                   id: 'user.column.info',
-                  defaultMessage: '用户信息',
+                  defaultMessage: 'User Info',
                 }),
                 dataIndex: 'name',
                 render: (_: any, r: any) => (
@@ -591,7 +613,12 @@ const CreditManagement: React.FC = () => {
                   >
                     <img
                       src={r.avatar}
-                      style={{ width: 36, height: 36, borderRadius: 18 }}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        objectFit: 'cover',
+                      }}
                       alt=""
                     />
                     <div>
@@ -604,28 +631,28 @@ const CreditManagement: React.FC = () => {
               {
                 title: intl.formatMessage({
                   id: 'user.form.studentId',
-                  defaultMessage: '学号',
+                  defaultMessage: 'Student ID',
                 }),
                 dataIndex: 'studentId',
               },
               {
                 title: intl.formatMessage({
                   id: 'user.column.creditScore',
-                  defaultMessage: '信用分',
+                  defaultMessage: 'Credit Score',
                 }),
                 dataIndex: 'creditScore',
               },
               {
                 title: intl.formatMessage({
                   id: 'credit.column.joinedAt',
-                  defaultMessage: '加入时间',
+                  defaultMessage: 'Joined At',
                 }),
                 dataIndex: 'blacklistedAt',
               },
               {
                 title: intl.formatMessage({
                   id: 'common.action',
-                  defaultMessage: '操作',
+                  defaultMessage: 'Actions',
                 }),
                 valueType: 'option',
                 render: (_: any, record: any) => (
@@ -636,18 +663,24 @@ const CreditManagement: React.FC = () => {
                         message.success(
                           intl.formatMessage({
                             id: 'credit.message.removed',
-                            defaultMessage: '已移出黑名单',
+                            defaultMessage: 'Removed from blacklist',
                           }),
                         );
                         blacklistActionRef.current?.reload?.();
                       } catch (e: any) {
-                        message.error(e?.message || '操作失败');
+                        message.error(
+                          e?.message ||
+                            intl.formatMessage({
+                              id: 'common.operationFailed',
+                              defaultMessage: 'Operation failed',
+                            }),
+                        );
                       }
                     }}
                   >
                     {intl.formatMessage({
                       id: 'credit.blacklist.remove',
-                      defaultMessage: '移出黑名单',
+                      defaultMessage: 'Remove from blacklist',
                     })}
                   </a>
                 ),
@@ -659,14 +692,17 @@ const CreditManagement: React.FC = () => {
         <Tabs.TabPane
           tab={intl.formatMessage({
             id: 'credit.tab.grades',
-            defaultMessage: '信用等级',
+            defaultMessage: 'Grades',
           })}
           key="grades"
         >
           <Card bordered={false}>
             <div>
-              信用等级规则可在此展示或配置（如：&gt;=80 优秀，60-79 良好，&lt;60
-              普通）。
+              {intl.formatMessage({
+                id: 'credit.grades.description',
+                defaultMessage:
+                  'Credit grading rules can be displayed or configured here (e.g. >=80 Excellent, 60-79 Good, <60 Normal).',
+              })}
             </div>
           </Card>
         </Tabs.TabPane>
@@ -677,13 +713,13 @@ const CreditManagement: React.FC = () => {
             ? intl.formatMessage(
                 {
                   id: 'credit.modal.adjustFor',
-                  defaultMessage: '调整 {name} 的积分',
+                  defaultMessage: "Adjust {name}'s Credit",
                 },
                 { name: adjustTarget.userName },
               )
             : intl.formatMessage({
                 id: 'credit.modal.adjust',
-                defaultMessage: '调整积分',
+                defaultMessage: 'Adjust Credit',
               })
         }
         open={modalVisible}
@@ -711,7 +747,7 @@ const CreditManagement: React.FC = () => {
             message.success(
               intl.formatMessage({
                 id: 'credit.message.adjustSuccess',
-                defaultMessage: '调整成功',
+                defaultMessage: 'Adjusted',
               }),
             );
             setModalVisible(false);
@@ -724,7 +760,7 @@ const CreditManagement: React.FC = () => {
               e?.message ||
                 intl.formatMessage({
                   id: 'credit.message.adjustFailed',
-                  defaultMessage: '调整失败',
+                  defaultMessage: 'Adjust failed',
                 }),
             );
           }
@@ -740,7 +776,7 @@ const CreditManagement: React.FC = () => {
               name="userId"
               label={intl.formatMessage({
                 id: 'credit.form.userId',
-                defaultMessage: '用户 ID',
+                defaultMessage: 'User ID',
               })}
               rules={[{ required: true }]}
             >
@@ -751,20 +787,20 @@ const CreditManagement: React.FC = () => {
             name="type"
             label={intl.formatMessage({
               id: 'seat.form.type',
-              defaultMessage: '类型',
+              defaultMessage: 'Type',
             })}
           >
             <Radio.Group>
               <Radio value={CreditType.Add}>
                 {intl.formatMessage({
                   id: 'credit.type.add',
-                  defaultMessage: '加分',
+                  defaultMessage: 'Add',
                 })}
               </Radio>
               <Radio value={CreditType.Deduct}>
                 {intl.formatMessage({
                   id: 'credit.type.deduct',
-                  defaultMessage: '减分',
+                  defaultMessage: 'Deduct',
                 })}
               </Radio>
             </Radio.Group>
@@ -773,7 +809,7 @@ const CreditManagement: React.FC = () => {
             name="points"
             label={intl.formatMessage({
               id: 'credit.form.points',
-              defaultMessage: '分数',
+              defaultMessage: 'Points',
             })}
             rules={[{ required: true }]}
           >
@@ -783,7 +819,7 @@ const CreditManagement: React.FC = () => {
             name="reason"
             label={intl.formatMessage({
               id: 'credit.form.reason',
-              defaultMessage: '原因',
+              defaultMessage: 'Reason',
             })}
           >
             <Input />

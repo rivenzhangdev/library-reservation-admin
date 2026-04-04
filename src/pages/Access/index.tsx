@@ -12,7 +12,7 @@ const AccessPage: React.FC = () => {
       header={{
         title: intl.formatMessage({
           id: 'access.title',
-          defaultMessage: '权限示例',
+          defaultMessage: 'Access example',
         }),
       }}
     >
@@ -20,7 +20,7 @@ const AccessPage: React.FC = () => {
         <Button>
           {intl.formatMessage({
             id: 'access.onlyAdminButton',
-            defaultMessage: '只有 Admin 可以看到这个按钮',
+            defaultMessage: 'Only Admin can see this button',
           })}
         </Button>
       </Access>
