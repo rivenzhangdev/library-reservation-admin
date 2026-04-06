@@ -17,4 +17,7 @@ export default {
   'notification.detail.title': '标题',
   'notification.detail.content': '内容',
   'notification.detail.time': '时间',
+  'notification.edit': '编辑通知',
+  'notification.updateSuccess': '更新成功',
+  'notification.updateFailed': '更新失败',
 };

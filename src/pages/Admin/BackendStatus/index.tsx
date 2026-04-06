@@ -3,7 +3,9 @@ import { useIntl } from '@umijs/max';
 import { Button, Space, Table, Tag, Typography, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import {
+  BACKEND_BASE_KEY,
   BACKEND_ENVS,
+  BACKEND_ENV_KEY,
   detectBackendStatuses,
   getBackendBaseUrl,
   getBackendEnvKey,
@@ -60,6 +62,35 @@ const BackendStatusPage: React.FC = () => {
       intl.formatMessage({
         id: 'admin.setSuccess',
         defaultMessage: 'Environment set',
+      }),
+    );
+    refresh();
+  };
+
+  const handleUseLan = (key: string) => {
+    const found = BACKEND_ENVS.find((e) => e.key === key);
+    const lan = (found as any)?.lanBaseUrl || '';
+    if (!lan) {
+      message.warn(
+        intl.formatMessage({
+          id: 'admin.noLan',
+          defaultMessage: 'No LAN address configured for this environment',
+        }),
+      );
+      return;
+    }
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(BACKEND_ENV_KEY, key);
+        localStorage.setItem(BACKEND_BASE_KEY, lan);
+      }
+    } catch (e) {
+      // ignore
+    }
+    message.success(
+      intl.formatMessage({
+        id: 'admin.useLanSuccess',
+        defaultMessage: 'Using LAN address',
       }),
     );
     refresh();
@@ -163,6 +194,22 @@ const BackendStatusPage: React.FC = () => {
           >
             {intl.formatMessage({ id: 'admin.open', defaultMessage: 'Open' })}
           </Button>
+          {(() => {
+            const found = BACKEND_ENVS.find((e) => e.key === record.key) as any;
+            const hasLan = !!(found && found.lanBaseUrl);
+            return (
+              <Button
+                size="small"
+                onClick={() => handleUseLan(record.key)}
+                disabled={!hasLan}
+              >
+                {intl.formatMessage({
+                  id: 'admin.useLan',
+                  defaultMessage: 'Use LAN',
+                })}
+              </Button>
+            );
+          })()}
           {!record.selected && (
             <Button
               size="small"

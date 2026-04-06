@@ -14,6 +14,7 @@ import {
   getNotificationDetail,
   getNotificationList,
   sendNotification,
+  updateNotification,
 } from '../../services/library/notification';
 
 /**
@@ -43,6 +44,8 @@ const NotificationManagement: React.FC = () => {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [detailVisible, setDetailVisible] = useState<boolean>(false);
   const [detailData, setDetailData] = useState<any>(null);
+  const [editVisible, setEditVisible] = useState<boolean>(false);
+  const [editForm] = Form.useForm();
   const [floors, setFloors] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
@@ -267,7 +270,14 @@ const NotificationManagement: React.FC = () => {
                 const res: any = await getNotificationDetail(record.id);
                 const raw = res?.data ?? res;
                 setDetailData(raw);
-                setDetailVisible(true);
+                // prefill edit form
+                editForm.setFieldsValue({
+                  userId: raw.userId || '',
+                  type: raw.type,
+                  title: raw.title,
+                  content: raw.content,
+                });
+                setEditVisible(true);
               } catch (e: any) {
                 message.error(
                   e?.message ||
@@ -430,6 +440,110 @@ const NotificationManagement: React.FC = () => {
             })}
           </div>
         )}
+      </Modal>
+      <Modal
+        title={intl.formatMessage({
+          id: 'notification.edit',
+          defaultMessage: 'Edit notification',
+        })}
+        open={editVisible}
+        onCancel={() => {
+          setEditVisible(false);
+          setDetailData(null);
+          editForm.resetFields();
+        }}
+        onOk={async () => {
+          try {
+            const values = await editForm.validateFields();
+            const id = detailData?.id || detailData?._id;
+            if (!id) throw new Error('missing id');
+            await updateNotification(id, values);
+            message.success(
+              intl.formatMessage({
+                id: 'notification.updateSuccess',
+                defaultMessage: 'Updated successfully',
+              }),
+            );
+            setEditVisible(false);
+            editForm.resetFields();
+            actionRef.current?.reload?.();
+          } catch (e: any) {
+            if (e?.errorFields) return;
+            message.error(
+              e?.message ||
+                intl.formatMessage({
+                  id: 'notification.updateFailed',
+                  defaultMessage: 'Update failed',
+                }),
+            );
+          }
+        }}
+      >
+        <Form form={editForm} layout="vertical">
+          <Form.Item
+            name="userId"
+            label={intl.formatMessage({
+              id: 'credit.form.userId',
+              defaultMessage: 'User ID',
+            })}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="type"
+            label={intl.formatMessage({
+              id: 'seat.form.type',
+              defaultMessage: 'Type',
+            })}
+          >
+            <Select>
+              <Select.Option value={NotificationTypeEnum.System}>
+                {intl.formatMessage({
+                  id: 'notification.type.system',
+                  defaultMessage: 'System',
+                })}
+              </Select.Option>
+              <Select.Option value={NotificationTypeEnum.Booking}>
+                {intl.formatMessage({
+                  id: 'notification.type.booking',
+                  defaultMessage: 'Booking',
+                })}
+              </Select.Option>
+              <Select.Option value={NotificationTypeEnum.Activity}>
+                {intl.formatMessage({
+                  id: 'notification.type.activity',
+                  defaultMessage: 'Activity',
+                })}
+              </Select.Option>
+              <Select.Option value={NotificationTypeEnum.Marketing}>
+                {intl.formatMessage({
+                  id: 'notification.type.marketing',
+                  defaultMessage: 'Marketing',
+                })}
+              </Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item
+            name="title"
+            label={intl.formatMessage({
+              id: 'activity.form.title',
+              defaultMessage: 'Title',
+            })}
+            rules={[{ required: true }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="content"
+            label={intl.formatMessage({
+              id: 'notification.form.content',
+              defaultMessage: 'Content',
+            })}
+            rules={[{ required: true }]}
+          >
+            <Input.TextArea rows={4} />
+          </Form.Item>
+        </Form>
       </Modal>
       <Modal
         title={intl.formatMessage({

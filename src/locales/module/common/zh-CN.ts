@@ -13,6 +13,8 @@ export default {
   'right.guest': '游客',
   'right.updateBackendFailed': '更新后端失败，已保存到本地（演示）',
   'right.backend.switchSuccess': '已切换后端环境',
+  'right.envHeader': '后端环境',
+  'right.backend.switchSuccessTo': '已切换后端为 {name}',
   'common.saveFailed': '保存失败',
   'right.notifications.newBooking': '您有新的预约申请',
   'right.notifications.maintenance': '系统维护通知',
@@ -31,6 +33,8 @@ export default {
   'userProfile.email': '邮箱',
   'userProfile.phone': '手机号',
   'userProfile.uploadFailed': '上传头像失败',
+  'userProfile.uploadSuccess': '上传头像成功',
+  'userProfile.uploadNoUrl': '上传成功但未返回可用 URL',
   'user.role.admin': '管理员',
   'common.user': '用户',
   'common.unknown': '未知',
@@ -112,6 +116,7 @@ export default {
   // activity page
   'activity.column.endTime': '结束时间',
   'activity.column.participants': '报名人数',
+  'activity.column.maxParticipants': '最大参与人数',
   'common.view': '查看',
   'common.back': '返回',
   // user page

@@ -1,3 +1,4 @@
+import { uploadImage } from '@/services/library/user';
 import { UploadOutlined } from '@ant-design/icons';
 import { useIntl } from '@umijs/max';
 import { Button, Form, Input, Modal, Upload, message } from 'antd';
@@ -33,6 +34,7 @@ const UserProfileModal: React.FC<{
     initialValues?.avatar,
   );
   const [uploading, setUploading] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const intl = useIntl();
 
   useEffect(() => {
@@ -52,8 +54,43 @@ const UserProfileModal: React.FC<{
       return Upload.LIST_IGNORE;
     }
     const base64 = await getBase64(file);
+    // show immediate preview
     setAvatarPreview(base64);
-    // prevent auto upload
+
+    // automatically upload to backend and replace preview with returned URL
+    try {
+      setAvatarUploading(true);
+      const res: any = await uploadImage(base64 as string);
+      const url = res?.url || (res && res.data && res.data.url) || res;
+      if (url) {
+        setAvatarPreview(url);
+        message.success(
+          intl.formatMessage({
+            id: 'userProfile.uploadSuccess',
+            defaultMessage: '上传成功',
+          }),
+        );
+      } else {
+        message.warn(
+          intl.formatMessage({
+            id: 'userProfile.uploadNoUrl',
+            defaultMessage: '上传完成，但未返回 URL',
+          }),
+        );
+      }
+    } catch (e) {
+      console.error('upload failed', e);
+      message.error(
+        intl.formatMessage({
+          id: 'userProfile.uploadFailed',
+          defaultMessage: '上传失败',
+        }),
+      );
+    } finally {
+      setAvatarUploading(false);
+    }
+
+    // prevent Upload from auto-sending (we handled upload)
     return Upload.LIST_IGNORE;
   };
 
@@ -90,7 +127,7 @@ const UserProfileModal: React.FC<{
       open={visible}
       onCancel={onClose}
       onOk={handleOk}
-      confirmLoading={uploading}
+      confirmLoading={uploading || avatarUploading}
       destroyOnHidden
     >
       <Form form={form} layout="vertical">
@@ -123,7 +160,7 @@ const UserProfileModal: React.FC<{
               showUploadList={false}
               accept="image/*"
             >
-              <Button icon={<UploadOutlined />}>
+              <Button icon={<UploadOutlined />} loading={avatarUploading}>
                 {intl.formatMessage({
                   id: 'userProfile.upload',
                   defaultMessage: '上传头像',

@@ -1,4 +1,7 @@
-import '@/assets/styles/global.less';
+/* eslint-disable */
+// local styles for RightContent
+import './index.less';
+// removed missing global import to avoid module not found during build
 import UserProfileModal, { UserProfile } from '@/components/UserProfileModal';
 import {
   BACKEND_ENVS,
@@ -7,24 +10,10 @@ import {
   setBackendEnv,
 } from '@/config/backendEnvs';
 import { updateUser, uploadImage } from '@/services/library/user';
-import {
-  DownOutlined,
-  LogoutOutlined,
-  ReloadOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
+import { CheckOutlined, LogoutOutlined, UserOutlined } from '@ant-design/icons';
 import { history, SelectLang, useIntl } from '@umijs/max';
 import type { MenuProps } from 'antd';
-import {
-  Button,
-  Dropdown,
-  message,
-  Popover,
-  Select,
-  Space,
-  Tag,
-  Tooltip,
-} from 'antd';
+import { Dropdown, message, Space, Tooltip } from 'antd';
 import React, { useEffect, useState } from 'react';
 
 const RightContent: React.FC = () => {
@@ -32,24 +21,8 @@ const RightContent: React.FC = () => {
 
   const intl = useIntl();
 
-  // 用户菜单
-  const userMenuItems: MenuProps['items'] = [
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: intl.formatMessage({ id: 'right.personalCenter' }),
-    },
-
-    {
-      type: 'divider' as const,
-    },
-    {
-      key: 'logout',
-      icon: <LogoutOutlined />,
-      label: intl.formatMessage({ id: 'right.logout' }),
-      danger: true,
-    },
-  ];
+  // 用户菜单（包含环境切换项）
+  // NOTE: items will be constructed later so they can react to `selectedEnv` state
 
   const [profileVisible, setProfileVisible] = useState(false);
   const [selectedEnv, setSelectedEnv] = useState<string>(() => {
@@ -89,6 +62,48 @@ const RightContent: React.FC = () => {
     }
   }, [currentUser]);
 
+  // 构造用户菜单项（放在状态之后，这样 icon 可以根据 selectedEnv 实时变化）
+  const userMenuItems: MenuProps['items'] = [
+    {
+      key: 'profile',
+      icon: <UserOutlined />,
+      label: intl.formatMessage({ id: 'right.personalCenter' }),
+    },
+    {
+      type: 'divider' as const,
+    },
+    // 环境切换标题（不可选）
+    {
+      key: 'env_header',
+      label: intl.formatMessage({
+        id: 'right.envHeader',
+        defaultMessage: '切换环境',
+      }),
+      disabled: true,
+    },
+    // 环境项
+    ...BACKEND_ENVS.map((e) => {
+      const k = `env:${e.key}`;
+      return {
+        key: k,
+        label: intl.formatMessage({
+          id: `backend.env.${e.key}`,
+          defaultMessage: e.label,
+        }),
+        icon: selectedEnv === e.key ? <CheckOutlined /> : undefined,
+      } as any;
+    }),
+    {
+      type: 'divider' as const,
+    },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: intl.formatMessage({ id: 'right.logout' }),
+      danger: true,
+    },
+  ];
+
   const [backendStatuses, setBackendStatuses] = useState<
     Record<string, { status: 'down' | 'partial' | 'ok' }>
   >({});
@@ -114,7 +129,21 @@ const RightContent: React.FC = () => {
     const { key } = info;
     if (key === 'profile') {
       setProfileVisible(true);
-    } else if (key === 'logout') {
+      return;
+    }
+
+    // 环境切换项（key 格式：env:<key>）
+    if (typeof key === 'string' && key.startsWith('env:')) {
+      const envKey = key.slice(4);
+      try {
+        handleEnvChange(envKey);
+      } catch (e) {
+        // ignore
+      }
+      return;
+    }
+
+    if (key === 'logout') {
       // 清理本地登录信息并跳转到登录页
       try {
         localStorage.removeItem('token');
@@ -169,16 +198,37 @@ const RightContent: React.FC = () => {
 
   const handleEnvChange = (value: string) => {
     try {
+      const found = BACKEND_ENVS.find((e) => e.key === value);
       setBackendEnv(value as any);
       setSelectedEnv(value);
+      const envLabel = found
+        ? intl.formatMessage({
+            id: `backend.env.${found.key}`,
+            defaultMessage: found.label,
+          })
+        : value;
       message.success(
-        intl.formatMessage({
-          id: 'right.backend.switchSuccess',
-          defaultMessage: '已切换后端环境',
-        }),
+        intl.formatMessage(
+          {
+            id: 'right.backend.switchSuccessTo',
+            defaultMessage: '已切换到 {env}',
+          },
+          { env: envLabel },
+        ),
       );
-      // reload to ensure new base URL takes effect
-      setTimeout(() => window.location.reload(), 300);
+      // avoid full page reload to prevent UI flicker
+      try {
+        // dispatch an event so other parts can react if they choose to
+        window.dispatchEvent(
+          new CustomEvent('backend_base_url_changed', {
+            detail: { key: value },
+          }),
+        );
+      } catch (e) {
+        // ignore
+      }
+      // refresh status indicators
+      loadBackendStatuses();
     } catch (e) {
       message.error(
         intl.formatMessage({
@@ -200,74 +250,7 @@ const RightContent: React.FC = () => {
         <SelectLang />
       </div>
 
-      {/* 后端环境选择 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Select
-          value={selectedEnv}
-          onChange={handleEnvChange}
-          style={{ width: 140 }}
-        >
-          {BACKEND_ENVS.map((e) => (
-            <Select.Option key={e.key} value={e.key}>
-              {intl.formatMessage({
-                id: `backend.env.${e.key}`,
-                defaultMessage: e.label,
-              })}
-            </Select.Option>
-          ))}
-        </Select>
-        <Popover
-          placement="bottomRight"
-          title={intl.formatMessage({
-            id: 'right.backend.statusTitle',
-            defaultMessage: 'Backend Status',
-          })}
-          content={
-            <div style={{ minWidth: 220 }}>
-              {BACKEND_ENVS.map((e) => {
-                const s = backendStatuses[e.key]?.status || 'down';
-                const color =
-                  s === 'ok' ? 'green' : s === 'partial' ? 'orange' : 'red';
-                return (
-                  <div
-                    key={e.key}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '4px 0',
-                    }}
-                  >
-                    <div>
-                      {intl.formatMessage({
-                        id: `backend.env.${e.key}`,
-                        defaultMessage: e.label,
-                      })}
-                    </div>
-                    <Tag color={color} style={{ textTransform: 'capitalize' }}>
-                      {s}
-                    </Tag>
-                  </div>
-                );
-              })}
-              <div style={{ marginTop: 8, textAlign: 'right' }}>
-                <Button
-                  size="small"
-                  icon={<ReloadOutlined />}
-                  onClick={() => loadBackendStatuses()}
-                >
-                  {intl.formatMessage({
-                    id: 'right.backend.refresh',
-                    defaultMessage: 'Refresh',
-                  })}
-                </Button>
-              </div>
-            </div>
-          }
-        >
-          <Button type="text" icon={<DownOutlined />} />
-        </Popover>
-      </div>
+      {/* 环境切换已移入用户菜单（个人菜单中显示） */}
 
       {/* 用户信息组：头像 + 名称 + 角色（点击弹出菜单） */}
       <Dropdown

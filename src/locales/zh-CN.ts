@@ -1,3 +1,4 @@
+import admin from './module/admin/zh-CN';
 import booking from './module/booking/zh-CN';
 import common from './module/common/zh-CN';
 import credit from './module/credit/zh-CN';
@@ -18,6 +19,7 @@ export default {
   ...credit,
   ...floor,
   ...global,
+  ...admin,
   ...management,
   ...notification,
   ...seat,

@@ -56,3 +56,13 @@ export async function deleteNotification(id: string) {
     method: 'DELETE',
   });
 }
+
+/**
+ * 更新通知（管理员）
+ */
+export async function updateNotification(id: string, data: any) {
+  return request(`/api/notification/${id}`, {
+    method: 'PATCH',
+    data,
+  });
+}

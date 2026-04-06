@@ -113,22 +113,21 @@ const request: RequestConfig = {
   },
   requestInterceptors: [
     async (url: string, options: any) => {
-      // avoid reassigning function parameter 'url' (no-param-reassign)
-      let resolvedUrl = url;
       let opts = options ?? {};
+      let requestUrl = url;
       try {
         // 支持通过本地配置的 backend_base_url 强制覆盖请求前缀（用于多环境切换）
         if (typeof window !== 'undefined') {
           const forcedBase = window.localStorage.getItem('backend_base_url');
           if (
             forcedBase &&
-            typeof resolvedUrl === 'string' &&
-            !/^https?:\/\//i.test(resolvedUrl)
+            typeof requestUrl === 'string' &&
+            !/^https?:\/\//i.test(requestUrl)
           ) {
             const prefix = forcedBase.replace(/\/$/, '');
-            resolvedUrl = resolvedUrl.startsWith('/')
-              ? `${prefix}${resolvedUrl}`
-              : `${prefix}/${resolvedUrl}`;
+            requestUrl = requestUrl.startsWith('/')
+              ? `${prefix}${requestUrl}`
+              : `${prefix}/${requestUrl}`;
           }
         }
       } catch (e) {
@@ -152,7 +151,7 @@ const request: RequestConfig = {
       } catch (e) {
         // ignore
       }
-      return { url: resolvedUrl, options: opts };
+      return { url: requestUrl, options: opts };
     },
   ],
   responseInterceptors: [

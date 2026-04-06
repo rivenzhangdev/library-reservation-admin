@@ -13,6 +13,8 @@ export default {
   'right.guest': 'Guest',
   'right.updateBackendFailed': 'Update backend failed, saved locally (demo)',
   'right.backend.switchSuccess': 'Backend environment switched',
+  'right.envHeader': 'Backend Environments',
+  'right.backend.switchSuccessTo': 'Switched backend to {name}',
   'common.saveFailed': 'Save failed',
   'right.notifications.newBooking': 'You have a new booking request',
   'right.notifications.maintenance': 'System maintenance notice',
@@ -31,6 +33,8 @@ export default {
   'userProfile.email': 'Email',
   'userProfile.phone': 'Phone',
   'userProfile.uploadFailed': 'Failed to upload avatar',
+  'userProfile.uploadSuccess': 'Avatar uploaded successfully',
+  'userProfile.uploadNoUrl': 'Upload succeeded but returned no usable URL',
   'user.role.admin': 'Admin',
   'common.user': 'User',
   'common.unknown': 'Unknown',
@@ -114,6 +118,7 @@ export default {
   // activity page
   'activity.column.endTime': 'End Time',
   'activity.column.participants': 'Participants',
+  'activity.column.maxParticipants': 'Max participants',
   'common.view': 'View',
   'common.back': 'Back',
   // user page

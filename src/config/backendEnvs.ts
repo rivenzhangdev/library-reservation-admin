@@ -4,6 +4,7 @@ export interface BackendEnv {
   key: BackendEnvKey;
   label: string;
   baseUrl: string;
+  lanBaseUrl?: string;
 }
 
 const BACKEND_ENVS_FALLBACK: BackendEnv[] = [
@@ -11,6 +12,7 @@ const BACKEND_ENVS_FALLBACK: BackendEnv[] = [
     key: 'development',
     label: 'Development',
     baseUrl: 'http://localhost:3000',
+    lanBaseUrl: '',
   },
   { key: 'test', label: 'Test', baseUrl: 'http://localhost:3001' },
   { key: 'uat', label: 'UAT', baseUrl: 'http://localhost:3002' },
@@ -18,17 +20,55 @@ const BACKEND_ENVS_FALLBACK: BackendEnv[] = [
 ];
 
 export const BACKEND_ENVS: BackendEnv[] = (() => {
+  let envs: BackendEnv[] = BACKEND_ENVS_FALLBACK;
   try {
     // Prefer a shared workspace config if present
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const shared = require('../../../backend-envs.json');
     if (shared && Array.isArray(shared.BACKEND_ENVS)) {
-      return shared.BACKEND_ENVS as BackendEnv[];
+      envs = shared.BACKEND_ENVS as BackendEnv[];
     }
   } catch (e) {
     // ignore and fallback
   }
-  return BACKEND_ENVS_FALLBACK;
+
+  // Allow build/start-time overrides via environment variables.
+  // Examples (in scripts):
+  //   cross-env BACKEND_ENV=uat BACKEND_BASE_URL=http://192.168.x.x:3002 pnpm dev
+  try {
+    const penv = typeof process !== 'undefined' ? (process as any).env : null;
+    if (penv) {
+      const overrideKey =
+        penv.BACKEND_ENV || penv.REACT_APP_BACKEND_ENV || penv.VITE_BACKEND_ENV;
+      const overrideBase =
+        penv.BACKEND_BASE_URL ||
+        penv.REACT_APP_BACKEND_BASE_URL ||
+        penv.VITE_BACKEND_BASE_URL;
+      const overrideLan =
+        penv.BACKEND_LAN_URL ||
+        penv.REACT_APP_BACKEND_LAN_URL ||
+        penv.VITE_BACKEND_LAN_BASE_URL;
+      if (overrideKey || overrideBase || overrideLan) {
+        const idx = envs.findIndex((e) => e.key === overrideKey);
+        if (idx >= 0) {
+          if (overrideBase) (envs[idx] as any).baseUrl = overrideBase;
+          if (overrideLan) (envs[idx] as any).lanBaseUrl = overrideLan;
+        } else {
+          const newEnv: BackendEnv = {
+            key: (overrideKey as BackendEnvKey) || 'development',
+            label: overrideKey || 'Env',
+            baseUrl: overrideBase || (envs[0] && envs[0].baseUrl) || '',
+            lanBaseUrl: overrideLan || '',
+          };
+          envs = [newEnv, ...envs];
+        }
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  return envs;
 })();
 
 export const BACKEND_ENV_KEY = 'backend_env';

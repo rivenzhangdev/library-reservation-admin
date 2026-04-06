@@ -1,0 +1,75 @@
+.rc-right-container {
+  display: flex;
+  align-items: center;
+}
+
+.rc-lang {
+  margin-right: 8px;
+}
+
+.rc-user-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: background 0.18s ease;
+}
+
+.rc-user-group:hover {
+  background: rgb(0 0 0 / 3%);
+}
+
+.rc-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #1890ff;
+  color: #fff;
+}
+
+.rc-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rc-user-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rc-username {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.rc-role {
+  font-size: 12px;
+  color: rgb(0 0 0 / 45%);
+}
+
+/* Responsive: on small screens hide name/role and keep avatar clickable */
+@media (width <= 480px) {
+  .rc-right-container .rc-user-group {
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .rc-right-container .rc-user-meta {
+    display: none;
+  }
+
+  .rc-right-container .rc-avatar {
+    width: 40px;
+    height: 40px;
+  }
+}

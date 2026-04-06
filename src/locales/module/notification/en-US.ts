@@ -18,4 +18,7 @@ export default {
   'notification.detail.title': 'Title',
   'notification.detail.content': 'Content',
   'notification.detail.time': 'Time',
+  'notification.edit': 'Edit notification',
+  'notification.updateSuccess': 'Updated successfully',
+  'notification.updateFailed': 'Update failed',
 };

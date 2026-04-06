@@ -166,7 +166,10 @@ const FeedbackPage: React.FC = () => {
       render: (_, r) =>
         r.typeName ||
         (r.typeId
-          ? intl.formatMessage({ id: `feedback.type.${r.typeId}` })
+          ? intl.formatMessage(
+              { id: `feedback.type.${r.typeId}`, defaultMessage: 'Type {id}' },
+              { id: r.typeId },
+            )
           : '-'),
     },
     {
@@ -185,7 +188,10 @@ const FeedbackPage: React.FC = () => {
       render: (_, r) => {
         const id = Number(r.urgencyId);
         const color = URGENCY_COLOR_MAP[id];
-        const text = intl.formatMessage({ id: `feedback.urgency.${id}` });
+        const text = intl.formatMessage(
+          { id: `feedback.urgency.${id}`, defaultMessage: 'Urgency {id}' },
+          { id },
+        );
         return id && color ? (
           <Tag color={color}>{text}</Tag>
         ) : (
@@ -209,7 +215,10 @@ const FeedbackPage: React.FC = () => {
       render: (_, r) => {
         const id = Number(r.status);
         const color = STATUS_COLOR_MAP[id];
-        const text = intl.formatMessage({ id: `feedback.status.${id}` });
+        const text = intl.formatMessage(
+          { id: `feedback.status.${id}`, defaultMessage: 'Status {id}' },
+          { id },
+        );
         return id && color ? (
           <Tag color={color}>{text}</Tag>
         ) : (
@@ -484,7 +493,16 @@ const FeedbackPage: React.FC = () => {
                   defaultMessage: 'Type',
                 })}
               >
-                {detail.typeName || TYPE_MAP[detail.typeId] || '-'}
+                {detail.typeName ||
+                  (detail.typeId
+                    ? intl.formatMessage(
+                        {
+                          id: `feedback.type.${detail.typeId}`,
+                          defaultMessage: 'Type {id}',
+                        },
+                        { id: detail.typeId },
+                      )
+                    : '-')}
               </Descriptions.Item>
               <Descriptions.Item
                 label={intl.formatMessage({
@@ -493,9 +511,17 @@ const FeedbackPage: React.FC = () => {
                 })}
               >
                 {(() => {
-                  const u = URGENCY_MAP[detail.urgencyId];
-                  return u ? (
-                    <Tag color={u.color}>{u.text}</Tag>
+                  const id = Number(detail.urgencyId);
+                  const color = URGENCY_COLOR_MAP[id];
+                  const text = intl.formatMessage(
+                    {
+                      id: `feedback.urgency.${id}`,
+                      defaultMessage: 'Urgency {id}',
+                    },
+                    { id },
+                  );
+                  return id && color ? (
+                    <Tag color={color}>{text}</Tag>
                   ) : (
                     detail.urgencyName || '-'
                   );
@@ -508,11 +534,19 @@ const FeedbackPage: React.FC = () => {
                 })}
               >
                 {(() => {
-                  const s = STATUS_MAP[detail.status];
-                  return s ? (
-                    <Tag color={s.color}>{s.text}</Tag>
+                  const id = Number(detail.status);
+                  const color = STATUS_COLOR_MAP[id];
+                  const text = intl.formatMessage(
+                    {
+                      id: `feedback.status.${id}`,
+                      defaultMessage: 'Status {id}',
+                    },
+                    { id },
+                  );
+                  return id && color ? (
+                    <Tag color={color}>{text}</Tag>
                   ) : (
-                    String(detail.status)
+                    detail.statusName || String(detail.status || '-')
                   );
                 })()}
               </Descriptions.Item>

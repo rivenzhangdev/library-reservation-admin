@@ -1,3 +1,4 @@
+import admin from './module/admin/en-US';
 import booking from './module/booking/en-US';
 import common from './module/common/en-US';
 import credit from './module/credit/en-US';
@@ -18,6 +19,7 @@ export default {
   ...credit,
   ...floor,
   ...global,
+  ...admin,
   ...management,
   ...notification,
   ...seat,
