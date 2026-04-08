@@ -26,6 +26,7 @@ import {
   deleteViolation,
   getViolationList,
 } from '../../services/library/violation';
+import { getUpdatedByDisplay } from '../../utils/userDisplay';
 
 /**
  * 信用记录数据类型
@@ -38,6 +39,7 @@ interface CreditRecordType {
   points: number;
   date: string;
   reason: string;
+  updatedByName?: string;
 }
 
 /**
@@ -168,6 +170,15 @@ const CreditManagement: React.FC = () => {
     },
     {
       title: intl.formatMessage({
+        id: 'common.updatedBy',
+        defaultMessage: 'Updated By',
+      }),
+      dataIndex: 'updatedByName',
+      width: 140,
+      hideInSearch: true,
+    },
+    {
+      title: intl.formatMessage({
         id: 'common.action',
         defaultMessage: 'Actions',
       }),
@@ -239,6 +250,13 @@ const CreditManagement: React.FC = () => {
                 list = list.map((item: any) => ({
                   ...item,
                   id: item.id || item._id,
+                  userName:
+                    item.userName ||
+                    item.user?.name ||
+                    item.user?.username ||
+                    item.userId ||
+                    '-',
+                  updatedByName: getUpdatedByDisplay(item),
                 }));
                 const total =
                   raw?.total ?? (Array.isArray(list) ? list.length : 0);

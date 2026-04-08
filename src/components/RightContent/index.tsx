@@ -312,7 +312,7 @@ const RightContent: React.FC = () => {
         <div
           ref={groupRef}
           className={
-            'rc-user-group' + (isCompact ? ' rc-user-group--compact' : '')
+            'rc-user-group' + (isCompact ? ' rc-user-group-compact' : '')
           }
           style={{ cursor: 'pointer', padding: 8 }}
         >

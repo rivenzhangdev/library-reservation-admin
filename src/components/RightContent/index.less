@@ -57,6 +57,21 @@
   color: rgb(0 0 0 / 45%);
 }
 
+/* Compact variant for small screens */
+.rc-user-group-compact {
+  gap: 6px;
+  padding: 6px;
+}
+
+.rc-user-group-compact .rc-user-meta {
+  display: none;
+}
+
+.rc-user-group-compact .rc-avatar {
+  width: 40px;
+  height: 40px;
+}
+
 /* Responsive: on small screens hide name/role and keep avatar clickable */
 @media (width <= 480px) {
   .rc-right-container .rc-user-group {
