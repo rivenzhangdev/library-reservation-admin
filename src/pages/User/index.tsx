@@ -1,5 +1,10 @@
 import { Roles } from '@/constants/roles';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  PlusOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
@@ -16,7 +21,7 @@ import {
   Tag,
   Upload,
 } from 'antd';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   batchUpdateUserStatus,
   createUser,
@@ -47,6 +52,14 @@ interface UserType {
 /**
  * 用户管理页面
  */
+const getBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
+
 const UserManagement: React.FC = () => {
   const intl = useIntl();
 
@@ -59,7 +72,14 @@ const UserManagement: React.FC = () => {
   const [editingUser, setEditingUser] = useState<Partial<UserType> | null>(
     null,
   );
+  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(
+    undefined,
+  );
+  const [avatarPreviewError, setAvatarPreviewError] = useState(false);
   const [form] = Form.useForm();
+  useEffect(() => {
+    setAvatarPreviewError(false);
+  }, [avatarPreview]);
 
   /**
    * 删除用户
@@ -80,7 +100,7 @@ const UserManagement: React.FC = () => {
             message.success(
               intl.formatMessage({
                 id: 'common.deleteSuccessRefresh',
-                defaultMessage: 'Deleted successfully, refreshing',
+                defaultMessage: 'Deleted successfully',
               }),
             );
             actionRef.current?.reload?.();
@@ -98,6 +118,22 @@ const UserManagement: React.FC = () => {
     });
   };
 
+  useEffect(() => {
+    if (editingUser) {
+      form.setFieldsValue(editingUser as any);
+      setAvatarPreview(editingUser.avatar);
+    } else {
+      setAvatarPreview(undefined);
+    }
+  }, [editingUser, form]);
+
+  const handleAvatarBeforeUpload = async (file: File) => {
+    const base64 = await getBase64(file);
+    setAvatarPreview(base64);
+    form.setFieldsValue({ avatar: base64 });
+    return Upload.LIST_IGNORE;
+  };
+
   const columns: ProColumns<UserType>[] = [
     {
       title: intl.formatMessage({
@@ -109,7 +145,7 @@ const UserManagement: React.FC = () => {
       render: (_, record) => (
         <div className="user-info-cell">
           <div className="avatar-wrapper">
-            <Avatar src={record.avatar} size={48}>
+            <Avatar src={record.avatar} icon={<UserOutlined />} size={48}>
               {!record.avatar && record.name ? record.name.charAt(0) : null}
             </Avatar>
           </div>
@@ -152,6 +188,7 @@ const UserManagement: React.FC = () => {
         defaultMessage: 'Role',
       }),
       dataIndex: 'role',
+      width: 150,
       valueType: 'select',
       valueEnum: {
         [Roles.USER]: {
@@ -393,6 +430,7 @@ const UserManagement: React.FC = () => {
           setModalVisible(false);
           setEditingUser(null);
           form.resetFields();
+          setAvatarPreview(undefined);
         }}
         onOk={async () => {
           try {
@@ -407,9 +445,13 @@ const UserManagement: React.FC = () => {
                 const uploadRes: any = await uploadImage(values.avatar);
                 const avatarUrl =
                   uploadRes?.url ||
-                  (uploadRes && uploadRes.data && uploadRes.data.url) ||
-                  uploadRes;
-                values.avatar = avatarUrl;
+                  uploadRes?.data?.url ||
+                  uploadRes?.data?.data?.url ||
+                  (typeof uploadRes === 'string' ? uploadRes : undefined);
+                if (avatarUrl) {
+                  values.avatar = avatarUrl;
+                  setAvatarPreview(avatarUrl);
+                }
               } catch (e) {
                 console.error(
                   intl.formatMessage({
@@ -469,22 +511,12 @@ const UserManagement: React.FC = () => {
             <Upload
               listType="picture-card"
               showUploadList={false}
-              beforeUpload={async (file) => {
-                const getBase64 = (fileParam: File) =>
-                  new Promise<string>((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.readAsDataURL(fileParam);
-                    reader.onload = () => resolve(reader.result as string);
-                    reader.onerror = (error) => reject(error);
-                  });
-                const base64 = await getBase64(file as File);
-                form.setFieldsValue({ avatar: base64 });
-                return false;
-              }}
+              accept="image/*"
+              beforeUpload={handleAvatarBeforeUpload}
             >
-              {form.getFieldValue('avatar') ? (
+              {avatarPreview && !avatarPreviewError ? (
                 <img
-                  src={form.getFieldValue('avatar')}
+                  src={avatarPreview}
                   alt="avatar"
                   style={{
                     width: 96,
@@ -492,6 +524,7 @@ const UserManagement: React.FC = () => {
                     objectFit: 'cover',
                     borderRadius: '50%',
                   }}
+                  onError={() => setAvatarPreviewError(true)}
                 />
               ) : (
                 <div>

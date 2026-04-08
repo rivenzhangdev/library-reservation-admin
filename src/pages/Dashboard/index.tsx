@@ -589,7 +589,11 @@ const Dashboard: React.FC = () => {
                         style={{ background: '#fafafa' }}
                       >
                         <Space>
-                          <Avatar src={user.avatar} size={40} />
+                          <Avatar
+                            src={user.avatar}
+                            icon={<UserOutlined />}
+                            size={40}
+                          />
                           <div>
                             <div
                               style={{

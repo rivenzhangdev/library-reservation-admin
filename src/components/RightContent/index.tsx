@@ -9,12 +9,14 @@ import {
   getBackendEnvKey,
   setBackendEnv,
 } from '@/config/backendEnvs';
+import { Roles } from '@/constants/roles';
 import { updateUser, uploadImage } from '@/services/library/user';
+import { normalizeRoleValue } from '@/utils/role';
 import { CheckOutlined, LogoutOutlined, UserOutlined } from '@ant-design/icons';
-import { history, SelectLang, useIntl } from '@umijs/max';
+import { history, SelectLang, useIntl, useModel } from '@umijs/max';
 import type { MenuProps } from 'antd';
-import { Dropdown, message, Space, Tooltip } from 'antd';
-import React, { useEffect, useState } from 'react';
+import { Dropdown, message, Tooltip } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
 
 const RightContent: React.FC = () => {
   // theme tokens currently unused
@@ -36,31 +38,84 @@ const RightContent: React.FC = () => {
       return 'development';
     }
   });
-  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
+  // use global model if available so login can update user immediately
+  const globalModel = (useModel as any)('global');
+  const modelCurrentUser = globalModel?.currentUser;
+  const modelSetCurrentUser = globalModel?.setCurrentUser;
+
+  const defaultUserFallback = {
+    id: '',
+    username: 'user',
+    name: intl.formatMessage({
+      id: 'user.role.user',
+      defaultMessage: '普通用户',
+    }),
+    avatar: undefined,
+    role: Roles.USER,
+  } as any;
+
+  const [localUser, setLocalUser] = useState<UserProfile | null>(() => {
     try {
       const raw = localStorage.getItem('currentUser');
       if (raw) return JSON.parse(raw);
     } catch (e) {
       // ignore
     }
-    return {
-      id: '1',
-      username: 'admin',
-      name: intl.formatMessage({
-        id: 'user.role.admin',
-        defaultMessage: 'Administrator',
-      }),
-      avatar: undefined,
-    };
+    return null;
   });
 
+  const rawCurrent = (modelCurrentUser || localUser) as any | null;
+  const normalizedRole = normalizeRoleValue(rawCurrent?.role);
+
+  const currentUser = rawCurrent
+    ? ({ ...rawCurrent, role: normalizedRole } as any)
+    : defaultUserFallback;
+  const setCurrentUser = (u: any) => {
+    if (modelSetCurrentUser) modelSetCurrentUser(u);
+    else setLocalUser((prev) => ({ ...(prev || {}), ...(u || {}) }));
+  };
+
+  // 响应式：当右侧空间不足（如侧边栏折叠）时，进入 compact 模式，仅显示头像
+  const groupRef = useRef<HTMLDivElement | null>(null);
+  const [isCompact, setIsCompact] = useState(false);
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
+
   useEffect(() => {
+    setAvatarLoadFailed(false);
+  }, [currentUser?.avatar]);
+
+  useEffect(() => {
+    const el = groupRef.current;
+    if (!el) return;
+    const parent = el.parentElement || el;
+    const handler = () => {
+      try {
+        const rect = (parent as HTMLElement).getBoundingClientRect();
+        // 阈值：当可用宽度小于 120px 时进入 compact 模式
+        setIsCompact(rect.width < 88);
+      } catch (e) {
+        // ignore
+      }
+    };
+    handler();
+    let ro: ResizeObserver | null = null;
     try {
-      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      ro = new ResizeObserver(handler);
+      ro.observe(parent);
     } catch (e) {
-      // ignore
+      // ResizeObserver 在某些环境可能不可用，退回到 window resize
+      window.addEventListener('resize', handler);
     }
-  }, [currentUser]);
+    window.addEventListener('resize', handler);
+    return () => {
+      try {
+        if (ro) ro.disconnect();
+      } catch (e) {
+        // ignore
+      }
+      window.removeEventListener('resize', handler);
+    };
+  }, []);
 
   // 构造用户菜单项（放在状态之后，这样 icon 可以根据 selectedEnv 实时变化）
   const userMenuItems: MenuProps['items'] = [
@@ -240,11 +295,7 @@ const RightContent: React.FC = () => {
   };
 
   return (
-    <Space
-      size="large"
-      style={{ marginRight: 16 }}
-      className="rc-right-container"
-    >
+    <div className="rc-right-container">
       {/* 语言切换（独立部分）*/}
       <div className="rc-lang">
         <SelectLang />
@@ -259,44 +310,70 @@ const RightContent: React.FC = () => {
         trigger={['click']}
       >
         <div
-          className="rc-user-group"
+          ref={groupRef}
+          className={
+            'rc-user-group' + (isCompact ? ' rc-user-group--compact' : '')
+          }
           style={{ cursor: 'pointer', padding: 8 }}
         >
-          <div className="rc-avatar" role="img" aria-label="avatar">
-            {currentUser?.avatar ? (
-              <img src={currentUser.avatar} alt="avatar" />
-            ) : (
-              <UserOutlined />
-            )}
-          </div>
+          <Tooltip
+            title={
+              currentUser?.username ||
+              currentUser?.name ||
+              intl.formatMessage({
+                id: 'user.role.user',
+                defaultMessage: '普通用户',
+              })
+            }
+            placement="left"
+          >
+            <div className="rc-avatar" role="img" aria-label="avatar">
+              {currentUser?.avatar && !avatarLoadFailed ? (
+                <img
+                  src={currentUser.avatar}
+                  alt="avatar"
+                  onError={() => setAvatarLoadFailed(true)}
+                />
+              ) : (
+                <UserOutlined />
+              )}
+            </div>
+          </Tooltip>
 
-          <div className="rc-user-meta">
-            <div className="rc-username">
-              <Tooltip
-                title={
-                  currentUser?.name ||
-                  currentUser?.username ||
-                  intl.formatMessage({
-                    id: 'user.role.admin',
-                    defaultMessage: '管理员',
-                  })
-                }
-              >
-                {currentUser?.name ||
-                  currentUser?.username ||
-                  intl.formatMessage({
-                    id: 'user.role.admin',
-                    defaultMessage: '管理员',
-                  })}
-              </Tooltip>
+          {!isCompact && (
+            <div className="rc-user-meta">
+              <div className="rc-username">
+                <Tooltip
+                  title={
+                    currentUser?.username ||
+                    currentUser?.name ||
+                    intl.formatMessage({
+                      id: 'user.role.user',
+                      defaultMessage: '普通用户',
+                    })
+                  }
+                >
+                  {currentUser?.username ||
+                    currentUser?.name ||
+                    intl.formatMessage({
+                      id: 'user.role.user',
+                      defaultMessage: '普通用户',
+                    })}
+                </Tooltip>
+              </div>
+              <div className="rc-role">
+                {currentUser?.role === Roles.ADMIN
+                  ? intl.formatMessage({
+                      id: 'user.role.admin',
+                      defaultMessage: '管理员',
+                    })
+                  : intl.formatMessage({
+                      id: 'user.role.user',
+                      defaultMessage: '普通用户',
+                    })}
+              </div>
             </div>
-            <div className="rc-role">
-              {intl.formatMessage({
-                id: 'user.role.admin',
-                defaultMessage: '管理员',
-              })}
-            </div>
-          </div>
+          )}
         </div>
       </Dropdown>
 
@@ -306,7 +383,7 @@ const RightContent: React.FC = () => {
         onClose={() => setProfileVisible(false)}
         onSave={handleSaveProfile}
       />
-    </Space>
+    </div>
   );
 };
 

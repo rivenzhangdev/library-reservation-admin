@@ -1,5 +1,5 @@
 import { uploadImage } from '@/services/library/user';
-import { UploadOutlined } from '@ant-design/icons';
+import { UploadOutlined, UserOutlined } from '@ant-design/icons';
 import { useIntl } from '@umijs/max';
 import { Button, Form, Input, Modal, Upload, message } from 'antd';
 import type { RcFile } from 'antd/es/upload';
@@ -33,6 +33,7 @@ const UserProfileModal: React.FC<{
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(
     initialValues?.avatar,
   );
+  const [avatarError, setAvatarError] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const intl = useIntl();
@@ -41,6 +42,10 @@ const UserProfileModal: React.FC<{
     form.setFieldsValue(initialValues || {});
     setAvatarPreview(initialValues?.avatar);
   }, [initialValues, form]);
+
+  useEffect(() => {
+    setAvatarError(false);
+  }, [avatarPreview]);
 
   const handleBeforeUpload = async (file: RcFile) => {
     const isLt2M = file.size / 1024 / 1024 < 2;
@@ -147,13 +152,27 @@ const UserProfileModal: React.FC<{
                 background: '#f5f5f5',
               }}
             >
-              {avatarPreview ? (
+              {avatarPreview && !avatarError ? (
                 <img
                   src={avatarPreview}
                   alt="avatar"
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={() => setAvatarError(true)}
                 />
-              ) : null}
+              ) : (
+                <div
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#999',
+                  }}
+                >
+                  <UserOutlined />
+                </div>
+              )}
             </div>
             <Upload
               beforeUpload={handleBeforeUpload}
