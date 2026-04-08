@@ -99,7 +99,7 @@ export default {
   'common.configSuccess': '配置成功',
   'common.configFailed': '配置失败，请重试！',
   'common.deleting': '正在删除',
-  'common.deleteSuccessRefresh': '删除成功，即将刷新',
+  'common.deleteSuccessRefresh': '删除成功',
   'common.deleteFailed': '删除失败，请重试',
   'common.new': '新建',
   'common.bulkDelete': '批量删除',
@@ -146,4 +146,6 @@ export default {
   'floor.createSuccess': '创建成功',
   // activity
   'activity.participantsCount': '{count} 人',
+  'common.createdBy': '创建人',
+  'common.updatedBy': '更新人',
 };

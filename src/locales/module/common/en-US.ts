@@ -101,7 +101,7 @@ export default {
   'common.configSuccess': 'Configured successfully',
   'common.configFailed': 'Config failed, please try again!',
   'common.deleting': 'Deleting...',
-  'common.deleteSuccessRefresh': 'Deleted successfully, refreshing',
+  'common.deleteSuccessRefresh': 'Deleted successfully',
   'common.deleteFailed': 'Delete failed, please try again',
   'common.new': 'New',
   'common.bulkDelete': 'Batch delete',
@@ -148,4 +148,6 @@ export default {
   'floor.createSuccess': 'Created successfully',
   // activity
   'activity.participantsCount': '{count} people',
+  'common.createdBy': 'Created By',
+  'common.updatedBy': 'Updated By',
 };
