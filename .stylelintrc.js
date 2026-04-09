@@ -6,4 +6,7 @@ module.exports = {
       customSyntax: 'postcss-less',
     },
   ],
+  rules: {
+    'no-duplicate-selectors': null,
+  },
 };

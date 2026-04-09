@@ -1,7 +1,10 @@
+import { getUpdatedByDisplay } from '@/utils/userDisplay';
+import { UserOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
 import {
+  Avatar,
   Button,
   Card,
   Form,
@@ -26,7 +29,6 @@ import {
   deleteViolation,
   getViolationList,
 } from '../../services/library/violation';
-import { getUpdatedByDisplay } from '../../utils/userDisplay';
 
 /**
  * 信用记录数据类型
@@ -241,12 +243,8 @@ const CreditManagement: React.FC = () => {
             request={async (params) => {
               try {
                 const res: any = await getCreditRecordList(params);
-                const raw = res?.data;
-                let list: any[] = [];
-                if (Array.isArray(raw)) list = raw;
-                else if (Array.isArray(raw?.list)) list = raw.list;
-                else if (Array.isArray(raw?.records)) list = raw.records;
-                else list = [];
+                const raw = res?.data || {};
+                let list = Array.isArray(raw.list) ? raw.list : [];
                 list = list.map((item: any) => ({
                   ...item,
                   id: item.id || item._id,
@@ -284,19 +282,17 @@ const CreditManagement: React.FC = () => {
             request={async (params) => {
               try {
                 const res: any = await getUserList(params);
-                const raw = res?.data;
-                let list: any[] = [];
-                if (Array.isArray(raw)) list = raw;
-                else if (Array.isArray(raw?.list)) list = raw.list;
-                else if (Array.isArray(raw?.users)) list = raw.users;
-                else list = [];
-                list = list.map((item: any) => ({
-                  ...item,
-                  id: item.id || item._id,
-                }));
-                const total =
-                  raw?.total ?? (Array.isArray(list) ? list.length : 0);
-                return { data: list, success: true, total };
+                const raw = res?.data || {};
+                const list = Array.isArray(raw.list) ? raw.list : [];
+                const total = raw.total ?? list.length;
+                return {
+                  data: list.map((item: any) => ({
+                    ...item,
+                    id: item.id || item._id,
+                  })),
+                  success: true,
+                  total,
+                };
               } catch (e) {
                 return { data: [], success: false, total: 0 };
               }
@@ -312,16 +308,18 @@ const CreditManagement: React.FC = () => {
                   <div
                     style={{ display: 'flex', alignItems: 'center', gap: 12 }}
                   >
-                    <img
+                    <Avatar
                       src={r.avatar}
+                      icon={<UserOutlined />}
+                      size={36}
                       style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 18,
-                        objectFit: 'cover',
+                        backgroundColor: '#1890ff',
+                        color: '#fff',
+                        flexShrink: 0,
                       }}
-                      alt=""
-                    />
+                    >
+                      {r.name ? r.name.charAt(0) : null}
+                    </Avatar>
                     <div>
                       <div style={{ fontWeight: 600 }}>{r.name}</div>
                       <div style={{ color: '#999' }}>{r.username}</div>
@@ -462,19 +460,17 @@ const CreditManagement: React.FC = () => {
             request={async (params) => {
               try {
                 const res: any = await getViolationList(params);
-                const raw = res?.data;
-                let list: any[] = [];
-                if (Array.isArray(raw)) list = raw;
-                else if (Array.isArray(raw?.list)) list = raw.list;
-                else if (Array.isArray(raw?.violations)) list = raw.violations;
-                else list = [];
-                list = list.map((item: any) => ({
-                  ...item,
-                  id: item.id || item._id,
-                }));
-                const total =
-                  raw?.total ?? (Array.isArray(list) ? list.length : 0);
-                return { data: list, success: true, total };
+                const raw = res?.data || {};
+                const list = Array.isArray(raw.list) ? raw.list : [];
+                const total = raw.total ?? list.length;
+                return {
+                  data: list.map((item: any) => ({
+                    ...item,
+                    id: item.id || item._id,
+                  })),
+                  success: true,
+                  total,
+                };
               } catch (e) {
                 return { data: [], success: false, total: 0 };
               }
@@ -601,18 +597,13 @@ const CreditManagement: React.FC = () => {
               try {
                 const q = { ...(params || {}), blacklisted: true };
                 const res: any = await getUserList(q);
-                const raw = res?.data;
-                let list: any[] = [];
-                if (Array.isArray(raw)) list = raw;
-                else if (Array.isArray(raw?.list)) list = raw.list;
-                else if (Array.isArray(raw?.users)) list = raw.users;
-                else list = [];
+                const raw = res?.data || {};
+                let list = Array.isArray(raw.list) ? raw.list : [];
                 list = list.map((item: any) => ({
                   ...item,
                   id: item.id || item._id,
                 }));
-                const total =
-                  raw?.total ?? (Array.isArray(list) ? list.length : 0);
+                const total = raw.total ?? list.length;
                 return { data: list, success: true, total };
               } catch (e) {
                 return { data: [], success: false, total: 0 };
@@ -629,16 +620,18 @@ const CreditManagement: React.FC = () => {
                   <div
                     style={{ display: 'flex', alignItems: 'center', gap: 12 }}
                   >
-                    <img
+                    <Avatar
                       src={r.avatar}
+                      icon={<UserOutlined />}
+                      size={36}
                       style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 18,
-                        objectFit: 'cover',
+                        backgroundColor: '#1890ff',
+                        color: '#fff',
+                        flexShrink: 0,
                       }}
-                      alt=""
-                    />
+                    >
+                      {r.name ? r.name.charAt(0) : null}
+                    </Avatar>
                     <div>
                       <div style={{ fontWeight: 600 }}>{r.name}</div>
                       <div style={{ color: '#999' }}>{r.studentId}</div>

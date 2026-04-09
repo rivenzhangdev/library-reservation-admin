@@ -14,10 +14,10 @@
   padding: 6px 10px;
   border-radius: 8px;
   transition: background 0.18s ease;
-}
 
-.rc-user-group:hover {
-  background: rgb(0 0 0 / 3%);
+  &:hover {
+    background: rgb(0 0 0 / 3%);
+  }
 }
 
 .rc-avatar {
@@ -30,12 +30,12 @@
   overflow: hidden;
   background: #1890ff;
   color: #fff;
-}
 
-.rc-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 }
 
 .rc-user-meta {
@@ -61,30 +61,32 @@
 .rc-user-group-compact {
   gap: 6px;
   padding: 6px;
-}
 
-.rc-user-group-compact .rc-user-meta {
-  display: none;
-}
+  .rc-user-meta {
+    display: none;
+  }
 
-.rc-user-group-compact .rc-avatar {
-  width: 40px;
-  height: 40px;
+  .rc-avatar {
+    width: 40px;
+    height: 40px;
+  }
 }
 
 /* Responsive: on small screens hide name/role and keep avatar clickable */
 @media (width <= 480px) {
-  .rc-right-container .rc-user-group {
-    gap: 6px;
-    padding: 6px;
-  }
+  .rc-right-container {
+    .rc-user-group {
+      gap: 6px;
+      padding: 6px;
+    }
 
-  .rc-right-container .rc-user-meta {
-    display: none;
-  }
+    .rc-user-meta {
+      display: none;
+    }
 
-  .rc-right-container .rc-avatar {
-    width: 40px;
-    height: 40px;
+    .rc-avatar {
+      width: 40px;
+      height: 40px;
+    }
   }
 }
