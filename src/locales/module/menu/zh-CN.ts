@@ -1,12 +1,18 @@
 export default {
   'menu.dashboard': '数据概览',
   'menu.user': '用户管理',
+  'menu.changeRequests': '改绑申请',
+  'menu.changeRequests.studentIdChangeRequests': '学号改绑申请',
+  'menu.changeRequests.phoneChangeRequests': '手机号改绑申请',
+  'menu.studentIdChangeRequests': '学号改绑申请',
+  'menu.phoneChangeRequests': '手机号改绑申请',
   'menu.booking': '预约管理',
   'menu.seat': '座位管理',
   'menu.activity': '活动管理',
   'menu.notification': '通知管理',
   'menu.uploads': '图片管理',
   'menu.credit': '信用管理',
+  'menu.systemConfig': '配置中心',
   'menu.management': '综合管理',
   'menu.feedback': '反馈管理',
 };

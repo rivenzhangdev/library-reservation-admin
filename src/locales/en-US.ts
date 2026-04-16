@@ -4,12 +4,12 @@ import common from './module/common/en-US';
 import credit from './module/credit/en-US';
 import feedback from './module/feedback/en-US';
 import floor from './module/floor/en-US';
-import global from './module/global/en-US';
 import management from './module/management/en-US';
 import menu from './module/menu/en-US';
 import notification from './module/notification/en-US';
+import phoneChangeRequest from './module/phoneChangeRequest/en-US';
 import seat from './module/seat/en-US';
-import table from './module/table/en-US';
+import studentIdChangeRequest from './module/studentIdChangeRequest/en-US';
 import zone from './module/zone/en-US';
 
 export default {
@@ -18,12 +18,12 @@ export default {
   ...feedback,
   ...credit,
   ...floor,
-  ...global,
   ...admin,
   ...management,
   ...notification,
+  ...phoneChangeRequest,
+  ...studentIdChangeRequest,
   ...seat,
-  ...table,
   ...zone,
   ...menu,
 };

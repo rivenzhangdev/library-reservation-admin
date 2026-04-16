@@ -2,10 +2,14 @@ import { request } from '@umijs/max';
 
 /** 获取楼层列表 */
 export async function getFloors(params?: any) {
-  return request('/api/floors', {
+  const res: any = await request('/api/floors', {
     method: 'GET',
     params,
   });
+  const raw = res?.data;
+  if (Array.isArray(raw)) return raw;
+  if (Array.isArray(raw?.list)) return raw.list;
+  return [];
 }
 
 /** 创建楼层 */

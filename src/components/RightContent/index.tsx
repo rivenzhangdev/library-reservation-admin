@@ -11,14 +11,20 @@ import {
 } from '@/config/backendEnvs';
 import { Roles } from '@/constants/roles';
 import { updateUser, uploadImage } from '@/services/library/user';
-import { normalizeRoleValue } from '@/utils/role';
-import { CheckOutlined, LogoutOutlined, UserOutlined } from '@ant-design/icons';
+import {
+  CheckOutlined,
+  LogoutOutlined,
+  SafetyOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
 import { history, SelectLang, useIntl, useModel } from '@umijs/max';
 import type { MenuProps } from 'antd';
 import { Dropdown, message, Tooltip } from 'antd';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-const RightContent: React.FC = () => {
+const RightContent: React.FC<{
+  headerProps?: { collapsed?: boolean; isMobile?: boolean };
+}> = ({ headerProps }) => {
   // theme tokens currently unused
 
   const intl = useIntl();
@@ -65,19 +71,60 @@ const RightContent: React.FC = () => {
   });
 
   const rawCurrent = (modelCurrentUser || localUser) as any | null;
-  const normalizedRole = normalizeRoleValue(rawCurrent?.role);
 
   const currentUser = rawCurrent
-    ? ({ ...rawCurrent, role: normalizedRole } as any)
+    ? ({ ...rawCurrent } as any)
     : defaultUserFallback;
+  const isAdmin = currentUser?.role === Roles.ADMIN;
   const setCurrentUser = (u: any) => {
-    if (modelSetCurrentUser) modelSetCurrentUser(u);
-    else setLocalUser((prev) => ({ ...(prev || {}), ...(u || {}) }));
+    const nextUser = { ...(rawCurrent || {}), ...(u || {}) };
+    if (modelSetCurrentUser) {
+      modelSetCurrentUser(nextUser);
+    }
+    setLocalUser(nextUser);
+    try {
+      localStorage.setItem('currentUser', JSON.stringify(nextUser));
+    } catch (e) {
+      // ignore storage failures
+    }
   };
 
-  // 响应式：当右侧空间不足（如侧边栏折叠）时，进入 compact 模式，仅显示头像
-  const groupRef = useRef<HTMLDivElement | null>(null);
-  const [isCompact, setIsCompact] = useState(false);
+  useEffect(() => {
+    const handleCurrentUserUpdated = () => {
+      try {
+        const raw = localStorage.getItem('currentUser');
+        if (raw) {
+          setLocalUser(JSON.parse(raw));
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    window.addEventListener('currentUserUpdated', handleCurrentUserUpdated);
+    return () => {
+      window.removeEventListener(
+        'currentUserUpdated',
+        handleCurrentUserUpdated,
+      );
+    };
+  }, []);
+
+  const getLayoutMode = () => {
+    if (
+      headerProps?.isMobile ||
+      (typeof window !== 'undefined' && window.innerWidth <= 480)
+    ) {
+      return 'topRight' as const;
+    }
+    if (headerProps?.collapsed) {
+      return 'collapsed' as const;
+    }
+    return 'expanded' as const;
+  };
+
+  const [layoutMode, setLayoutMode] = useState<
+    'expanded' | 'collapsed' | 'topRight'
+  >(getLayoutMode());
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
 
   useEffect(() => {
@@ -85,37 +132,21 @@ const RightContent: React.FC = () => {
   }, [currentUser?.avatar]);
 
   useEffect(() => {
-    const el = groupRef.current;
-    if (!el) return;
-    const parent = el.parentElement || el;
-    const handler = () => {
-      try {
-        const rect = (parent as HTMLElement).getBoundingClientRect();
-        // 阈值：当可用宽度小于 120px 时进入 compact 模式
-        setIsCompact(rect.width < 88);
-      } catch (e) {
-        // ignore
-      }
-    };
-    handler();
-    let ro: ResizeObserver | null = null;
-    try {
-      ro = new ResizeObserver(handler);
-      ro.observe(parent);
-    } catch (e) {
-      // ResizeObserver 在某些环境可能不可用，退回到 window resize
+    setLayoutMode(getLayoutMode());
+  }, [headerProps?.collapsed, headerProps?.isMobile]);
+
+  useEffect(() => {
+    const handler = () => setLayoutMode(getLayoutMode());
+    if (typeof window !== 'undefined') {
       window.addEventListener('resize', handler);
     }
-    window.addEventListener('resize', handler);
+    handler();
     return () => {
-      try {
-        if (ro) ro.disconnect();
-      } catch (e) {
-        // ignore
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', handler);
       }
-      window.removeEventListener('resize', handler);
     };
-  }, []);
+  }, [headerProps?.collapsed, headerProps?.isMobile]);
 
   // 构造用户菜单项（放在状态之后，这样 icon 可以根据 selectedEnv 实时变化）
   const userMenuItems: MenuProps['items'] = [
@@ -241,10 +272,10 @@ const RightContent: React.FC = () => {
       if (currentUser?.id) {
         await updateUser(currentUser.id, data);
       }
-      setCurrentUser((prev) => ({ ...prev, ...data }));
+      setCurrentUser(data);
     } catch (e) {
       // 回退到本地保存
-      setCurrentUser((prev) => ({ ...prev, ...data }));
+      setCurrentUser(data);
       message.warning(intl.formatMessage({ id: 'right.updateBackendFailed' }));
     }
   };
@@ -294,8 +325,10 @@ const RightContent: React.FC = () => {
     }
   };
 
+  const showUserMeta = layoutMode === 'expanded';
+
   return (
-    <div className="rc-right-container">
+    <div className={`rc-right-container rc-right-container-${layoutMode}`}>
       {/* 语言切换（独立部分）*/}
       <div className="rc-lang">
         <SelectLang />
@@ -310,16 +343,13 @@ const RightContent: React.FC = () => {
         trigger={['click']}
       >
         <div
-          ref={groupRef}
-          className={
-            'rc-user-group' + (isCompact ? ' rc-user-group-compact' : '')
-          }
-          style={{ cursor: 'pointer', padding: 8 }}
+          className={`rc-user-group rc-user-group-${layoutMode}`}
+          style={{ cursor: 'pointer', padding: 8, minWidth: 0 }}
         >
           <Tooltip
             title={
-              currentUser?.username ||
               currentUser?.name ||
+              currentUser?.username ||
               intl.formatMessage({
                 id: 'user.role.user',
                 defaultMessage: '普通用户',
@@ -337,32 +367,59 @@ const RightContent: React.FC = () => {
               ) : (
                 <UserOutlined />
               )}
+              {isAdmin && (
+                <div
+                  className="rc-admin-badge"
+                  title={intl.formatMessage({
+                    id: 'user.role.admin',
+                    defaultMessage: '管理员',
+                  })}
+                >
+                  <SafetyOutlined />
+                </div>
+              )}
             </div>
           </Tooltip>
 
-          {!isCompact && (
+          {showUserMeta && (
             <div className="rc-user-meta">
               <div className="rc-username">
                 <Tooltip
                   title={
-                    currentUser?.username ||
                     currentUser?.name ||
+                    currentUser?.username ||
                     intl.formatMessage({
                       id: 'user.role.user',
                       defaultMessage: '普通用户',
                     })
                   }
                 >
-                  {currentUser?.username ||
-                    currentUser?.name ||
+                  {currentUser?.name ||
+                    currentUser?.username ||
                     intl.formatMessage({
                       id: 'user.role.user',
                       defaultMessage: '普通用户',
                     })}
                 </Tooltip>
               </div>
-              <div className="rc-role">
-                {currentUser?.role === Roles.ADMIN
+              <div
+                className={
+                  'rc-role-label ' +
+                  (isAdmin ? 'rc-role-label-admin' : 'rc-role-label-user')
+                }
+                aria-label={
+                  isAdmin
+                    ? intl.formatMessage({
+                        id: 'user.role.admin',
+                        defaultMessage: '管理员',
+                      })
+                    : intl.formatMessage({
+                        id: 'user.role.user',
+                        defaultMessage: '普通用户',
+                      })
+                }
+              >
+                {isAdmin
                   ? intl.formatMessage({
                       id: 'user.role.admin',
                       defaultMessage: '管理员',

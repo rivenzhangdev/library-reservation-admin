@@ -35,46 +35,41 @@ function getFormatMessage():
 }
 
 // 全局 request 配置：统一注入 Authorization（默认）并支持 options.skipAuth 跳过注入
-const request: RequestConfig = {
-  // 全局错误处理：捕获网络/代理错误（如后端未启动导致的连接拒绝），并弹窗提示
+const request: RequestConfig & { errorHandler?: (error: any) => void } = {
+  // 全局错误处理：捕获网络/代理错误和服务端错误，并弹窗提示
   errorHandler: (error: any) => {
-    try {
-      // 尝试从运行时获取 formatMessage（支持 umi / @umijs/max）
-      let formatMessageFn:
-        | undefined
-        | ((
-            opts: { id: string; defaultMessage?: string },
-            values?: any,
-          ) => string);
+    const getFormatMessageFn = () => {
       try {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const umi = require('umi');
         if (umi) {
-          if (typeof umi.formatMessage === 'function') {
-            formatMessageFn = umi.formatMessage;
-          } else if (typeof umi.getIntl === 'function') {
+          if (typeof umi.formatMessage === 'function') return umi.formatMessage;
+          if (typeof umi.getIntl === 'function') {
             const intl = umi.getIntl();
             if (intl && typeof intl.formatMessage === 'function') {
-              formatMessageFn = intl.formatMessage.bind(intl);
+              return intl.formatMessage.bind(intl);
             }
           }
         }
       } catch (e) {
         try {
-          // fallback: 使用生成的 localeExports
           // eslint-disable-next-line @typescript-eslint/no-var-requires
           const localeExports = require('../.umi/plugin-locale/localeExports');
           if (
             localeExports &&
             typeof localeExports.formatMessage === 'function'
           ) {
-            formatMessageFn = localeExports.formatMessage;
+            return localeExports.formatMessage;
           }
         } catch (e2) {
           // ignore
         }
       }
+      return undefined;
+    };
 
+    try {
+      const formatMessageFn = getFormatMessageFn();
       const locale =
         typeof window !== 'undefined'
           ? window.localStorage.getItem('umi_locale') ||
@@ -83,28 +78,81 @@ const request: RequestConfig = {
           : '';
       const isZh = typeof locale === 'string' && locale.startsWith('zh');
 
-      const title = formatMessageFn
-        ? formatMessageFn({
-            id: 'request.networkError.title',
-            defaultMessage: isZh ? '网络错误' : 'Network error',
-          })
-        : isZh
-        ? '网络错误'
-        : 'Network error';
+      const showModal = (title: string, content: string) => {
+        try {
+          Modal.error({ title, content });
+        } catch (e) {
+          // ignore
+        }
+      };
 
-      const content = formatMessageFn
-        ? formatMessageFn({
+      const status = error?.response?.status;
+      const errorCode = String(error?.code || '').toLowerCase();
+      const isServiceUnavailable =
+        !error?.response ||
+        status === 0 ||
+        errorCode === 'ecofnrefused' ||
+        errorCode === 'enotfound' ||
+        errorCode === 'econnreset' ||
+        String(error?.message || '')
+          .toLowerCase()
+          .includes('failed to fetch');
+      if (isServiceUnavailable) {
+        const title =
+          formatMessageFn?.({
+            id: 'request.networkError.title',
+            defaultMessage: isZh ? '服务连接失败' : 'Service connection failed',
+          }) ?? (isZh ? '服务连接失败' : 'Service connection failed');
+        const content =
+          formatMessageFn?.({
             id: 'request.networkError.content',
             defaultMessage: isZh
-              ? '无法连接到后端服务，请确认服务已启动。'
-              : 'Failed to connect to backend service. Please ensure the server is running.',
-          })
-        : isZh
-        ? '无法连接到后端服务，请确认服务已启动。'
-        : 'Failed to connect to backend service. Please ensure the server is running.';
-
-      if (!error || !error.response) {
-        Modal.error({ title, content });
+              ? '后端服务未响应，请检查 BACKEND_URL 或服务端是否已启动。'
+              : 'The backend service did not respond. Please check BACKEND_URL or whether the server is running.',
+          }) ??
+          (isZh
+            ? '后端服务未响应，请检查 BACKEND_URL 或服务端是否已启动。'
+            : 'The backend service did not respond. Please check BACKEND_URL or whether the server is running.');
+        showModal(
+          title,
+          `${content}${
+            error?.message
+              ? `
+${error.message}`
+              : ''
+          }`.trim(),
+        );
+      } else if (status >= 500) {
+        const title =
+          formatMessageFn?.({
+            id: 'request.serverError.title',
+            defaultMessage: isZh ? '服务错误' : 'Server error',
+          }) ?? (isZh ? '服务错误' : 'Server error');
+        const serverMessage =
+          error?.response?.data?.message ||
+          error?.response?.data?.error?.message ||
+          error?.message ||
+          '';
+        const content =
+          formatMessageFn?.({
+            id: 'request.serverError.content',
+            defaultMessage: isZh
+              ? '后端服务内部出现错误，请检查服务是否正常运行。'
+              : 'The backend service returned an error. Please check if the server is running correctly.',
+          }) ??
+          (isZh
+            ? '后端服务内部出现错误，请检查服务是否正常运行。'
+            : 'The backend service returned an error. Please check if the server is running correctly.');
+        showModal(
+          title,
+          `${content}${
+            serverMessage
+              ? `
+[${status}] ${serverMessage}`
+              : `
+[${status}]`
+          }`.trim(),
+        );
       }
     } catch (e) {
       // ignore
@@ -155,7 +203,7 @@ const request: RequestConfig = {
     },
   ],
   responseInterceptors: [
-    async (response: Response) => {
+    async (response: any) => {
       try {
         const showSessionExpired = async () => {
           try {
@@ -207,6 +255,8 @@ const request: RequestConfig = {
               body &&
               body.error &&
               (String(body.error.code) === String(1002) ||
+                String(body.error.code) === String(2004) ||
+                String(body.error.code) === String(2005) ||
                 body.error.code === 'UNAUTHORIZED')
             ) {
               await showSessionExpired();

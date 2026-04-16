@@ -12,21 +12,40 @@ const BACKEND_ENVS_FALLBACK: BackendEnv[] = [
     key: 'development',
     label: 'Development',
     baseUrl: 'http://localhost:3000',
-    lanBaseUrl: '',
+    lanBaseUrl: 'http://192.168.18.60:3000',
   },
-  { key: 'test', label: 'Test', baseUrl: 'http://localhost:3001' },
-  { key: 'uat', label: 'UAT', baseUrl: 'http://localhost:3002' },
-  { key: 'production', label: 'Production', baseUrl: 'http://localhost:3000' },
+  {
+    key: 'test',
+    label: 'Test',
+    baseUrl: 'http://localhost:3001',
+    lanBaseUrl: 'http://192.168.18.60:3001',
+  },
+  {
+    key: 'uat',
+    label: 'UAT',
+    baseUrl: 'http://localhost:3002',
+    lanBaseUrl: 'http://192.168.18.60:3002',
+  },
+  {
+    key: 'production',
+    label: 'Production',
+    baseUrl: 'http://localhost:3000',
+    lanBaseUrl: 'http://192.168.18.60:3000',
+  },
 ];
 
 export const BACKEND_ENVS: BackendEnv[] = (() => {
   let envs: BackendEnv[] = BACKEND_ENVS_FALLBACK;
   try {
-    // Prefer a shared workspace config if present
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const shared = require('../../../backend-envs.json');
-    if (shared && Array.isArray(shared.BACKEND_ENVS)) {
-      envs = shared.BACKEND_ENVS as BackendEnv[];
+    if (typeof window === 'undefined') {
+      // Prefer a shared workspace config if present.
+      // Use eval('require') so bundlers don't try to resolve this optional file.
+      // eslint-disable-next-line no-eval,@typescript-eslint/no-implied-eval
+      const requireFn = eval('require');
+      const shared = requireFn('../../backend-envs.json');
+      if (shared && Array.isArray(shared.BACKEND_ENVS)) {
+        envs = shared.BACKEND_ENVS as BackendEnv[];
+      }
     }
   } catch (e) {
     // ignore and fallback
@@ -112,8 +131,7 @@ export function getBackendBaseUrl(): string {
 
 /**
  * 简单检测每个环境的可达性。
- * - 优先检测 swagger 页面（若存在则视为完整可用）
- * - 否则尝试访问根路径以判断是否至少有响应
+ * - 尝试访问根路径判断服务是否已启动
  */
 export async function detectBackendStatuses(
   timeout = 3000,
@@ -121,38 +139,18 @@ export async function detectBackendStatuses(
   const results: Record<string, { status: 'down' | 'partial' | 'ok' }> = {};
   for (const env of BACKEND_ENVS) {
     const base = env.baseUrl.replace(/\/$/, '');
-    // try swagger page
+
     try {
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort(), timeout);
-      const resp = await fetch(`${base}/swagger-index.html`, {
+      const resp = await fetch(base, {
         method: 'GET',
         signal: controller.signal,
         mode: 'cors',
       }).catch(() => null);
       clearTimeout(id);
-      if (resp && resp.ok) {
-        results[env.key] = { status: 'ok' };
-        continue;
-      }
-    } catch (e) {
-      // ignore
-    }
-
-    // try root path
-    try {
-      const controller2 = new AbortController();
-      const id2 = setTimeout(() => controller2.abort(), timeout);
-      const resp2 = await fetch(base, {
-        method: 'GET',
-        signal: controller2.signal,
-        mode: 'cors',
-      }).catch(() => null);
-      clearTimeout(id2);
-      if (resp2) {
-        results[env.key] = { status: resp2.ok ? 'partial' : 'partial' };
-      } else {
-        results[env.key] = { status: 'down' };
+      if (resp) {
+        results[env.key] = { status: resp.ok ? 'partial' : 'partial' };
       }
     } catch (e) {
       results[env.key] = { status: 'down' };

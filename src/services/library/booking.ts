@@ -47,6 +47,15 @@ export async function checkIn(id: number) {
 }
 
 /**
+ * 签退
+ */
+export async function checkOut(id: number) {
+  return request(`/api/bookings/checkout/${id}`, {
+    method: 'POST',
+  });
+}
+
+/**
  * 创建预约
  */
 export async function createBooking(data: any) {

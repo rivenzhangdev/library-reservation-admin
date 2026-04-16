@@ -1,6 +1,27 @@
 .rc-right-container {
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.rc-right-container-collapsed {
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.rc-right-container-collapsed .rc-user-group {
+  order: 1;
+}
+
+.rc-right-container-collapsed .rc-lang {
+  order: 2;
+}
+
+.rc-right-container-topRight {
+  flex-direction: row;
+  align-items: center;
 }
 
 .rc-lang {
@@ -10,24 +31,38 @@
 .rc-user-group {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: 8px;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
   transition: background 0.18s ease;
+  white-space: nowrap;
 
   &:hover {
-    background: rgb(0 0 0 / 3%);
+    background: rgb(0 0 0 / 5%);
   }
 }
 
+.rc-user-group-collapsed {
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.rc-user-group-topRight {
+  flex-direction: row;
+  align-items: center;
+}
+
 .rc-avatar {
-  width: 36px;
-  height: 36px;
+  position: relative;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  overflow: visible;
   background: #1890ff;
   color: #fff;
 
@@ -35,7 +70,25 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+    border-radius: 50%;
   }
+}
+
+.rc-admin-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #722ed1;
+  color: #fff;
+  font-size: 12px;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
 .rc-user-meta {
@@ -44,49 +97,69 @@
   min-width: 0;
 }
 
+.rc-right-container-topRight .rc-user-meta,
+.rc-right-container-collapsed .rc-user-meta {
+  display: none;
+}
+
 .rc-username {
   font-size: 14px;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 140px;
 }
 
-.rc-role {
+.rc-role-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
   font-size: 12px;
-  color: rgb(0 0 0 / 45%);
+  line-height: 20px;
+  color: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, 0.04);
 }
 
-/* Compact variant for small screens */
+.rc-role-label-admin {
+  color: #096dd9;
+  background: rgba(24, 144, 255, 0.12);
+  font-weight: 600;
+}
+
+.rc-role-label-user {
+  color: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* Compact variant for narrow header space */
 .rc-user-group-compact {
-  gap: 6px;
-  padding: 6px;
+  gap: 8px;
+  padding: 8px;
+}
+
+/* Responsive: keep right content horizontal on very small screens and hide user details */
+@media (max-width: 480px) {
+  .rc-right-container {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .rc-user-group {
+    gap: 8px;
+    padding: 8px;
+  }
 
   .rc-user-meta {
     display: none;
   }
 
   .rc-avatar {
-    width: 40px;
-    height: 40px;
-  }
-}
-
-/* Responsive: on small screens hide name/role and keep avatar clickable */
-@media (width <= 480px) {
-  .rc-right-container {
-    .rc-user-group {
-      gap: 6px;
-      padding: 6px;
-    }
-
-    .rc-user-meta {
-      display: none;
-    }
-
-    .rc-avatar {
-      width: 40px;
-      height: 40px;
-    }
+    width: 44px;
+    height: 44px;
   }
 }

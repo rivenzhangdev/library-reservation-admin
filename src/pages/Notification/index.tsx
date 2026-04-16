@@ -2,7 +2,17 @@ import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
-import { Button, Form, Input, Modal, Select, Space, Tag, message } from 'antd';
+import {
+  Button,
+  DatePicker,
+  Form,
+  Input,
+  Modal,
+  Select,
+  Space,
+  Tag,
+  message,
+} from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   NotificationType as NotificationTypeEnum,
@@ -10,12 +20,14 @@ import {
 } from '../../constants/status';
 import { getFloors } from '../../services/library/floor';
 import {
+  batchMarkAsRead,
   deleteNotification,
   getNotificationDetail,
   getNotificationList,
   sendNotification,
   updateNotification,
 } from '../../services/library/notification';
+import { getUserList } from '../../services/library/user';
 
 /**
  * 通知数据类型
@@ -31,6 +43,11 @@ interface NotificationRecord {
   isRead: boolean;
   floorId?: string;
   floorName?: string;
+  targetType?: string;
+  targetRole?: number;
+  audience?: string;
+  updatedByName?: string;
+  updatedBy?: { name?: string; username?: string };
 }
 
 /**
@@ -47,16 +64,33 @@ const NotificationManagement: React.FC = () => {
   const [editVisible, setEditVisible] = useState<boolean>(false);
   const [editForm] = Form.useForm();
   const [floors, setFloors] = useState<Array<{ id: string; name: string }>>([]);
+  const [userOptions, setUserOptions] = useState<
+    Array<{ label: string; value: string }>
+  >([]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+
+  const fetchUserOptions = async (keyword: string) => {
+    try {
+      const res: any = await getUserList({ q: keyword, page: 1, limit: 10 });
+      const raw = res?.data || {};
+      const list = raw.list || raw.users || [];
+      setUserOptions(
+        list.map((user: any) => ({
+          label: `${user.name || user.username}${
+            user.studentId ? ` (${user.studentId})` : ''
+          }`,
+          value: user.id || user._id,
+        })),
+      );
+    } catch (e) {
+      setUserOptions([]);
+    }
+  };
 
   useEffect(() => {
     (async () => {
       try {
-        const res: any = await getFloors();
-        const raw = res?.data;
-        let list: any[] = [];
-        if (Array.isArray(raw)) list = raw;
-        else if (Array.isArray(raw?.floors)) list = raw.floors;
-        else list = [];
+        const list: any[] = await getFloors();
         setFloors(list.map((f) => ({ id: f.id, name: f.name })));
       } catch (e) {
         // ignore
@@ -100,6 +134,67 @@ const NotificationManagement: React.FC = () => {
     });
   };
 
+  const handleBatchMarkAsRead = async () => {
+    if (!selectedRowKeys.length) return;
+    try {
+      await batchMarkAsRead(selectedRowKeys as string[]);
+      message.success(
+        intl.formatMessage({
+          id: 'notification.batchMarkReadSuccess',
+          defaultMessage: 'Selected notifications marked as read',
+        }),
+      );
+      setSelectedRowKeys([]);
+      actionRef.current?.reload?.();
+    } catch (e: any) {
+      message.error(
+        e?.message ||
+          intl.formatMessage({
+            id: 'notification.batchMarkReadFailed',
+            defaultMessage: 'Batch mark as read failed',
+          }),
+      );
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    if (!selectedRowKeys.length) return;
+    Modal.confirm({
+      title: intl.formatMessage({
+        id: 'notification.confirmDeleteTitle',
+        defaultMessage: 'Confirm delete selected notifications',
+      }),
+      content: intl.formatMessage({
+        id: 'notification.confirmDeleteSelectedContent',
+        defaultMessage:
+          'Are you sure you want to delete selected notifications?',
+      }),
+      onOk: async () => {
+        try {
+          await Promise.all(
+            selectedRowKeys.map((id) => deleteNotification(String(id))),
+          );
+          message.success(
+            intl.formatMessage({
+              id: 'notification.batchDeleteSuccess',
+              defaultMessage: 'Selected notifications deleted',
+            }),
+          );
+          setSelectedRowKeys([]);
+          actionRef.current?.reload?.();
+        } catch (e: any) {
+          message.error(
+            e?.message ||
+              intl.formatMessage({
+                id: 'notification.batchDeleteFailed',
+                defaultMessage: 'Batch delete failed',
+              }),
+          );
+        }
+      },
+    });
+  };
+
   const columns: ProColumns<NotificationRecord>[] = [
     {
       title: intl.formatMessage({
@@ -111,10 +206,26 @@ const NotificationManagement: React.FC = () => {
     },
     {
       title: intl.formatMessage({
+        id: 'notification.form.audience',
+        defaultMessage: 'Audience',
+      }),
+      dataIndex: 'audience',
+      width: 180,
+      hideInSearch: true,
+      render: (_, record) =>
+        record.audience ||
+        intl.formatMessage({
+          id: 'notification.audience.all',
+          defaultMessage: 'All Users',
+        }),
+    },
+    {
+      title: intl.formatMessage({
         id: 'seat.form.type',
         defaultMessage: 'Type',
       }),
       dataIndex: 'type',
+      width: 120,
       valueType: 'select',
       valueEnum: {
         [NotificationTypeEnum.System]: {
@@ -224,6 +335,7 @@ const NotificationManagement: React.FC = () => {
         defaultMessage: 'Status',
       }),
       dataIndex: 'isRead',
+      width: 120,
       valueType: 'select',
       valueEnum: {
         true: {
@@ -250,6 +362,16 @@ const NotificationManagement: React.FC = () => {
           })}
         </Tag>
       ),
+    },
+    {
+      title: intl.formatMessage({
+        id: 'common.updatedBy',
+        defaultMessage: 'Updated By',
+      }),
+      dataIndex: 'updatedByName',
+      width: 120,
+      hideInSearch: true,
+      render: (_, record) => record.updatedByName || '-',
     },
     {
       title: intl.formatMessage({
@@ -344,11 +466,52 @@ const NotificationManagement: React.FC = () => {
               ...item,
               id: item.id || item._id,
               userName:
-                item.userName ||
-                item.user?.name ||
-                item.user?.username ||
-                item.userId ||
-                '-',
+                item.userName || item.user?.name || item.user?.username || '-',
+              audience:
+                item.targetType === 'all'
+                  ? intl.formatMessage({
+                      id: 'notification.audience.all',
+                      defaultMessage: 'All Users',
+                    })
+                  : item.targetType === 'role'
+                  ? intl.formatMessage(
+                      {
+                        id: 'notification.audience.role',
+                        defaultMessage: 'Role: {role}',
+                      },
+                      {
+                        role:
+                          item.targetRole === 1
+                            ? intl.formatMessage({
+                                id: 'notification.role.admin',
+                                defaultMessage: 'Admin',
+                              })
+                            : intl.formatMessage({
+                                id: 'notification.role.user',
+                                defaultMessage: 'User',
+                              }),
+                      },
+                    )
+                  : item.targetType === 'floor'
+                  ? `${intl.formatMessage({
+                      id: 'notification.audience.floor',
+                      defaultMessage: 'Floor',
+                    })}: ${item.floorName || item.floorId}`
+                  : item.targetType === 'user'
+                  ? intl.formatMessage(
+                      {
+                        id: 'notification.audience.user',
+                        defaultMessage: 'User: {user}',
+                      },
+                      {
+                        user:
+                          item.userName ||
+                          item.user?.name ||
+                          item.user?.username ||
+                          '-',
+                      },
+                    )
+                  : item.userName || '-',
             }));
             const total = raw?.total ?? (Array.isArray(list) ? list.length : 0);
             return { data: list, success: true, total };
@@ -358,6 +521,22 @@ const NotificationManagement: React.FC = () => {
         }}
         columns={columns}
         toolBarRender={() => [
+          selectedRowKeys.length ? (
+            <Space key="batch-actions">
+              <Button type="default" onClick={handleBatchMarkAsRead}>
+                {intl.formatMessage({
+                  id: 'notification.batchMarkRead',
+                  defaultMessage: 'Mark selected as read',
+                })}
+              </Button>
+              <Button danger type="default" onClick={handleBatchDelete}>
+                {intl.formatMessage({
+                  id: 'notification.batchDelete',
+                  defaultMessage: 'Delete selected',
+                })}
+              </Button>
+            </Space>
+          ) : null,
           <Button
             key="new"
             type="primary"
@@ -372,6 +551,12 @@ const NotificationManagement: React.FC = () => {
         ]}
         pagination={{
           pageSize: 10,
+        }}
+        rowSelection={{
+          selectedRowKeys,
+          onChange: (selectedKeys) => {
+            setSelectedRowKeys(selectedKeys);
+          },
         }}
       />
       <Modal
@@ -397,8 +582,8 @@ const NotificationManagement: React.FC = () => {
                 ：
               </strong>
               {detailData.userName ||
-                detailData.user?.name ||
                 detailData.user?.username ||
+                detailData.user?.name ||
                 '-'}
             </p>
             <p>
@@ -486,8 +671,22 @@ const NotificationManagement: React.FC = () => {
               id: 'credit.form.userId',
               defaultMessage: 'User ID',
             })}
+            rules={[
+              {
+                required: true,
+                message: intl.formatMessage({
+                  id: 'notification.form.userIdRequired',
+                  defaultMessage: 'Please enter a user ID',
+                }),
+              },
+            ]}
           >
-            <Input />
+            <Input
+              placeholder={intl.formatMessage({
+                id: 'notification.form.userIdPlaceholder',
+                defaultMessage: 'Enter target user ID',
+              })}
+            />
           </Form.Item>
           <Form.Item
             name="type"
@@ -558,7 +757,27 @@ const NotificationManagement: React.FC = () => {
         onOk={async () => {
           try {
             const values = await form.validateFields();
-            await sendNotification(values);
+            const payload = { ...values } as any;
+            if (payload.time?.toISOString) {
+              payload.time = payload.time.toISOString();
+            }
+            if (
+              payload.templateData &&
+              typeof payload.templateData === 'string'
+            ) {
+              try {
+                payload.templateData = JSON.parse(payload.templateData);
+              } catch (parseError) {
+                message.error(
+                  intl.formatMessage({
+                    id: 'notification.templateDataInvalid',
+                    defaultMessage: 'Template Data must be valid JSON',
+                  }),
+                );
+                return;
+              }
+            }
+            await sendNotification(payload);
             message.success(
               intl.formatMessage({
                 id: 'notification.sendSuccess',
@@ -582,13 +801,177 @@ const NotificationManagement: React.FC = () => {
       >
         <Form form={form} layout="vertical">
           <Form.Item
-            name="userId"
+            name="targetType"
             label={intl.formatMessage({
-              id: 'credit.form.userId',
-              defaultMessage: 'User ID',
+              id: 'notification.form.audience',
+              defaultMessage: 'Audience',
+            })}
+            initialValue="user"
+            rules={[{ required: true }]}
+          >
+            <Select>
+              <Select.Option value="user">
+                {intl.formatMessage({
+                  id: 'notification.audience.user',
+                  defaultMessage: 'Specific user',
+                })}
+              </Select.Option>
+              <Select.Option value="all">
+                {intl.formatMessage({
+                  id: 'notification.audience.all',
+                  defaultMessage: 'All users',
+                })}
+              </Select.Option>
+              <Select.Option value="role">
+                {intl.formatMessage({
+                  id: 'notification.audience.roleTarget',
+                  defaultMessage: 'By role',
+                })}
+              </Select.Option>
+              <Select.Option value="floor">
+                {intl.formatMessage({
+                  id: 'notification.audience.floorTarget',
+                  defaultMessage: 'By floor',
+                })}
+              </Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item
+            noStyle
+            shouldUpdate={(prev, current) =>
+              prev.targetType !== current.targetType
+            }
+          >
+            {({ getFieldValue }) => {
+              const targetType = getFieldValue('targetType');
+              if (targetType === 'user') {
+                return (
+                  <Form.Item
+                    name="userId"
+                    label={intl.formatMessage({
+                      id: 'credit.form.userId',
+                      defaultMessage: 'User ID',
+                    })}
+                    rules={[
+                      {
+                        required: true,
+                        message: intl.formatMessage({
+                          id: 'notification.form.userIdRequired',
+                          defaultMessage: 'Please enter a user ID',
+                        }),
+                      },
+                    ]}
+                  >
+                    <Select
+                      showSearch
+                      filterOption={false}
+                      placeholder={intl.formatMessage({
+                        id: 'notification.form.userIdPlaceholder',
+                        defaultMessage: 'Search and select user',
+                      })}
+                      options={userOptions}
+                      onSearch={fetchUserOptions}
+                      notFoundContent={null}
+                    />
+                  </Form.Item>
+                );
+              }
+              if (targetType === 'role') {
+                return (
+                  <Form.Item
+                    name="role"
+                    label={intl.formatMessage({
+                      id: 'notification.form.role',
+                      defaultMessage: 'Role',
+                    })}
+                    rules={[{ required: true }]}
+                  >
+                    <Select>
+                      <Select.Option value={0}>
+                        {intl.formatMessage({
+                          id: 'notification.role.user',
+                          defaultMessage: 'User',
+                        })}
+                      </Select.Option>
+                      <Select.Option value={1}>
+                        {intl.formatMessage({
+                          id: 'notification.role.admin',
+                          defaultMessage: 'Admin',
+                        })}
+                      </Select.Option>
+                    </Select>
+                  </Form.Item>
+                );
+              }
+              if (targetType === 'floor') {
+                return (
+                  <Form.Item
+                    name="floorId"
+                    label={intl.formatMessage({
+                      id: 'seat.form.floor',
+                      defaultMessage: 'Floor',
+                    })}
+                    rules={[{ required: true }]}
+                  >
+                    <Select>
+                      {floors.map((floor) => (
+                        <Select.Option key={floor.id} value={floor.id}>
+                          {floor.name}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                );
+              }
+              return null;
+            }}
+          </Form.Item>
+          <Form.Item
+            name="templateType"
+            label={intl.formatMessage({
+              id: 'notification.form.templateType',
+              defaultMessage: 'Template Type',
             })}
           >
-            <Input />
+            <Select allowClear>
+              <Select.Option value="BOOKING_SUCCESS">
+                {intl.formatMessage({
+                  id: 'notification.template.bookingSuccess',
+                  defaultMessage: 'Booking success',
+                })}
+              </Select.Option>
+              <Select.Option value="BOOKING_REMINDER">
+                {intl.formatMessage({
+                  id: 'notification.template.bookingReminder',
+                  defaultMessage: 'Booking reminder',
+                })}
+              </Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item
+            name="templateData"
+            label={intl.formatMessage({
+              id: 'notification.form.templateData',
+              defaultMessage: 'Template Data',
+            })}
+          >
+            <Input.TextArea
+              rows={4}
+              placeholder={intl.formatMessage({
+                id: 'notification.form.templateDataPlaceholder',
+                defaultMessage:
+                  '{"title":"...","bookingTime":"...","seatInfo":"..."}',
+              })}
+            />
+          </Form.Item>
+          <Form.Item
+            name="time"
+            label={intl.formatMessage({
+              id: 'notification.form.time',
+              defaultMessage: 'Send time',
+            })}
+          >
+            <DatePicker showTime style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item
             name="type"

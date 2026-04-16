@@ -11,11 +11,21 @@ export async function deleteUpload(id: string) {
   const res = await request(`/api/uploads/${id}`, {
     method: 'DELETE',
   });
-  // 如果后端返回 { success: false, error: {...} }，将其作为异常抛出，避免前端误判为成功
   if (res && res.success === false) {
     throw new Error(res.error?.message || '删除失败');
   }
   return res;
 }
 
-export default { getUploads, deleteUpload };
+export async function deleteUploads(ids: string[]) {
+  const res = await request('/api/uploads/batch-delete', {
+    method: 'POST',
+    data: { ids },
+  });
+  if (res && res.success === false) {
+    throw new Error(res.error?.message || '批量删除失败');
+  }
+  return res;
+}
+
+export default { getUploads, deleteUpload, deleteUploads };

@@ -9,6 +9,8 @@ interface ZoneType {
   id: string;
   name: string;
   description?: string;
+  updatedByName?: string;
+  updatedBy?: { name?: string; username?: string };
 }
 
 const ZoneManagement: React.FC = () => {
@@ -33,6 +35,16 @@ const ZoneManagement: React.FC = () => {
         defaultMessage: 'Description',
       }),
       dataIndex: 'description',
+    },
+    {
+      title: intl.formatMessage({
+        id: 'common.updatedBy',
+        defaultMessage: 'Updated By',
+      }),
+      dataIndex: 'updatedByName',
+      width: 140,
+      hideInSearch: true,
+      render: (_, record) => record.updatedByName || '-',
     },
     {
       title: intl.formatMessage({
@@ -224,8 +236,7 @@ const ZoneManagement: React.FC = () => {
               },
             ]}
           >
-            {' '}
-            <Input />{' '}
+            <Input />
           </Form.Item>
           <Form.Item
             name="description"
@@ -234,8 +245,7 @@ const ZoneManagement: React.FC = () => {
               defaultMessage: 'Description',
             })}
           >
-            {' '}
-            <Input />{' '}
+            <Input />
           </Form.Item>
         </Form>
       </Modal>

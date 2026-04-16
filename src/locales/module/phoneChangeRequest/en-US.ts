@@ -1,0 +1,27 @@
+export default {
+  'phoneChangeRequest.column.requester': 'Requester',
+  'phoneChangeRequest.column.currentPhone': 'Current Phone',
+  'phoneChangeRequest.column.requestedPhone': 'Requested Phone',
+  'phoneChangeRequest.column.reason': 'Reason',
+  'phoneChangeRequest.column.status': 'Status',
+  'phoneChangeRequest.column.reviewedAt': 'Reviewed At',
+  'phoneChangeRequest.listTitle': 'Phone change requests',
+  'phoneChangeRequest.approveConfirmTitle': 'Approve phone change request?',
+  'phoneChangeRequest.approveConfirmContent':
+    'Approve this phone change request after review.',
+  'phoneChangeRequest.rejectConfirmTitle': 'Reject phone change request?',
+  'phoneChangeRequest.rejectConfirmContent':
+    'Reject this request and keep the existing phone number unchanged.',
+  'phoneChangeRequest.approveSuccess': 'Approved successfully',
+  'phoneChangeRequest.approveFailed': 'Approval failed, please try again',
+  'phoneChangeRequest.rejectSuccess': 'Rejected successfully',
+  'phoneChangeRequest.rejectFailed': 'Rejection failed, please try again',
+  'phoneChangeRequest.action.approve': 'Approve',
+  'phoneChangeRequest.action.reject': 'Reject',
+  'phoneChangeRequest.column.reviewer': 'Reviewer',
+  'phoneChangeRequest.column.reviewComment': 'Review Comment',
+  'phoneChangeRequest.reviewCommentPlaceholder': 'Optional review comment',
+  'phoneChangeRequest.status.pending': 'Pending',
+  'phoneChangeRequest.status.approved': 'Approved',
+  'phoneChangeRequest.status.rejected': 'Rejected',
+};

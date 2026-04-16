@@ -1,4 +1,3 @@
-import { getUpdatedByDisplay } from '@/utils/userDisplay';
 import { UserOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
@@ -37,6 +36,7 @@ interface CreditRecordType {
   id: string;
   userId: string;
   userName: string;
+  userAvatar?: string;
   type: number;
   points: number;
   date: string;
@@ -146,7 +146,7 @@ const CreditManagement: React.FC = () => {
             color: record.type === CreditType.Add ? '#52c41a' : '#f5222d',
           }}
         >
-          {record.type === CreditType.Add ? '+' : ''}
+          {record.type === CreditType.Add ? '+' : '-'}
           {record.points}
         </span>
       ),
@@ -169,6 +169,7 @@ const CreditManagement: React.FC = () => {
       dataIndex: 'reason',
       ellipsis: true,
       width: 200,
+      hideInSearch: true,
     },
     {
       title: intl.formatMessage({
@@ -244,20 +245,15 @@ const CreditManagement: React.FC = () => {
               try {
                 const res: any = await getCreditRecordList(params);
                 const raw = res?.data || {};
-                let list = Array.isArray(raw.list) ? raw.list : [];
-                list = list.map((item: any) => ({
+                const responseList = Array.isArray(raw.list) ? raw.list : [];
+                const list = responseList.map((item: any) => ({
                   ...item,
                   id: item.id || item._id,
-                  userName:
-                    item.userName ||
-                    item.user?.name ||
-                    item.user?.username ||
-                    item.userId ||
-                    '-',
-                  updatedByName: getUpdatedByDisplay(item),
+                  userName: item.userName || '',
+                  userAvatar: item.userAvatar || '',
+                  updatedByName: item.updatedByName || '',
                 }));
-                const total =
-                  raw?.total ?? (Array.isArray(list) ? list.length : 0);
+                const total = raw?.total ?? list.length;
                 return { data: list, success: true, total };
               } catch (e) {
                 return { data: [], success: false, total: 0 };
@@ -310,15 +306,15 @@ const CreditManagement: React.FC = () => {
                   >
                     <Avatar
                       src={r.avatar}
-                      icon={<UserOutlined />}
+                      icon={!r.avatar ? <UserOutlined /> : undefined}
                       size={36}
                       style={{
-                        backgroundColor: '#1890ff',
+                        backgroundColor: r.avatar ? 'transparent' : '#1890ff',
                         color: '#fff',
                         flexShrink: 0,
                       }}
                     >
-                      {r.name ? r.name.charAt(0) : null}
+                      {!r.avatar && r.name ? r.name.charAt(0) : null}
                     </Avatar>
                     <div>
                       <div style={{ fontWeight: 600 }}>{r.name}</div>
@@ -482,13 +478,54 @@ const CreditManagement: React.FC = () => {
                   defaultMessage: 'Users',
                 }),
                 dataIndex: 'userName',
-              },
-              {
-                title: intl.formatMessage({
-                  id: 'user.form.studentId',
-                  defaultMessage: 'Student ID',
-                }),
-                dataIndex: 'studentId',
+                render: (_: any, record: any) => (
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+                  >
+                    <div
+                      style={{
+                        width: 32,
+                        height: 32,
+                        minWidth: 32,
+                        minHeight: 32,
+                        overflow: 'hidden',
+                        borderRadius: 999,
+                        background: '#f5f5f5',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {record.userAvatar ? (
+                        <img
+                          src={record.userAvatar}
+                          alt={record.userName || 'avatar'}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                          }}
+                        />
+                      ) : (
+                        <Avatar
+                          icon={<UserOutlined />}
+                          size={24}
+                          style={{ background: '#d9d9d9', color: '#fff' }}
+                        />
+                      )}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>
+                        {record.userName || '-'}
+                      </div>
+                      {record.studentId ? (
+                        <div style={{ color: '#999', fontSize: 12 }}>
+                          {record.studentId}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                ),
               },
               {
                 title: intl.formatMessage({
@@ -505,6 +542,7 @@ const CreditManagement: React.FC = () => {
                 dataIndex: 'description',
                 ellipsis: true,
               },
+
               {
                 title: intl.formatMessage({
                   id: 'credit.column.deductPoints',
@@ -521,6 +559,16 @@ const CreditManagement: React.FC = () => {
                   defaultMessage: 'Date',
                 }),
                 dataIndex: 'date',
+                hideInSearch: true,
+              },
+              {
+                title: intl.formatMessage({
+                  id: 'common.updatedBy',
+                  defaultMessage: 'Updated By',
+                }),
+                dataIndex: 'updatedByName',
+                width: 140,
+                hideInSearch: true,
               },
               {
                 title: intl.formatMessage({
@@ -595,7 +643,7 @@ const CreditManagement: React.FC = () => {
             search={{ labelWidth: 'auto', defaultCollapsed: false }}
             request={async (params) => {
               try {
-                const q = { ...(params || {}), blacklisted: true };
+                const q = { ...(params || {}), blacklisted: 1 };
                 const res: any = await getUserList(q);
                 const raw = res?.data || {};
                 let list = Array.isArray(raw.list) ? raw.list : [];
@@ -622,15 +670,15 @@ const CreditManagement: React.FC = () => {
                   >
                     <Avatar
                       src={r.avatar}
-                      icon={<UserOutlined />}
+                      icon={!r.avatar ? <UserOutlined /> : undefined}
                       size={36}
                       style={{
-                        backgroundColor: '#1890ff',
+                        backgroundColor: r.avatar ? 'transparent' : '#1890ff',
                         color: '#fff',
                         flexShrink: 0,
                       }}
                     >
-                      {r.name ? r.name.charAt(0) : null}
+                      {!r.avatar && r.name ? r.name.charAt(0) : null}
                     </Avatar>
                     <div>
                       <div style={{ fontWeight: 600 }}>{r.name}</div>
@@ -659,6 +707,7 @@ const CreditManagement: React.FC = () => {
                   defaultMessage: 'Joined At',
                 }),
                 dataIndex: 'blacklistedAt',
+                hideInSearch: true,
               },
               {
                 title: intl.formatMessage({
@@ -765,6 +814,9 @@ const CreditManagement: React.FC = () => {
             setAdjustTarget(null);
             form.resetFields();
             actionRef.current?.reload?.();
+            usersActionRef.current?.reload?.();
+            violationsActionRef.current?.reload?.();
+            blacklistActionRef.current?.reload?.();
           } catch (e: any) {
             if (e?.errorFields) return;
             message.error(

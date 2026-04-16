@@ -1,4 +1,9 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  PlusOutlined,
+  UploadOutlined,
+} from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
@@ -10,11 +15,15 @@ import {
   Input,
   InputNumber,
   Modal,
+  Radio,
   Select,
   Space,
+  Spin,
   Tag,
+  Upload,
   message,
 } from 'antd';
+import dayjs from 'dayjs';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityStatus, ActivityStatusText } from '../../constants/status';
 import {
@@ -24,6 +33,7 @@ import {
   updateActivity,
 } from '../../services/library/activity';
 import { getFloors } from '../../services/library/floor';
+import { uploadImage } from '../../services/library/user';
 
 /**
  * 活动数据类型
@@ -39,8 +49,12 @@ interface ActivityType {
   floorId?: string;
   floorName?: string;
   status: ActivityStatus;
-  participants: number;
+  participants: number | any[];
   maxParticipants: number;
+  createdByName?: string;
+  createdBy?: { name?: string; username?: string };
+  updatedByName?: string;
+  updatedBy?: { name?: string; username?: string };
 }
 
 /**
@@ -57,12 +71,7 @@ const ActivityManagement: React.FC = () => {
   useEffect(() => {
     (async () => {
       try {
-        const res: any = await getFloors();
-        const raw = res?.data;
-        let list: any[] = [];
-        if (Array.isArray(raw)) list = raw;
-        else if (Array.isArray(raw?.floors)) list = raw.floors;
-        else list = [];
+        const list: any[] = await getFloors();
         setFloors(list.map((f) => ({ id: f.id, name: f.name })));
       } catch (e) {
         // ignore
@@ -70,6 +79,85 @@ const ActivityManagement: React.FC = () => {
     })();
   }, []);
   const [form] = Form.useForm();
+  const [coverType, setCoverType] = useState<'url' | 'local'>('url');
+  const [coverPreview, setCoverPreview] = useState<string>();
+  const [localCoverDataUrl, setLocalCoverDataUrl] = useState<string>();
+  const [qrModalVisible, setQrModalVisible] = useState<boolean>(false);
+  const [qrPayload, setQrPayload] = useState<string>('');
+  const [qrTitle, setQrTitle] = useState<string>('');
+  const [qrLoading, setQrLoading] = useState<boolean>(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const getBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+
+  const isDataUrl = (value?: string): boolean =>
+    !!value && /^data:image\/[a-zA-Z]+;base64,/.test(value);
+
+  const handleCoverBeforeUpload = async (file: File) => {
+    const base64 = await getBase64(file);
+    setCoverPreview(base64);
+    setLocalCoverDataUrl(base64);
+    setCoverType('local');
+    setPreviewLoading(true);
+    form.setFieldsValue({ coverType: 'local', coverImage: undefined });
+    return Upload.LIST_IGNORE;
+  };
+
+  const handleCoverTypeChange = (e: any) => {
+    const next = e.target.value as 'url' | 'local';
+    setCoverType(next);
+    form.setFieldsValue({ coverType: next });
+    if (next === 'url') {
+      const url = form.getFieldValue('coverImage');
+      setCoverPreview(url || undefined);
+      setLocalCoverDataUrl(undefined);
+      setPreviewLoading(!!url);
+    } else {
+      setCoverPreview(undefined);
+      setLocalCoverDataUrl(undefined);
+      setPreviewLoading(false);
+      form.setFieldsValue({ coverImage: undefined });
+    }
+  };
+
+  const createQrImageUrl = (payload: string) => {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(
+      payload,
+    )}`;
+  };
+
+  const openQrModal = (title: string, payload: string) => {
+    setQrTitle(title);
+    setQrPayload(payload);
+    setQrLoading(true);
+    setQrModalVisible(true);
+  };
+
+  const closeQrModal = () => {
+    setQrModalVisible(false);
+    setQrLoading(false);
+  };
+
+  const copyToClipboard = async (text: string) => {
+    if (navigator.clipboard?.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+  };
 
   /**
    * 删除活动
@@ -107,6 +195,21 @@ const ActivityManagement: React.FC = () => {
     });
   };
 
+  const generateActivityQr = (
+    record: ActivityType,
+    action: 'checkin' | 'checkout',
+  ) => {
+    const payload = JSON.stringify({
+      type: 'activity',
+      id: String(record.id),
+      action,
+    });
+    openQrModal(
+      `${record.title} · ${action === 'checkin' ? '签到' : '签退'} QR`,
+      payload,
+    );
+  };
+
   const columns: ProColumns<ActivityType>[] = [
     {
       title: intl.formatMessage({
@@ -124,22 +227,22 @@ const ActivityManagement: React.FC = () => {
       }),
       dataIndex: 'coverImage',
       hideInSearch: true,
-      width: 80,
+      width: 140,
       render: (_, record) => {
-        const src = record.coverImage || record.cover_image || record.cover;
+        const src = record.coverImage;
         return src ? (
           <Image
             src={src}
             alt={record.title}
-            width={60}
-            height={60}
+            width={120}
+            height={64}
             style={{ objectFit: 'cover', borderRadius: '4px' }}
           />
         ) : (
           <div
             style={{
-              width: 60,
-              height: 60,
+              width: 120,
+              height: 64,
               background: '#f5f5f5',
               borderRadius: 4,
             }}
@@ -209,6 +312,7 @@ const ActivityManagement: React.FC = () => {
         defaultMessage: 'Status',
       }),
       dataIndex: 'status',
+      width: 120,
       valueType: 'select',
       valueEnum: {
         [ActivityStatus.Ongoing]: {
@@ -248,6 +352,16 @@ const ActivityManagement: React.FC = () => {
     },
     {
       title: intl.formatMessage({
+        id: 'common.createdBy',
+        defaultMessage: 'Created By',
+      }),
+      dataIndex: 'createdByName',
+      width: 120,
+      hideInSearch: true,
+      render: (_, record) => record.createdByName || '-',
+    },
+    {
+      title: intl.formatMessage({
         id: 'activity.column.participants',
         defaultMessage: 'Participants',
       }),
@@ -255,13 +369,15 @@ const ActivityManagement: React.FC = () => {
       hideInSearch: true,
       width: 120,
       render: (_, record) => {
-        const p = Number(record.participants) || 0;
+        const count = Array.isArray(record.participants)
+          ? record.participants.length
+          : Number(record.participants) || 0;
         return intl.formatMessage(
           {
             id: 'activity.participantsCount',
             defaultMessage: '{count} people',
           },
-          { count: p },
+          { count },
         );
       },
     },
@@ -295,7 +411,7 @@ const ActivityManagement: React.FC = () => {
       width: 150,
       fixed: 'right',
       render: (_, record) => (
-        <Space size="small">
+        <Space size="small" wrap style={{ width: '100%', gap: 4 }}>
           <Button
             type="link"
             icon={<EditOutlined />}
@@ -304,10 +420,12 @@ const ActivityManagement: React.FC = () => {
               setEditingId(record.id);
               // populate form
               try {
+                const cover = record.coverImage;
+                const isLocalCover = isDataUrl(String(cover || ''));
                 const values: any = {
                   title: record.title,
                   description: record.description,
-                  coverImage: record.coverImage,
+                  coverImage: cover,
                   location: record.location,
                   maxParticipants: record.maxParticipants,
                   status: record.status,
@@ -321,7 +439,13 @@ const ActivityManagement: React.FC = () => {
                     dayjs(record.endTime),
                   ];
                 }
-                form.setFieldsValue(values);
+                form.setFieldsValue({
+                  ...values,
+                  coverType: isLocalCover ? 'local' : 'url',
+                });
+                setCoverType(isLocalCover ? 'local' : 'url');
+                setCoverPreview(values.coverImage);
+                setLocalCoverDataUrl(isLocalCover ? String(cover) : undefined);
                 setModalVisible(true);
               } catch (e) {
                 // ignore
@@ -329,6 +453,26 @@ const ActivityManagement: React.FC = () => {
             }}
           >
             {intl.formatMessage({ id: 'common.edit', defaultMessage: 'Edit' })}
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            onClick={() => generateActivityQr(record, 'checkin')}
+          >
+            {intl.formatMessage({
+              id: 'activity.qr.checkin',
+              defaultMessage: 'Check-in QR',
+            })}
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            onClick={() => generateActivityQr(record, 'checkout')}
+          >
+            {intl.formatMessage({
+              id: 'activity.qr.checkout',
+              defaultMessage: 'Check-out QR',
+            })}
           </Button>
           <Button
             type="link"
@@ -393,6 +537,10 @@ const ActivityManagement: React.FC = () => {
             icon={<PlusOutlined />}
             onClick={() => {
               setEditingId(null);
+              setCoverType('url');
+              setCoverPreview(undefined);
+              setLocalCoverDataUrl(undefined);
+              form.resetFields();
               setModalVisible(true);
             }}
           >
@@ -416,11 +564,32 @@ const ActivityManagement: React.FC = () => {
           setModalVisible(false);
           form.resetFields();
           setEditingId(null);
+          setCoverType('url');
+          setCoverPreview(undefined);
+          setLocalCoverDataUrl(undefined);
         }}
         onOk={async () => {
           try {
             const values = await form.validateFields();
             const payload: any = { ...values };
+            if (values.coverType === 'local' && localCoverDataUrl) {
+              try {
+                const uploadRes: any = await uploadImage(localCoverDataUrl);
+                payload.coverImage = uploadRes?.url || localCoverDataUrl;
+              } catch (uploadError: any) {
+                message.error(
+                  uploadError?.message ||
+                    intl.formatMessage({
+                      id: 'activity.form.coverUploadFailed',
+                      defaultMessage: 'Uploaded cover image failed',
+                    }),
+                );
+                return;
+              }
+            } else {
+              payload.coverImage = values.coverImage;
+            }
+            delete payload.coverType;
             if (values.time && Array.isArray(values.time)) {
               payload.startTime = values.time[0].format();
               payload.endTime = values.time[1].format();
@@ -446,6 +615,9 @@ const ActivityManagement: React.FC = () => {
             setModalVisible(false);
             form.resetFields();
             setEditingId(null);
+            setCoverType('url');
+            setCoverPreview(undefined);
+            setLocalCoverDataUrl(undefined);
             actionRef.current?.reload?.();
           } catch (e: any) {
             if (e?.errorFields) return; // form validation errors shown inline
@@ -484,14 +656,120 @@ const ActivityManagement: React.FC = () => {
             <Input.TextArea rows={3} />
           </Form.Item>
           <Form.Item
-            name="coverImage"
+            name="coverType"
             label={intl.formatMessage({
-              id: 'activity.form.cover',
-              defaultMessage: 'Cover image URL',
+              id: 'activity.form.coverSource',
+              defaultMessage: 'Cover source',
             })}
+            initialValue="url"
           >
-            <Input />
+            <Radio.Group onChange={handleCoverTypeChange} value={coverType}>
+              <Radio value="url">
+                {intl.formatMessage({
+                  id: 'activity.form.coverUrlOption',
+                  defaultMessage: 'Use image URL',
+                })}
+              </Radio>
+              <Radio value="local">
+                {intl.formatMessage({
+                  id: 'activity.form.coverLocalOption',
+                  defaultMessage: 'Upload local image',
+                })}
+              </Radio>
+            </Radio.Group>
           </Form.Item>
+          {coverType === 'local' ? (
+            <Form.Item
+              label={intl.formatMessage({
+                id: 'activity.form.cover',
+                defaultMessage: 'Cover image',
+              })}
+            >
+              <Upload
+                accept="image/*"
+                beforeUpload={handleCoverBeforeUpload}
+                showUploadList={false}
+                fileList={[]}
+              >
+                <Button icon={<UploadOutlined />}>
+                  {intl.formatMessage({
+                    id: 'activity.form.coverUploadButton',
+                    defaultMessage: 'Upload local image',
+                  })}
+                </Button>
+              </Upload>
+            </Form.Item>
+          ) : (
+            <Form.Item
+              name="coverImage"
+              label={intl.formatMessage({
+                id: 'activity.form.cover',
+                defaultMessage: 'Cover image URL',
+              })}
+              rules={[
+                {
+                  type: 'url',
+                  message: intl.formatMessage({
+                    id: 'activity.form.coverUrlInvalid',
+                    defaultMessage: 'Please enter a valid image URL',
+                  }),
+                },
+              ]}
+            >
+              <Input
+                onChange={(e) => {
+                  const nextUrl = e.target.value;
+                  setCoverType('url');
+                  setCoverPreview(nextUrl || undefined);
+                  setPreviewLoading(!!nextUrl);
+                  form.setFieldsValue({ coverType: 'url' });
+                }}
+              />
+            </Form.Item>
+          )}
+          {coverPreview ? (
+            <Form.Item
+              label={intl.formatMessage({
+                id: 'activity.form.coverPreview',
+                defaultMessage: 'Preview',
+              })}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: 260,
+                  height: 140,
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  background: '#f5f5f5',
+                }}
+              >
+                <Image
+                  src={coverPreview}
+                  preview={false}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  placeholder={
+                    previewLoading ? (
+                      <div
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: '#f5f5f5',
+                        }}
+                      >
+                        <Spin />
+                      </div>
+                    ) : undefined
+                  }
+                  onLoad={() => setPreviewLoading(false)}
+                  onError={() => setPreviewLoading(false)}
+                />
+              </div>
+            </Form.Item>
+          ) : null}
           <Form.Item
             name="location"
             label={intl.formatMessage({
@@ -521,7 +799,7 @@ const ActivityManagement: React.FC = () => {
               showTime
               style={{ width: '100%' }}
               disabledDate={(current) =>
-                current && current.endOf('day').isBefore(new Date())
+                current && current.endOf('day').isBefore(dayjs())
               }
             />
           </Form.Item>
@@ -581,6 +859,53 @@ const ActivityManagement: React.FC = () => {
             </Select>
           </Form.Item>
         </Form>
+      </Modal>
+      <Modal
+        title={qrTitle}
+        open={qrModalVisible}
+        footer={null}
+        onCancel={closeQrModal}
+      >
+        <div style={{ textAlign: 'center' }}>
+          <div
+            style={{
+              position: 'relative',
+              display: 'inline-block',
+              marginBottom: 20,
+            }}
+          >
+            {qrLoading && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'rgba(255,255,255,0.8)',
+                  borderRadius: 8,
+                  zIndex: 1,
+                }}
+              >
+                <Spin />
+              </div>
+            )}
+            <Image
+              key={qrPayload}
+              preview={false}
+              src={createQrImageUrl(qrPayload)}
+              alt={qrTitle}
+              width={260}
+              height={260}
+              style={{ marginBottom: 20 }}
+              onLoad={() => setQrLoading(false)}
+              onError={() => setQrLoading(false)}
+            />
+          </div>
+        </div>
       </Modal>
     </PageContainer>
   );

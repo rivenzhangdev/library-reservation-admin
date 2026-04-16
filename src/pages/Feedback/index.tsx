@@ -25,6 +25,7 @@ import {
   Tag,
   Timeline,
 } from 'antd';
+import dayjs from 'dayjs';
 import React, { useRef, useState } from 'react';
 
 const { TextArea } = Input;
@@ -51,7 +52,11 @@ interface FeedbackType {
   urgencyId?: number;
   urgencyName?: string;
   status?: number;
+  statusName?: string;
   createdAt?: string;
+  updatedByName?: string;
+  updatedBy?: { name?: string; username?: string };
+  commentsCount?: number;
 }
 
 const FeedbackPage: React.FC = () => {
@@ -113,6 +118,19 @@ const FeedbackPage: React.FC = () => {
           }),
       );
     }
+  };
+
+  const getEffectiveFeedbackStatus = (feedback: any) => {
+    const rawStatus = Number(feedback?.status);
+    const commentsCount = Number(
+      feedback?.commentsCount ||
+        (Array.isArray(feedback?.comments) ? feedback.comments.length : 0),
+    );
+    const hasRecords = commentsCount > 0;
+    if (hasRecords && rawStatus === 1) {
+      return 2;
+    }
+    return rawStatus || 1;
   };
 
   const handleAddComment = async () => {
@@ -213,7 +231,7 @@ const FeedbackPage: React.FC = () => {
         4: { text: intl.formatMessage({ id: 'feedback.status.4' }) },
       },
       render: (_, r) => {
-        const id = Number(r.status);
+        const id = getEffectiveFeedbackStatus(r);
         const color = STATUS_COLOR_MAP[id];
         const text = intl.formatMessage(
           { id: `feedback.status.${id}`, defaultMessage: 'Status {id}' },
@@ -225,6 +243,16 @@ const FeedbackPage: React.FC = () => {
           r.statusName || String(r.status || '-')
         );
       },
+    },
+    {
+      title: intl.formatMessage({
+        id: 'common.updatedBy',
+        defaultMessage: 'Updated By',
+      }),
+      dataIndex: 'updatedByName',
+      width: 120,
+      hideInSearch: true,
+      render: (_, record) => record.updatedByName || '-',
     },
     {
       title: intl.formatMessage({
@@ -465,7 +493,7 @@ const FeedbackPage: React.FC = () => {
           setReplyText('');
         }}
         footer={null}
-        width={720}
+        width={840}
         destroyOnClose
       >
         {detailLoading ? (
@@ -534,7 +562,7 @@ const FeedbackPage: React.FC = () => {
                 })}
               >
                 {(() => {
-                  const id = Number(detail.status);
+                  const id = getEffectiveFeedbackStatus(detail);
                   const color = STATUS_COLOR_MAP[id];
                   const text = intl.formatMessage(
                     {
@@ -557,7 +585,7 @@ const FeedbackPage: React.FC = () => {
                 })}
               >
                 {detail.createdAt
-                  ? new Date(detail.createdAt).toLocaleString()
+                  ? dayjs(detail.createdAt).format('YYYY-MM-DD HH:mm')
                   : '-'}
               </Descriptions.Item>
               <Descriptions.Item
@@ -567,7 +595,7 @@ const FeedbackPage: React.FC = () => {
                 })}
                 span={2}
               >
-                {detail.userId?.name ||
+                {detail.userName ||
                   intl.formatMessage({
                     id: 'right.guest',
                     defaultMessage: 'Guest',
@@ -696,7 +724,7 @@ const FeedbackPage: React.FC = () => {
             </Descriptions>
 
             {/* 处理记录 */}
-            <div style={{ marginTop: 16 }}>
+            <div style={{ marginTop: 16, width: '100%' }}>
               <h4>
                 {intl.formatMessage({
                   id: 'feedback.records',
@@ -704,29 +732,32 @@ const FeedbackPage: React.FC = () => {
                 })}
               </h4>
               {Array.isArray(detail.comments) && detail.comments.length > 0 ? (
-                <Timeline
-                  items={detail.comments.map((c: any) => ({
-                    children: (
-                      <div>
+                <div style={{ width: '100%', padding: '20px 0' }}>
+                  <Timeline
+                    style={{ width: '100%' }}
+                    items={detail.comments.map((c: any) => ({
+                      children: (
                         <div>
-                          <strong>{c.operator}</strong>
-                          {c.isOfficial && (
-                            <Tag color="blue" style={{ marginLeft: 8 }}>
-                              {intl.formatMessage({
-                                id: 'feedback.official',
-                                defaultMessage: 'Official',
-                              })}
-                            </Tag>
-                          )}
-                          <span style={{ color: '#999', marginLeft: 8 }}>
-                            {new Date(c.date).toLocaleString()}
-                          </span>
+                          <div>
+                            <strong>{c.operator}</strong>
+                            {c.isOfficial && (
+                              <Tag color="blue" style={{ marginLeft: 8 }}>
+                                {intl.formatMessage({
+                                  id: 'feedback.official',
+                                  defaultMessage: 'Official',
+                                })}
+                              </Tag>
+                            )}
+                            <span style={{ color: '#999', marginLeft: 8 }}>
+                              {dayjs(c.date).format('YYYY-MM-DD HH:mm')}
+                            </span>
+                          </div>
+                          <div style={{ marginTop: 4 }}>{c.content}</div>
                         </div>
-                        <div style={{ marginTop: 4 }}>{c.content}</div>
-                      </div>
-                    ),
-                  }))}
-                />
+                      ),
+                    }))}
+                  />
+                </div>
               ) : (
                 <div style={{ color: '#999' }}>
                   {intl.formatMessage({
@@ -756,7 +787,9 @@ const FeedbackPage: React.FC = () => {
                   <Form
                     form={processForm}
                     onFinish={handleProcess}
-                    initialValues={{ status: detail.status || 2 }}
+                    initialValues={{
+                      status: getEffectiveFeedbackStatus(detail),
+                    }}
                   >
                     <div
                       style={{
@@ -776,6 +809,12 @@ const FeedbackPage: React.FC = () => {
                         style={{ marginBottom: 0 }}
                       >
                         <Select style={{ width: 120 }}>
+                          <Select.Option value={1}>
+                            {intl.formatMessage({
+                              id: 'feedback.status.1',
+                              defaultMessage: 'Pending',
+                            })}
+                          </Select.Option>
                           <Select.Option value={2}>
                             {intl.formatMessage({
                               id: 'feedback.status.2',

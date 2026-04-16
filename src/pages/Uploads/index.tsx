@@ -1,4 +1,8 @@
-import { deleteUpload, getUploads } from '@/services/library/uploads';
+import {
+  deleteUpload,
+  deleteUploads,
+  getUploads,
+} from '@/services/library/uploads';
 import type { ActionType } from '@ant-design/pro-components';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
@@ -8,6 +12,7 @@ import React, { useRef, useState } from 'react';
 const UploadsPage: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [preview, setPreview] = useState<string | null>(null);
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const intl = useIntl();
 
   const columns = [
@@ -52,6 +57,16 @@ const UploadsPage: React.FC = () => {
       }),
       dataIndex: 'createdAt',
       valueType: 'dateTime',
+    },
+    {
+      title: intl.formatMessage({
+        id: 'common.updatedBy',
+        defaultMessage: 'Updated By',
+      }),
+      dataIndex: 'uploaderName',
+      width: 140,
+      hideInSearch: true,
+      render: (_: any, record: any) => record.uploaderName || '-',
     },
     {
       title: intl.formatMessage({
@@ -118,7 +133,56 @@ const UploadsPage: React.FC = () => {
       <ProTable
         actionRef={actionRef}
         rowKey={(r) => r._id}
+        rowSelection={{
+          selectedRowKeys: selectedRows,
+          onChange: (_, rows) => setSelectedRows(rows.map((r: any) => r._id)),
+        }}
         search={{ labelWidth: 'auto', defaultCollapsed: false }}
+        toolBarRender={() => [
+          <Button
+            key="batchDelete"
+            danger
+            disabled={selectedRows.length === 0}
+            onClick={async () => {
+              Modal.confirm({
+                title: intl.formatMessage({
+                  id: 'common.bulkDelete',
+                  defaultMessage: 'Batch delete',
+                }),
+                content: intl.formatMessage({
+                  id: 'uploads.confirmDelete',
+                  defaultMessage: 'Confirm delete this file?',
+                }),
+                onOk: async () => {
+                  try {
+                    await deleteUploads(selectedRows);
+                    message.success(
+                      intl.formatMessage({
+                        id: 'common.deleteSuccessRefresh',
+                        defaultMessage: 'Deleted successfully, refreshing',
+                      }),
+                    );
+                    setSelectedRows([]);
+                    actionRef.current?.reload?.();
+                  } catch (e: any) {
+                    message.error(
+                      e?.message ||
+                        intl.formatMessage({
+                          id: 'common.deleteFailed',
+                          defaultMessage: 'Delete failed, please try again',
+                        }),
+                    );
+                  }
+                },
+              });
+            }}
+          >
+            {intl.formatMessage({
+              id: 'common.bulkDelete',
+              defaultMessage: 'Batch delete',
+            })}
+          </Button>,
+        ]}
         request={async (params) => {
           try {
             const p = Number(params.current || 1);

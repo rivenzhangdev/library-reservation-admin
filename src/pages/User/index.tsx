@@ -7,7 +7,7 @@ import {
 } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
-import { useIntl } from '@umijs/max';
+import { useIntl, useModel } from '@umijs/max';
 import {
   Avatar,
   Button,
@@ -43,10 +43,11 @@ interface UserType {
   phone: string;
   studentId: string;
   name: string;
-  role: string;
+  role: number;
   creditScore: number;
   blacklisted: boolean;
   createdAt: string;
+  updatedByName?: string;
 }
 
 /**
@@ -62,6 +63,9 @@ const getBase64 = (file: File): Promise<string> =>
 
 const UserManagement: React.FC = () => {
   const intl = useIntl();
+  const globalModel = (useModel as any)('global');
+  const modelCurrentUser = globalModel?.currentUser;
+  const modelSetCurrentUser = globalModel?.setCurrentUser;
 
   const actionRef = useRef<ActionType>();
   const [selectedRows, setSelectedRows] = useState<UserType[]>([]);
@@ -235,7 +239,20 @@ const UserManagement: React.FC = () => {
         defaultMessage: 'Blacklisted',
       }),
       dataIndex: 'blacklisted',
-      valueType: 'switch',
+      valueType: 'select',
+      valueEnum: {
+        1: {
+          text: intl.formatMessage({ id: 'common.yes', defaultMessage: 'Yes' }),
+          status: 'Error',
+        },
+        0: {
+          text: intl.formatMessage({ id: 'common.no', defaultMessage: 'No' }),
+          status: 'Success',
+        },
+      },
+      fieldProps: {
+        allowClear: true,
+      },
       width: 100,
       render: (_, record) => (
         <Tag color={record.blacklisted ? 'red' : 'green'}>
@@ -244,6 +261,16 @@ const UserManagement: React.FC = () => {
             : intl.formatMessage({ id: 'common.no', defaultMessage: 'No' })}
         </Tag>
       ),
+    },
+    {
+      title: intl.formatMessage({
+        id: 'common.updatedBy',
+        defaultMessage: 'Updated By',
+      }),
+      dataIndex: 'updatedByName',
+      width: 120,
+      hideInSearch: true,
+      render: (_, record) => record.updatedByName || '-',
     },
     {
       title: intl.formatMessage({
@@ -472,6 +499,39 @@ const UserManagement: React.FC = () => {
                   defaultMessage: 'Updated successfully',
                 }),
               );
+
+              const rawCurrentUser =
+                modelCurrentUser ||
+                (() => {
+                  try {
+                    const raw = localStorage.getItem('currentUser');
+                    return raw ? JSON.parse(raw) : null;
+                  } catch (e) {
+                    return null;
+                  }
+                })();
+              if (
+                rawCurrentUser &&
+                String(rawCurrentUser.id) === String(editingUser.id)
+              ) {
+                const nextCurrentUser = { ...rawCurrentUser, ...values };
+                if (modelSetCurrentUser) {
+                  try {
+                    modelSetCurrentUser(nextCurrentUser);
+                  } catch (e) {
+                    // ignore
+                  }
+                }
+                try {
+                  localStorage.setItem(
+                    'currentUser',
+                    JSON.stringify(nextCurrentUser),
+                  );
+                  window.dispatchEvent(new Event('currentUserUpdated'));
+                } catch (e) {
+                  // ignore
+                }
+              }
             } else {
               await createUser(values);
               message.success(

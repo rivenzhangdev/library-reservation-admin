@@ -187,7 +187,7 @@ async function interactiveSelect(arg) {
 
     let chosen = answers.env;
 
-    // 端口检测 — 如果 baseUrl 可解析出端口，检查端口占用并提供选项
+    // 端口检测 — 如果 baseUrl 可解析出端口，检查端口占用并提供提示
     const parsedPort = parsePortFromBaseUrl(chosen.baseUrl);
     if (parsedPort) {
       const host = (() => {
@@ -199,91 +199,21 @@ async function interactiveSelect(arg) {
       })();
 
       if (await isPortInUse(host, parsedPort)) {
-        const act = await inquirer.prompt([
-          {
-            type: 'list',
-            name: 'action',
-            message: `检测到 ${host}:${parsedPort} 端口已被占用，选择处理方式：`,
-            choices: [
-              { name: '切换其他环境', value: 'switch' },
-              { name: '尝试终止占用进程（可能需要管理员权限）', value: 'kill' },
-              { name: '直接继续启动（可能失败）', value: 'continue' },
-            ],
-          },
-        ]);
-
-        if (act.action === 'switch') {
-          return interactiveSelect();
-        }
-
-        if (act.action === 'kill') {
-          const pids = await getPidsByPort(parsedPort);
-          if (!pids || pids.length === 0) {
-            console.log(
-              chalk.yellow('未找到占用该端口的进程 PID，无法自动终止。'),
-            );
-            const retry = await inquirer.prompt([
-              {
-                type: 'confirm',
-                name: 'cont',
-                message: '是否继续启动？',
-                default: false,
-              },
-            ]);
-            if (!retry.cont) return interactiveSelect();
-            console.log(chalk.cyan(`以 ${chosen.key} 环境启动 dev 服务...`));
-            spawnDev(
-              chosen.key,
-              chosen.baseUrl || process.env.BACKEND_BASE_URL || '',
-              chosen.lanBaseUrl || '',
-            );
-            return;
-          }
-
-          console.log(chalk.cyan(`尝试终止 PID: ${pids.join(', ')}`));
-          const res = await killPids(pids);
-          if (res.success) {
-            // 等待短暂时间以释放端口
-            await new Promise((r) => setTimeout(r, 700));
-            if (await isPortInUse(host, parsedPort)) {
-              console.log(chalk.red('端口仍被占用，无法终止所有进程。'));
-              const retry = await inquirer.prompt([
-                {
-                  type: 'confirm',
-                  name: 'cont',
-                  message: '是否切换环境？（否将继续尝试启动）',
-                  default: true,
-                },
-              ]);
-              if (retry.cont) return interactiveSelect();
-            }
-          } else {
-            console.log(
-              chalk.red('终止进程失败：' + (res.message || '未知错误')),
-            );
-            const retry = await inquirer.prompt([
-              {
-                type: 'confirm',
-                name: 'cont',
-                message: '是否切换环境？（否将继续尝试启动）',
-                default: true,
-              },
-            ]);
-            if (retry.cont) return interactiveSelect();
-          }
-        }
-
-        console.log(chalk.cyan(`以 ${chosen.key} 环境启动 dev 服务...`));
-        spawnDev(
-          chosen.key,
-          chosen.baseUrl || process.env.BACKEND_BASE_URL || '',
-          chosen.lanBaseUrl || '',
+        console.log(
+          chalk.green(
+            `检测到 ${host}:${parsedPort} 端口已被占用，后台服务似乎已启动，继续使用当前环境。`
+          )
         );
-        return;
+      } else {
+        console.log(
+          chalk.yellow(
+            `检测到 ${host}:${parsedPort} 端口未占用，后台服务可能尚未启动，请确认后端是否已运行。`
+          )
+        );
       }
     }
 
-    console.log(chalk.cyan(`正在以 ${chosen.key} 环境启动 dev 服务...`));
+    console.log(chalk.cyan(`正在使用 ${chosen.key} 环境访问后台服务...`));
     spawnDev(
       chosen.key,
       chosen.baseUrl || process.env.BACKEND_BASE_URL || '',
@@ -299,7 +229,7 @@ async function interactiveSelect(arg) {
     output: process.stdout,
   });
 
-  console.log('请选择要启动的环境（输入编号并回车）：');
+  console.log('请选择要使用的环境（输入编号并回车）：');
   envs.forEach((e, i) => {
     console.log(`  ${i + 1}) ${e.label} [${e.key}]  base: ${e.baseUrl}`);
   });
@@ -312,7 +242,7 @@ async function interactiveSelect(arg) {
       process.exit(1);
     }
     const chosen = envs[idx];
-    console.log(chalk.cyan(`以 ${chosen.key} 环境启动 dev 服务...`));
+    console.log(chalk.cyan(`正在使用 ${chosen.key} 环境访问后台服务...`));
     spawnDev(
       chosen.key,
       chosen.baseUrl || process.env.BACKEND_BASE_URL || '',

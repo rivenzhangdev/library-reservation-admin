@@ -1,3 +1,5 @@
+import type { Role } from '../../constants/roles';
+
 /**
  * 用户类型定义
  */
@@ -9,7 +11,7 @@ export interface User {
   studentId: string;
   name: string;
   avatar?: string;
-  role: 'user' | 'admin';
+  role: Role;
   creditScore: number;
   blacklisted: boolean;
   blacklistReason?: string;

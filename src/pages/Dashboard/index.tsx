@@ -59,20 +59,18 @@ const Dashboard: React.FC = () => {
   const [activeUsers, setActiveUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  const fetchDashboardDetails = async () => {
     setLoading(true);
     if (isAdmin) {
       Promise.all([
         getDashboardData().catch(() => ({ data: {} })),
-        getStatistics().catch(() => ({ data: {} })),
         getDashboardFloors().catch(() => ({ data: [] })),
         getHotAreas().catch(() => ({ data: [] })),
         getRecentBookings().catch(() => ({ data: [] })),
         getActiveUsers().catch(() => ({ data: [] })),
       ])
-        .then(([dashRes, statRes, floorRes, hotRes, bookRes, userRes]) => {
+        .then(([dashRes, floorRes, hotRes, bookRes, userRes]) => {
           setDashboardData(dashRes?.data || {});
-          setStatisticsData(statRes?.data || {});
           setFloorData(Array.isArray(floorRes?.data) ? floorRes.data : []);
           setHotAreasData(Array.isArray(hotRes?.data) ? hotRes.data : []);
           setRecentBookings(Array.isArray(bookRes?.data) ? bookRes.data : []);
@@ -85,7 +83,98 @@ const Dashboard: React.FC = () => {
         .catch(() => {})
         .finally(() => setLoading(false));
     }
+  };
+
+  const fetchStatisticsData = async (range: 'today' | 'week' | 'month') => {
+    try {
+      setLoading(true);
+      const res: any = await getStatistics({ range });
+      setStatisticsData(res?.data || {});
+    } catch (error) {
+      setStatisticsData({});
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardDetails();
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchStatisticsData(timeRange);
+    }
+  }, [timeRange, isAdmin]);
+
+  const getRangeLabelId = (range: 'today' | 'week' | 'month') => {
+    if (range === 'today') return 'dashboard.range.today';
+    if (range === 'week') return 'dashboard.range.week';
+    return 'dashboard.range.month';
+  };
+
+  const getRangeDefaultMessage = (range: 'today' | 'week' | 'month') => {
+    if (range === 'today') return 'Bookings today';
+    if (range === 'week') return 'Bookings this week';
+    return 'Bookings this month';
+  };
+
+  const handleExportDashboard = () => {
+    const rows = [
+      [
+        intl.formatMessage({
+          id: 'dashboard.totalUsers',
+          defaultMessage: 'Total users',
+        }),
+        dashboardData.totalUsers || 0,
+      ],
+      [
+        intl.formatMessage({
+          id: 'dashboard.totalBookings',
+          defaultMessage: 'Total bookings',
+        }),
+        dashboardData.totalBookings || 0,
+      ],
+      [
+        intl.formatMessage({
+          id: getRangeLabelId(timeRange),
+          defaultMessage: getRangeDefaultMessage(timeRange),
+        }),
+        (statisticsData.rangeBookings ?? dashboardData.todayBookings) || 0,
+      ],
+      [
+        intl.formatMessage({
+          id: 'dashboard.bookingType.completed',
+          defaultMessage: 'Completed',
+        }),
+        statisticsData.completedBookings || 0,
+      ],
+      [
+        intl.formatMessage({
+          id: 'dashboard.bookingType.canceled',
+          defaultMessage: 'Canceled',
+        }),
+        statisticsData.canceledBookings || 0,
+      ],
+      [
+        intl.formatMessage({
+          id: 'dashboard.bookingType.violated',
+          defaultMessage: 'Violated',
+        }),
+        statisticsData.violatedBookings || 0,
+      ],
+    ];
+    const csv = rows
+      .map((row) => row.map((cell) => JSON.stringify(cell ?? '')).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `dashboard_export_${timeRange}_${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const statData: StatCardData[] = [
     {
@@ -110,10 +199,10 @@ const Dashboard: React.FC = () => {
     },
     {
       title: intl.formatMessage({
-        id: 'dashboard.activeToday',
-        defaultMessage: 'Bookings today',
+        id: getRangeLabelId(timeRange),
+        defaultMessage: getRangeDefaultMessage(timeRange),
       }),
-      value: dashboardData.todayBookings || 0,
+      value: (statisticsData.rangeBookings ?? dashboardData.todayBookings) || 0,
       icon: <FireOutlined />,
       iconColor: '#722ed1',
       iconBg: '#f9f0ff',
@@ -356,7 +445,12 @@ const Dashboard: React.FC = () => {
                 >
                   {intl.formatMessage({ id: 'dashboard.range.month' })}
                 </Button>,
-                <Button key="4" type="primary" icon={<DownloadOutlined />}>
+                <Button
+                  key="4"
+                  type="primary"
+                  icon={<DownloadOutlined />}
+                  onClick={handleExportDashboard}
+                >
                   {intl.formatMessage({ id: 'dashboard.export' })}
                 </Button>,
               ]

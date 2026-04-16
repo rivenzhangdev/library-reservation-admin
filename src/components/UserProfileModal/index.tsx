@@ -76,7 +76,7 @@ const UserProfileModal: React.FC<{
           }),
         );
       } else {
-        message.warn(
+        message.warning(
           intl.formatMessage({
             id: 'userProfile.uploadNoUrl',
             defaultMessage: '上传完成，但未返回 URL',

@@ -1,12 +1,18 @@
 export default {
   'menu.dashboard': 'Dashboard',
   'menu.user': 'User Management',
+  'menu.changeRequests': 'Change Requests',
+  'menu.changeRequests.studentIdChangeRequests': 'Student ID Change Requests',
+  'menu.changeRequests.phoneChangeRequests': 'Phone Change Requests',
+  'menu.studentIdChangeRequests': 'Student ID Change Requests',
+  'menu.phoneChangeRequests': 'Phone Change Requests',
   'menu.booking': 'Booking Management',
   'menu.seat': 'Seat Management',
   'menu.activity': 'Activity Management',
   'menu.notification': 'Notification Management',
   'menu.uploads': 'Image Management',
   'menu.credit': 'Credit Management',
+  'menu.systemConfig': 'Configuration Center',
   'menu.management': 'General Management',
   'menu.feedback': 'Feedback Management',
 };

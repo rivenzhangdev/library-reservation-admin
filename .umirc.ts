@@ -51,7 +51,34 @@ export default defineConfig({
       access: 'canSeeAdmin',
     },
     {
+      path: '/change-requests',
+      name: 'changeRequests',
+      icon: 'SwapOutlined',
+      access: 'canSeeAdmin',
+      routes: [
+        {
+          path: '/change-requests',
+          redirect: '/change-requests/student-id-change-requests',
+        },
+        {
+          path: '/change-requests/student-id-change-requests',
+          name: 'studentIdChangeRequests',
+          icon: 'SolutionOutlined',
+          component: 'change-requests/StudentIdChangeRequests',
+          access: 'canSeeAdmin',
+        },
+        {
+          path: '/change-requests/phone-change-requests',
+          name: 'phoneChangeRequests',
+          icon: 'MobileOutlined',
+          component: 'change-requests/PhoneChangeRequests',
+          access: 'canSeeAdmin',
+        },
+      ],
+    },
+    {
       path: '/booking',
+
       name: 'booking',
       icon: 'CalendarOutlined',
       component: 'Booking',
@@ -83,8 +110,18 @@ export default defineConfig({
       path: '/feedback',
       name: 'feedback',
       icon: 'MessageOutlined',
-      component: 'Feedback',
       access: 'canSeeAdmin',
+      routes: [
+        {
+          path: '/feedback',
+          component: 'Feedback',
+        },
+        {
+          path: '/feedback/:id',
+          component: 'Feedback/Detail',
+          hideInMenu: true,
+        },
+      ],
     },
     {
       path: '/uploads',
@@ -94,23 +131,36 @@ export default defineConfig({
       access: 'canSeeAdmin',
     },
     {
-      path: '/feedback/:id',
-      component: 'Feedback/Detail',
-      hideInMenu: true,
-    },
-    {
       path: '/credit',
       name: 'credit',
       icon: 'StarOutlined',
       component: 'Credit',
       access: 'canSeeAdmin',
     },
-
     {
       path: '/management',
       name: 'management',
       icon: 'AppstoreAddOutlined',
       component: 'Management',
+      access: 'canSeeAdmin',
+    },
+    {
+      path: '/system-config',
+      name: 'systemConfig',
+      icon: 'SettingOutlined',
+      component: 'SystemConfig',
+      access: 'canSeeAdmin',
+    },
+    {
+      path: '/floor',
+      component: 'Floor',
+      hideInMenu: true,
+      access: 'canSeeAdmin',
+    },
+    {
+      path: '/zone',
+      component: 'Zone',
+      hideInMenu: true,
       access: 'canSeeAdmin',
     },
   ],

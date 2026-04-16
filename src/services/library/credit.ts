@@ -18,10 +18,14 @@ export async function addCreditPoints(
   points: number,
   reason: string,
 ) {
-  return request('/api/credit/add', {
+  const res: any = await request('/api/credit/add', {
     method: 'POST',
     data: { userId, points, reason },
   });
+  if (res?.success === false) {
+    throw new Error(res?.error?.message || 'Adjust failed');
+  }
+  return res;
 }
 
 /**
@@ -32,10 +36,14 @@ export async function deductCreditPoints(
   points: number,
   reason: string,
 ) {
-  return request('/api/credit/deduct', {
+  const res: any = await request('/api/credit/deduct', {
     method: 'POST',
     data: { userId, points, reason },
   });
+  if (res?.success === false) {
+    throw new Error(res?.error?.message || 'Adjust failed');
+  }
+  return res;
 }
 
 /**

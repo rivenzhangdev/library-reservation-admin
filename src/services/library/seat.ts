@@ -23,10 +23,15 @@ export async function getSeatDetail(id: number) {
  * 创建座位
  */
 export async function createSeat(data: any) {
-  return request('/api/seat', {
+  const res: any = await request('/api/seat', {
     method: 'POST',
     data,
+    getResponse: true,
   });
+  if (res?.data?.success === false) {
+    throw new Error(res.data.error?.message || 'Create seat failed');
+  }
+  return res?.data;
 }
 
 /**
@@ -52,10 +57,15 @@ export async function deleteSeat(id: number) {
  * 批量创建座位
  */
 export async function batchCreateSeats(data: any[]) {
-  return request('/api/seat/batch', {
+  const res: any = await request('/api/seat/batch', {
     method: 'POST',
     data,
+    getResponse: true,
   });
+  if (res?.data?.success === false) {
+    throw new Error(res.data.error?.message || 'Batch create seats failed');
+  }
+  return res?.data;
 }
 
 /**

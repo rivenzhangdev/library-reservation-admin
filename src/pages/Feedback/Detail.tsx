@@ -18,6 +18,7 @@ import {
   Space,
   Tag,
 } from 'antd';
+import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 
 const DetailPage: React.FC = () => {
@@ -140,7 +141,7 @@ const DetailPage: React.FC = () => {
               defaultMessage: 'Submitter',
             })}
           >
-            {data.userId?.name ||
+            {data.userName ||
               intl.formatMessage({
                 id: 'right.guest',
                 defaultMessage: 'Guest',
@@ -274,7 +275,7 @@ const DetailPage: React.FC = () => {
                   </div>
                   <div style={{ marginTop: 6 }}>{c.content}</div>
                   <div style={{ color: '#888', marginTop: 6 }}>
-                    {new Date(c.date).toLocaleString()}
+                    {dayjs(c.date).format('YYYY-MM-DD HH:mm')}
                   </div>
                 </div>
               ))
@@ -301,7 +302,11 @@ const DetailPage: React.FC = () => {
               form={form}
               layout="vertical"
               onFinish={onFinish}
-              initialValues={{ status: data.status || 2 }}
+              initialValues={{
+                status: [2, 3, 4].includes(Number(data.status))
+                  ? Number(data.status)
+                  : 2,
+              }}
             >
               <Form.Item
                 name="status"

@@ -71,7 +71,7 @@ const BackendStatusPage: React.FC = () => {
     const found = BACKEND_ENVS.find((e) => e.key === key);
     const lan = (found as any)?.lanBaseUrl || '';
     if (!lan) {
-      message.warn(
+      message.warning(
         intl.formatMessage({
           id: 'admin.noLan',
           defaultMessage: 'No LAN address configured for this environment',

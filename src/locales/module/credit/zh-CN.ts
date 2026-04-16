@@ -28,6 +28,7 @@ export default {
   'credit.type.deduct': '减分',
   'credit.column.violationType': '违规类型',
   'credit.column.deductPoints': '扣除分数',
+  'credit.column.joinedAt': '加入时间',
   'credit.confirmDeleteViolation': '确定要删除该违规记录吗？',
   'credit.column.points': '积分变化',
   'credit.column.date': '时间',

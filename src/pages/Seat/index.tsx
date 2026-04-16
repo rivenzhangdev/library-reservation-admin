@@ -21,6 +21,10 @@ import {
   SeatType as SeatTypeEnum,
   SeatTypeText,
 } from '../../constants/status';
+import {
+  getConfigSeatFacilities,
+  getConfigSeatTypes,
+} from '../../services/library/config';
 import { getFloors } from '../../services/library/floor';
 import {
   batchCreateSeats,
@@ -47,7 +51,19 @@ interface SeatType {
   hasSocket: boolean;
   isWindow: boolean;
   zone: string;
+  zoneName?: string;
+  description?: string;
+  updatedByName?: string;
+  updatedBy?: {
+    name?: string;
+    username?: string;
+  } | null;
 }
+
+const facilityFieldMap: Record<string, 'hasSocket' | 'isWindow'> = {
+  power: 'hasSocket',
+  window: 'isWindow',
+};
 
 /**
  * 座位管理页面
@@ -78,39 +94,156 @@ const SeatManagement: React.FC = () => {
   const [batchForm] = Form.useForm();
   const [batchStatusForm] = Form.useForm();
   const [batchStatus, setBatchStatus] = useState<number>(SeatStatus.Available);
-  const [floors, setFloors] = useState<Array<{ id: string; name: string }>>([]);
+  const [floors, setFloors] = useState<
+    Array<{ id: string; name: string; totalSeats?: number }>
+  >([]);
+
+  const loadFloors = async () => {
+    try {
+      const list: any[] = await getFloors();
+      setFloors(
+        list.map((f) => ({ id: f.id, name: f.name, totalSeats: f.totalSeats })),
+      );
+    } catch (e) {
+      // ignore
+    }
+  };
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res: any = await getFloors();
-        const raw = res?.data;
-        let list: any[] = [];
-        if (Array.isArray(raw)) list = raw;
-        else if (Array.isArray(raw?.floors)) list = raw.floors;
-        else list = [];
-        setFloors(list.map((f) => ({ id: f.id, name: f.name })));
-      } catch (e) {
-        // ignore
-      }
-    })();
+    loadFloors();
   }, []);
 
   const [zones, setZones] = useState<Array<{ id: string; name: string }>>([]);
+  const [zoneSearchLoading, setZoneSearchLoading] = useState<boolean>(false);
+  const zoneOptions = React.useMemo(
+    () =>
+      zones.map((zone) => ({
+        label: zone.name,
+        value: zone.name,
+        key: zone.id,
+      })),
+    [zones],
+  );
+  const [seatTypeConfigs, setSeatTypeConfigs] = useState<
+    Array<{
+      id?: number;
+      type: number;
+      value: string;
+      label: string;
+      enabled: boolean;
+      order?: number;
+    }>
+  >([]);
+  const [seatFacilityConfigs, setSeatFacilityConfigs] = useState<
+    Array<{
+      id?: number;
+      key: string;
+      label: string;
+      enabled: boolean;
+      order?: number;
+    }>
+  >([]);
+  const [seatConfigLoading, setSeatConfigLoading] = useState<boolean>(false);
+
+  const loadSeatOptionConfigs = async () => {
+    setSeatConfigLoading(true);
+    try {
+      const [typesRes, facilitiesRes] = await Promise.all([
+        getConfigSeatTypes(),
+        getConfigSeatFacilities(),
+      ]);
+      const typeList = typesRes?.data ?? typesRes;
+      const facilityList = facilitiesRes?.data ?? facilitiesRes;
+      setSeatTypeConfigs(Array.isArray(typeList) ? typeList : []);
+      setSeatFacilityConfigs(Array.isArray(facilityList) ? facilityList : []);
+    } catch (e) {
+      console.error('Failed to load seat configs', e);
+    } finally {
+      setSeatConfigLoading(false);
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      try {
-        const res: any = await getZones();
-        const raw = res?.data;
-        let list: any[] = [];
-        if (Array.isArray(raw)) list = raw;
-        else if (Array.isArray(raw?.zones)) list = raw.zones;
-        else list = [];
-        setZones(list.map((z) => ({ id: z.id, name: z.name })));
-      } catch (e) {
-        // ignore
-      }
-    })();
+    loadSeatOptionConfigs();
+  }, []);
+
+  const seatTypeOptions = React.useMemo(
+    () =>
+      seatTypeConfigs
+        .filter((item) => item.enabled)
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+        .map((item) => ({
+          value: item.type,
+          label: item.label,
+          key: item.value,
+        })),
+    [seatTypeConfigs],
+  );
+
+  const seatTypeLabelMap = React.useMemo(
+    () =>
+      seatTypeConfigs.reduce<Record<number, string>>((acc, item) => {
+        if (typeof item.type === 'number') {
+          acc[item.type] = item.label;
+        }
+        return acc;
+      }, {}),
+    [seatTypeConfigs],
+  );
+
+  const facilityLabelMap = React.useMemo(
+    () =>
+      seatFacilityConfigs.reduce<Record<string, string>>((acc, item) => {
+        if (item.key) {
+          acc[item.key] = item.label;
+        }
+        return acc;
+      }, {}),
+    [seatFacilityConfigs],
+  );
+
+  const seatFacilityOptions = React.useMemo(
+    () =>
+      seatFacilityConfigs
+        .filter((item) => item.enabled && facilityFieldMap[item.key])
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+        .map((item) => ({
+          key: item.key,
+          label: item.label,
+          field: facilityFieldMap[item.key],
+        })),
+    [seatFacilityConfigs],
+  );
+
+  const loadZones = async (keyword?: string) => {
+    setZoneSearchLoading(true);
+    try {
+      const res: any = await getZones({
+        q: keyword || undefined,
+        pageNum: 1,
+        pageLimit: 50,
+      });
+      const raw = res?.data ?? res;
+      let list: any[] = [];
+      if (Array.isArray(raw)) list = raw;
+      else if (Array.isArray(raw?.list)) list = raw.list;
+      else if (Array.isArray(raw?.zones)) list = raw.zones;
+      else if (Array.isArray(raw?.data)) list = raw.data;
+      setZones(
+        list.map((z) => ({
+          id: String(z.id || z._id || z._id?.toString?.() || z.name),
+          name: z.name,
+        })),
+      );
+    } catch (e) {
+      // ignore
+    } finally {
+      setZoneSearchLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadZones();
   }, []);
 
   const handleDelete = (id: number) => {
@@ -171,7 +304,8 @@ const SeatManagement: React.FC = () => {
     }
   };
 
-  const handleEdit = (record: Partial<SeatType>) => {
+  const handleEdit = async (record: Partial<SeatType>) => {
+    await loadFloors();
     setEditingSeat(record);
     form.setFieldsValue(record as any);
     setEditModalVisible(true);
@@ -275,26 +409,34 @@ const SeatManagement: React.FC = () => {
       }),
       dataIndex: 'type',
       valueType: 'select',
-      valueEnum: {
-        [SeatTypeEnum.Single]: {
-          text: intl.formatMessage({
-            id: SeatTypeText[SeatTypeEnum.Single],
-            defaultMessage: seatTypeDefault[SeatTypeEnum.Single],
-          }),
+      valueEnum: seatTypeConfigs.reduce<Record<string, any>>(
+        (acc, item) => {
+          acc[String(item.type)] = {
+            text: item.label,
+          };
+          return acc;
         },
-        [SeatTypeEnum.Double]: {
-          text: intl.formatMessage({
-            id: SeatTypeText[SeatTypeEnum.Double],
-            defaultMessage: seatTypeDefault[SeatTypeEnum.Double],
-          }),
+        {
+          [SeatTypeEnum.Single]: {
+            text: intl.formatMessage({
+              id: SeatTypeText[SeatTypeEnum.Single],
+              defaultMessage: seatTypeDefault[SeatTypeEnum.Single],
+            }),
+          },
+          [SeatTypeEnum.Double]: {
+            text: intl.formatMessage({
+              id: SeatTypeText[SeatTypeEnum.Double],
+              defaultMessage: seatTypeDefault[SeatTypeEnum.Double],
+            }),
+          },
+          [SeatTypeEnum.Group]: {
+            text: intl.formatMessage({
+              id: SeatTypeText[SeatTypeEnum.Group],
+              defaultMessage: seatTypeDefault[SeatTypeEnum.Group],
+            }),
+          },
         },
-        [SeatTypeEnum.Group]: {
-          text: intl.formatMessage({
-            id: SeatTypeText[SeatTypeEnum.Group],
-            defaultMessage: seatTypeDefault[SeatTypeEnum.Group],
-          }),
-        },
-      },
+      ),
     },
     {
       title: intl.formatMessage({
@@ -306,18 +448,20 @@ const SeatManagement: React.FC = () => {
         <Space>
           {record.hasSocket && (
             <Tag color="blue">
-              {intl.formatMessage({
-                id: 'seat.facility.socket',
-                defaultMessage: 'Socket',
-              })}
+              {facilityLabelMap.power ||
+                intl.formatMessage({
+                  id: 'seat.facility.socket',
+                  defaultMessage: 'Socket',
+                })}
             </Tag>
           )}
           {record.isWindow && (
             <Tag color="green">
-              {intl.formatMessage({
-                id: 'seat.form.isWindow',
-                defaultMessage: 'Window seat',
-              })}
+              {facilityLabelMap.window ||
+                intl.formatMessage({
+                  id: 'seat.form.isWindow',
+                  defaultMessage: 'Window seat',
+                })}
             </Tag>
           )}
         </Space>
@@ -332,6 +476,16 @@ const SeatManagement: React.FC = () => {
       render: (_, record) => (
         <Tag color="#108ee9">{record.zoneName || record.zone || '-'}</Tag>
       ),
+    },
+    {
+      title: intl.formatMessage({
+        id: 'common.updatedBy',
+        defaultMessage: 'Updated By',
+      }),
+      dataIndex: 'updatedByName',
+      width: 120,
+      hideInSearch: true,
+      render: (_, record) => record.updatedByName || '-',
     },
     {
       title: intl.formatMessage({
@@ -406,7 +560,13 @@ const SeatManagement: React.FC = () => {
           onChange: (_, rows) => setSelectedSeatIds(rows.map((r: any) => r.id)),
         }}
         toolBarRender={() => [
-          <Button key="batchCreate" onClick={() => setBatchModalVisible(true)}>
+          <Button
+            key="batchCreate"
+            onClick={async () => {
+              await loadFloors();
+              setBatchModalVisible(true);
+            }}
+          >
             {intl.formatMessage({
               id: 'seat.batchCreate',
               defaultMessage: 'Batch create seats',
@@ -426,9 +586,10 @@ const SeatManagement: React.FC = () => {
             key="new"
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => {
+            onClick={async () => {
               setEditingSeat(null);
               form.resetFields();
+              await loadFloors();
               setEditModalVisible(true);
             }}
           >
@@ -638,19 +799,32 @@ const SeatManagement: React.FC = () => {
             <InputNumber min={1} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item
-            name="zone"
+            name="zoneId"
             label={intl.formatMessage({
               id: 'seat.form.zone',
               defaultMessage: 'Zone',
             })}
           >
-            <Select>
-              {zones.map((z) => (
-                <Select.Option key={z.id} value={z.name}>
-                  {z.name}
-                </Select.Option>
-              ))}
-            </Select>
+            <Select
+              showSearch
+              filterOption={false}
+              notFoundContent={zoneSearchLoading ? 'Loading...' : undefined}
+              placeholder={intl.formatMessage({
+                id: 'seat.form.zonePlaceholder',
+                defaultMessage: 'Search zone name',
+              })}
+              onSearch={loadZones}
+              onFocus={() => {
+                if (!zones.length) loadZones();
+              }}
+              loading={zoneSearchLoading}
+              allowClear
+              options={zones.map((zone) => ({
+                value: zone.id,
+                label: zone.name,
+                key: zone.id,
+              }))}
+            />
           </Form.Item>
           <Form.Item
             name="type"
@@ -660,46 +834,37 @@ const SeatManagement: React.FC = () => {
             })}
           >
             <Select>
-              <Select.Option value={SeatTypeEnum.Single}>
-                {intl.formatMessage({
-                  id: 'seat.type.single',
-                  defaultMessage: 'Single',
-                })}
-              </Select.Option>
-              <Select.Option value={SeatTypeEnum.Double}>
-                {intl.formatMessage({
-                  id: 'seat.type.double',
-                  defaultMessage: 'Double',
-                })}
-              </Select.Option>
-              <Select.Option value={SeatTypeEnum.Group}>
-                {intl.formatMessage({
-                  id: 'seat.type.group',
-                  defaultMessage: 'Group',
-                })}
-              </Select.Option>
+              {seatTypeOptions.length > 0
+                ? seatTypeOptions.map((option) => (
+                    <Select.Option key={option.key} value={option.value}>
+                      {option.label}
+                    </Select.Option>
+                  ))
+                : [
+                    SeatTypeEnum.Single,
+                    SeatTypeEnum.Double,
+                    SeatTypeEnum.Group,
+                  ].map((value) => (
+                    <Select.Option key={value} value={value}>
+                      {intl.formatMessage({
+                        id: SeatTypeText[value],
+                        defaultMessage: seatTypeDefault[value],
+                      })}
+                    </Select.Option>
+                  ))}
             </Select>
           </Form.Item>
-          <Form.Item
-            name="hasSocket"
-            label={intl.formatMessage({
-              id: 'seat.form.hasSocket',
-              defaultMessage: 'Has socket',
-            })}
-            valuePropName="checked"
-          >
-            <Switch />
-          </Form.Item>
-          <Form.Item
-            name="isWindow"
-            label={intl.formatMessage({
-              id: 'seat.form.isWindow',
-              defaultMessage: 'Window seat',
-            })}
-            valuePropName="checked"
-          >
-            <Switch />
-          </Form.Item>
+          {seatFacilityOptions.length > 0 &&
+            seatFacilityOptions.map((option) => (
+              <Form.Item
+                key={option.key}
+                name={option.field}
+                label={option.label}
+                valuePropName="checked"
+              >
+                <Switch />
+              </Form.Item>
+            ))}
           <Form.Item
             name="status"
             label={intl.formatMessage({
@@ -740,7 +905,7 @@ const SeatManagement: React.FC = () => {
             const values = await batchForm.validateFields();
             const {
               floorId,
-              zone,
+              zoneId,
               startRow,
               endRow,
               startCol,
@@ -749,7 +914,24 @@ const SeatManagement: React.FC = () => {
               hasSocket,
               isWindow,
             } = values;
-            if (startRow > endRow || startCol > endCol)
+            const intStartRow = Number(startRow);
+            const intEndRow = Number(endRow);
+            const intStartCol = Number(startCol);
+            const intEndCol = Number(endCol);
+            if (
+              Number.isNaN(intStartRow) ||
+              Number.isNaN(intEndRow) ||
+              Number.isNaN(intStartCol) ||
+              Number.isNaN(intEndCol) ||
+              intStartRow < 1 ||
+              intEndRow < 1 ||
+              intStartCol < 1 ||
+              intEndCol < 1 ||
+              !Number.isInteger(intStartRow) ||
+              !Number.isInteger(intEndRow) ||
+              !Number.isInteger(intStartCol) ||
+              !Number.isInteger(intEndCol)
+            ) {
               throw new Error(
                 intl.formatMessage({
                   id: 'seat.batch.invalidRange',
@@ -757,9 +939,19 @@ const SeatManagement: React.FC = () => {
                     'Invalid row/column range: start must not be greater than end',
                 }),
               );
+            }
+            if (intStartRow > intEndRow || intStartCol > intEndCol)
+              throw new Error(
+                intl.formatMessage({
+                  id: 'seat.batch.invalidRange',
+                  defaultMessage:
+                    'Invalid row/column range: start must not be greater than end',
+                }),
+              );
+            const zone = zones.find((z) => z.id === zoneId)?.name;
             const seats = [] as any[];
-            for (let r = startRow; r <= endRow; r++) {
-              for (let c = startCol; c <= endCol; c++) {
+            for (let r = intStartRow; r <= intEndRow; r++) {
+              for (let c = intStartCol; c <= intEndCol; c++) {
                 const floor = floors.find((x) => x.id === floorId);
                 seats.push({
                   floorId,
@@ -822,19 +1014,32 @@ const SeatManagement: React.FC = () => {
             </Select>
           </Form.Item>
           <Form.Item
-            name="zone"
+            name="zoneId"
             label={intl.formatMessage({
               id: 'seat.form.zone',
               defaultMessage: 'Zone',
             })}
           >
-            <Select>
-              {zones.map((z) => (
-                <Select.Option key={z.id} value={z.name}>
-                  {z.name}
-                </Select.Option>
-              ))}
-            </Select>
+            <Select
+              showSearch
+              filterOption={false}
+              notFoundContent={zoneSearchLoading ? 'Loading...' : undefined}
+              placeholder={intl.formatMessage({
+                id: 'seat.form.zonePlaceholder',
+                defaultMessage: 'Search zone name',
+              })}
+              onSearch={loadZones}
+              onFocus={() => {
+                if (!zones.length) loadZones();
+              }}
+              loading={zoneSearchLoading}
+              allowClear
+              options={zones.map((zone) => ({
+                value: zone.id,
+                label: zone.name,
+                key: zone.id,
+              }))}
+            />
           </Form.Item>
           <Form.Item
             label={intl.formatMessage({
@@ -858,6 +1063,8 @@ const SeatManagement: React.FC = () => {
               >
                 <InputNumber
                   min={1}
+                  step={1}
+                  precision={0}
                   placeholder={intl.formatMessage({
                     id: 'seat.placeholder.startRow',
                     defaultMessage: 'Start row',
@@ -879,6 +1086,8 @@ const SeatManagement: React.FC = () => {
               >
                 <InputNumber
                   min={1}
+                  step={1}
+                  precision={0}
                   placeholder={intl.formatMessage({
                     id: 'seat.placeholder.endRow',
                     defaultMessage: 'End row',
@@ -909,6 +1118,8 @@ const SeatManagement: React.FC = () => {
               >
                 <InputNumber
                   min={1}
+                  step={1}
+                  precision={0}
                   placeholder={intl.formatMessage({
                     id: 'seat.placeholder.startCol',
                     defaultMessage: 'Start column',
@@ -930,6 +1141,8 @@ const SeatManagement: React.FC = () => {
               >
                 <InputNumber
                   min={1}
+                  step={1}
+                  precision={0}
                   placeholder={intl.formatMessage({
                     id: 'seat.placeholder.endCol',
                     defaultMessage: 'End column',
@@ -946,46 +1159,37 @@ const SeatManagement: React.FC = () => {
             })}
           >
             <Select>
-              <Select.Option value={SeatTypeEnum.Single}>
-                {intl.formatMessage({
-                  id: 'seat.type.single',
-                  defaultMessage: 'Single',
-                })}
-              </Select.Option>
-              <Select.Option value={SeatTypeEnum.Double}>
-                {intl.formatMessage({
-                  id: 'seat.type.double',
-                  defaultMessage: 'Double',
-                })}
-              </Select.Option>
-              <Select.Option value={SeatTypeEnum.Group}>
-                {intl.formatMessage({
-                  id: 'seat.type.group',
-                  defaultMessage: 'Group',
-                })}
-              </Select.Option>
+              {seatTypeOptions.length > 0
+                ? seatTypeOptions.map((option) => (
+                    <Select.Option key={option.key} value={option.value}>
+                      {option.label}
+                    </Select.Option>
+                  ))
+                : [
+                    SeatTypeEnum.Single,
+                    SeatTypeEnum.Double,
+                    SeatTypeEnum.Group,
+                  ].map((value) => (
+                    <Select.Option key={value} value={value}>
+                      {intl.formatMessage({
+                        id: SeatTypeText[value],
+                        defaultMessage: seatTypeDefault[value],
+                      })}
+                    </Select.Option>
+                  ))}
             </Select>
           </Form.Item>
-          <Form.Item
-            name="hasSocket"
-            label={intl.formatMessage({
-              id: 'seat.form.hasSocket',
-              defaultMessage: 'Has socket',
-            })}
-            valuePropName="checked"
-          >
-            <Switch />
-          </Form.Item>
-          <Form.Item
-            name="isWindow"
-            label={intl.formatMessage({
-              id: 'seat.form.isWindow',
-              defaultMessage: 'Window seat',
-            })}
-            valuePropName="checked"
-          >
-            <Switch />
-          </Form.Item>
+          {seatFacilityOptions.length > 0 &&
+            seatFacilityOptions.map((option) => (
+              <Form.Item
+                key={option.key}
+                name={option.field}
+                label={option.label}
+                valuePropName="checked"
+              >
+                <Switch />
+              </Form.Item>
+            ))}
         </Form>
       </Modal>
     </PageContainer>

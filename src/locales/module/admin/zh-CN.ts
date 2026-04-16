@@ -18,4 +18,6 @@ export default {
   'admin.backendDetect': '后端环境检测',
   'admin.refresh': '刷新',
   'admin.selectedBase': '已选基地址',
+  'access.title': '访问示例',
+  'access.onlyAdminButton': '只有管理员可见该按钮',
 };

@@ -1,5 +1,3 @@
-import '@umijs/max/typings';
-
 declare namespace API {
   interface UserInfo {
     id?: string;

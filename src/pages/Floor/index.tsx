@@ -10,6 +10,8 @@ interface FloorType {
   name: string;
   description?: string;
   totalSeats?: number;
+  updatedByName?: string;
+  updatedBy?: { name?: string; username?: string };
 }
 
 const FloorManagement: React.FC = () => {
@@ -41,6 +43,16 @@ const FloorManagement: React.FC = () => {
         defaultMessage: 'Total Seats',
       }),
       dataIndex: 'totalSeats',
+    },
+    {
+      title: intl.formatMessage({
+        id: 'common.updatedBy',
+        defaultMessage: 'Updated By',
+      }),
+      dataIndex: 'updatedByName',
+      width: 140,
+      hideInSearch: true,
+      render: (_, record) => record.updatedByName || '-',
     },
     {
       title: intl.formatMessage({
@@ -128,15 +140,11 @@ const FloorManagement: React.FC = () => {
         request={async (params) => {
           try {
             const res = await request('/api/floors', { params });
-            const raw = res?.data;
-            let list: any[] = [];
-            if (Array.isArray(raw)) list = raw;
-            else if (Array.isArray(raw?.list)) list = raw.list;
-            else list = [];
+            const list: any[] = res?.data?.list ?? [];
             return {
               data: list,
               success: true,
-              total: raw?.total ?? list.length,
+              total: res?.data?.total ?? list.length,
             };
           } catch (e) {
             return { data: [], success: false, total: 0 };
