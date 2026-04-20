@@ -16,6 +16,7 @@ export default {
   'feedback.status.rejected': 'Rejected',
   'feedback.processFeedback': 'Process Feedback',
   'feedback.form.status': 'Status',
+  'feedback.form.urgencyRequired': 'Please select urgency',
   'feedback.form.reply': 'Reply',
   'feedback.form.replyRequired': 'Please enter a reply',
   'feedback.form.submit': 'Submit',
@@ -37,4 +38,7 @@ export default {
   'feedback.official': 'Official',
   'feedback.field.createdAt': 'Created At',
   'feedback.form.replyPlaceholder': 'Please enter reply',
+  'feedback.quickReply.processing': 'Reply and continue processing',
+  'feedback.quickReply.resolve': 'Reply and resolve',
+  'feedback.quickReply.reject': 'Reply and reject',
 };

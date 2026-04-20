@@ -109,6 +109,8 @@ export interface CreditRecord {
   points: number;
   date: string;
   reason: string;
+  reasonCode?: string;
+  reasonText?: string;
 }
 
 /**

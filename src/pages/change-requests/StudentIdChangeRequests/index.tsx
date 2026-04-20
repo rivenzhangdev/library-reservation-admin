@@ -9,6 +9,11 @@ import {
   getStudentIdChangeRequests,
   rejectStudentIdChangeRequest,
 } from '../../../services/library/studentIdChangeRequest';
+import {
+  STANDARD_ACTION_COLUMN,
+  STANDARD_TABLE_SCROLL,
+  STANDARD_TABLE_SEARCH,
+} from '../../../utils/table';
 
 interface StudentIdChangeRequestType {
   id: string;
@@ -112,7 +117,7 @@ const StudentIdChangeRequests: React.FC = () => {
       width: 240,
       render: (_, record) => (
         <div>
-          <div>{record.userName || '-'}</div>
+          <div>{record.userId?.name || '-'}</div>
           <div style={{ color: '#999', fontSize: 12 }}>
             {record.userId?.username}
             {record.userId?.studentId ? ` · ${record.userId.studentId}` : ''}
@@ -122,12 +127,22 @@ const StudentIdChangeRequests: React.FC = () => {
     },
     {
       title: intl.formatMessage({
+        id: 'studentIdChangeRequest.column.oldStudentId',
+        defaultMessage: 'Student ID Before Request',
+      }),
+      dataIndex: 'oldStudentId',
+      width: 160,
+      ellipsis: true,
+      render: (_, record) => record.oldStudentId || '-',
+    },
+    {
+      title: intl.formatMessage({
         id: 'studentIdChangeRequest.column.currentStudentId',
         defaultMessage: 'Current Student ID',
       }),
-      dataIndex: 'oldStudentId',
       width: 140,
       ellipsis: true,
+      render: (_, record) => record.userId?.studentId || '-',
     },
     {
       title: intl.formatMessage({
@@ -143,9 +158,28 @@ const StudentIdChangeRequests: React.FC = () => {
         id: 'studentIdChangeRequest.column.currentName',
         defaultMessage: 'Current Name',
       }),
-      dataIndex: 'oldName',
       width: 140,
       ellipsis: true,
+      render: (_, record) => {
+        const current = record.userId?.name || record.oldName;
+        const oldValue = record.oldName;
+        return (
+          <div>
+            <div>{current || '-'}</div>
+            {record.userId?.name &&
+            oldValue &&
+            record.userId.name !== oldValue ? (
+              <div style={{ color: '#999', fontSize: 12 }}>
+                {intl.formatMessage({
+                  id: 'studentIdChangeRequest.column.requestSnapshot',
+                  defaultMessage: 'Requested snapshot:',
+                })}{' '}
+                {oldValue}
+              </div>
+            ) : null}
+          </div>
+        );
+      },
     },
     {
       title: intl.formatMessage({
@@ -212,6 +246,7 @@ const StudentIdChangeRequests: React.FC = () => {
         defaultMessage: 'Action',
       }),
       valueType: 'option',
+      ...STANDARD_ACTION_COLUMN,
       width: 180,
       render: (_, record) => (
         <Space>
@@ -269,10 +304,7 @@ const StudentIdChangeRequests: React.FC = () => {
         })}
         actionRef={actionRef}
         rowKey="id"
-        search={{
-          labelWidth: 'auto',
-          defaultCollapsed: false,
-        }}
+        search={STANDARD_TABLE_SEARCH}
         request={async (params) => {
           const response: any = await getStudentIdChangeRequests({
             page: params.current,
@@ -288,7 +320,7 @@ const StudentIdChangeRequests: React.FC = () => {
         }}
         columns={columns}
         rowSelection={{}}
-        scroll={{ x: 1400 }}
+        scroll={STANDARD_TABLE_SCROLL}
       />
     </PageContainer>
   );

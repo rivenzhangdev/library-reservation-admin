@@ -17,12 +17,15 @@ export default defineConfig({
     title: '图书馆管理后台',
     logo: false,
   },
-  // 本地开发时将 /api 请求代理到后端服务，优先使用环境变量 BACKEND_URL
+  // 本地开发时将 /api 请求代理到后端服务，优先使用环境变量 BACKEND_BASE_URL
   // 启动示例（PowerShell）：
   // $env:BACKEND_URL='http://localhost:3001'; pnpm dev
   proxy: {
     '/api': {
-      target: process.env.BACKEND_URL || 'http://localhost:3001',
+      target:
+        process.env.BACKEND_BASE_URL ||
+        process.env.BACKEND_URL ||
+        'http://localhost:3001',
       changeOrigin: true,
       secure: false,
     },
@@ -35,13 +38,33 @@ export default defineConfig({
     },
     {
       path: '/',
-      redirect: '/dashboard',
+      redirect: '/data-management/dashboard',
     },
     {
-      path: '/dashboard',
-      name: 'dashboard',
+      path: '/data-management',
+      name: 'dataManagement',
       icon: 'LineChartOutlined',
-      component: 'Dashboard',
+      access: 'canSeeAdmin',
+      routes: [
+        {
+          path: '/data-management',
+          redirect: '/data-management/dashboard',
+        },
+        {
+          path: 'dashboard',
+          name: 'dashboard',
+          icon: 'LineChartOutlined',
+          component: 'Dashboard',
+          access: 'canSeeAdmin',
+        },
+        {
+          path: 'operations',
+          name: 'operationDashboard',
+          icon: 'DashboardOutlined',
+          component: 'OperationDashboard',
+          access: 'canSeeAdmin',
+        },
+      ],
     },
     {
       path: '/user',
@@ -78,11 +101,22 @@ export default defineConfig({
     },
     {
       path: '/booking',
-
       name: 'booking',
       icon: 'CalendarOutlined',
-      component: 'Booking',
       access: 'canSeeAdmin',
+      routes: [
+        {
+          path: '/booking',
+          redirect: '/booking/list',
+        },
+        {
+          path: 'list',
+          name: 'bookingList',
+          icon: 'TableOutlined',
+          component: 'Booking',
+          access: 'canSeeAdmin',
+        },
+      ],
     },
     {
       path: '/seat',

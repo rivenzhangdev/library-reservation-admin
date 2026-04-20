@@ -80,3 +80,16 @@ export async function deleteConfigSeatFacility(id: number | string) {
     method: 'DELETE',
   });
 }
+
+export async function getConfigCreditRules() {
+  return request('/api/config/credit-rules', {
+    method: 'GET',
+  });
+}
+
+export async function updateConfigCreditRules(data: any) {
+  return request('/api/config/credit-rules', {
+    method: 'PUT',
+    data,
+  });
+}

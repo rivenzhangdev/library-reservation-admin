@@ -20,7 +20,9 @@ function writeDotEnv(found) {
     const outPath = path.resolve(__dirname, '..', '.env');
     const content = `BACKEND_ENV=${found.key}\nBACKEND_BASE_URL=${
       found.baseUrl || ''
-    }\nBACKEND_LAN_URL=${found.lanBaseUrl || ''}\n`;
+    }\nBACKEND_URL=${found.baseUrl || ''}\nBACKEND_LAN_URL=${
+      found.lanBaseUrl || ''
+    }\n`;
     fs.writeFileSync(outPath, content, 'utf8');
     console.log(`Wrote ${outPath}`);
   } catch (e) {

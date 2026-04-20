@@ -107,21 +107,34 @@ const request: RequestConfig & { errorHandler?: (error: any) => void } = {
           formatMessageFn?.({
             id: 'request.networkError.content',
             defaultMessage: isZh
-              ? '后端服务未响应，请检查 BACKEND_URL 或服务端是否已启动。'
-              : 'The backend service did not respond. Please check BACKEND_URL or whether the server is running.',
+              ? '后端服务未响应，即将跳转到登录页面。'
+              : 'The backend service did not respond. Redirecting to login page.',
           }) ??
           (isZh
-            ? '后端服务未响应，请检查 BACKEND_URL 或服务端是否已启动。'
-            : 'The backend service did not respond. Please check BACKEND_URL or whether the server is running.');
-        showModal(
-          title,
-          `${content}${
-            error?.message
-              ? `
+            ? '后端服务未响应，即将跳转到登录页面。'
+            : 'The backend service did not respond. Redirecting to login page.');
+        try {
+          Modal.error({
+            title,
+            content: `${content}${
+              error?.message
+                ? `
 ${error.message}`
-              : ''
-          }`.trim(),
-        );
+                : ''
+            }`.trim(),
+            onOk: () => {
+              try {
+                window.localStorage.removeItem('token');
+                window.localStorage.removeItem('currentUser');
+              } catch (e) {
+                // ignore
+              }
+              window.location.replace('/login');
+            },
+          });
+        } catch (e) {
+          // ignore
+        }
       } else if (status >= 500) {
         const title =
           formatMessageFn?.({

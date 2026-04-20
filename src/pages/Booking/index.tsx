@@ -2,6 +2,7 @@ import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { history, useIntl } from '@umijs/max';
+import dayjs from 'dayjs';
 import {
   Button,
   DatePicker,
@@ -35,6 +36,12 @@ import { getConfigTimeSlots } from '../../services/library/config';
 import { getFloors } from '../../services/library/floor';
 import { getSeatList } from '../../services/library/seat';
 import { getUserList } from '../../services/library/user';
+import {
+  STANDARD_ACTION_COLUMN,
+  STANDARD_TABLE_SCROLL,
+  STANDARD_TABLE_SEARCH,
+  toTableDataSource,
+} from '../../utils/table';
 
 /**
  * 预约数据类型
@@ -197,7 +204,7 @@ const BookingManagement: React.FC = () => {
           label: `${seat.floorName || ''} ${seat.zone || ''} ${
             seat.name || `R${seat.rowNum}C${seat.colNum}`
           }`.trim(),
-          value: String(seat.id || seat._id),
+          value: String(seat.id),
         })),
       );
     } catch (e) {
@@ -592,8 +599,8 @@ const BookingManagement: React.FC = () => {
         defaultMessage: 'Action',
       }),
       valueType: 'option',
-      width: 260,
-      fixed: 'right',
+      ...STANDARD_ACTION_COLUMN,
+      width: 280,
       render: (_, record) => (
         <Space size="small" wrap style={{ minWidth: 240 }}>
           <Button
@@ -691,7 +698,7 @@ const BookingManagement: React.FC = () => {
           })}
         </Button>,
       ]}
-      headerContent={
+      content={
         <Space direction="vertical" size="small">
           <Typography.Text strong>
             {intl.formatMessage({
@@ -714,11 +721,8 @@ const BookingManagement: React.FC = () => {
         })}
         actionRef={actionRef}
         rowKey="id"
-        scroll={{ x: 1000 }}
-        search={{
-          labelWidth: 'auto',
-          defaultCollapsed: false,
-        }}
+        scroll={STANDARD_TABLE_SCROLL}
+        search={STANDARD_TABLE_SEARCH}
         rowSelection={{
           onChange: (_, rows) => setSelectedRows(rows.map((r: any) => r.id)),
         }}
@@ -785,14 +789,7 @@ const BookingManagement: React.FC = () => {
         request={async (params) => {
           try {
             const res: any = await getBookingList(params);
-            const raw = res?.data;
-            let list: any[] = [];
-            if (Array.isArray(raw)) list = raw;
-            else if (Array.isArray(raw?.list)) list = raw.list;
-            else if (Array.isArray(raw?.bookings)) list = raw.bookings;
-            else list = [];
-            const total = raw?.total ?? (Array.isArray(list) ? list.length : 0);
-            return { data: list, success: true, total };
+            return toTableDataSource<BookingType>(res);
           } catch (e) {
             return { data: [], success: false, total: 0 };
           }
@@ -1085,14 +1082,15 @@ const BookingManagement: React.FC = () => {
                     page: 1,
                     limit: 10,
                   });
-                  const raw = res?.data || {};
-                  const list = raw.list || raw.users || [];
+                  const list = Array.isArray(res?.data?.list)
+                    ? res.data.list
+                    : [];
                   setUserOptions(
                     list.map((u: any) => ({
                       label: `${u.name || u.username}${
                         u.studentId ? ' (' + u.studentId + ')' : ''
                       }`,
-                      value: u.id || u._id,
+                      value: u.id,
                     })),
                   );
                 } catch (e) {
@@ -1151,7 +1149,17 @@ const BookingManagement: React.FC = () => {
               }}
               loading={seatLoading}
               options={seatOptions}
-              notFoundContent={seatLoading ? 'Loading...' : 'No seats found'}
+              notFoundContent={
+                seatLoading
+                  ? intl.formatMessage({
+                      id: 'common.loading',
+                      defaultMessage: 'Loading',
+                    })
+                  : intl.formatMessage({
+                      id: 'booking.noSeatsFound',
+                      defaultMessage: 'No seats found',
+                    })
+              }
             />
           </Form.Item>
           <Form.Item
@@ -1207,21 +1215,21 @@ const BookingManagement: React.FC = () => {
                     {
                       value: TimeSlot.Morning,
                       label: intl.formatMessage({
-                        id: 'timeslot.morning',
+                        id: 'booking.timeSlot.morning',
                         defaultMessage: 'Morning',
                       }),
                     },
                     {
                       value: TimeSlot.Afternoon,
                       label: intl.formatMessage({
-                        id: 'timeslot.afternoon',
+                        id: 'booking.timeSlot.afternoon',
                         defaultMessage: 'Afternoon',
                       }),
                     },
                     {
                       value: TimeSlot.Evening,
                       label: intl.formatMessage({
-                        id: 'timeslot.evening',
+                        id: 'booking.timeSlot.evening',
                         defaultMessage: 'Evening',
                       }),
                     },

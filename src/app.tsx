@@ -4,7 +4,9 @@ import '@antv/g2-extension-plot';
 import { history } from '@umijs/max';
 import { forwardRef } from 'react';
 import {
+  BACKEND_BASE_KEY,
   BACKEND_ENVS,
+  clearBackendAuthStorage,
   detectBackendStatuses,
   getBackendBaseUrl,
   getBackendEnvKey,
@@ -15,6 +17,86 @@ import requestConfig from './utils/request';
 export const request = requestConfig;
 
 const loginPath = '/login';
+
+function resolveRuntimeBackendOverride(): {
+  key?: string;
+  baseUrl?: string;
+} {
+  try {
+    const penv =
+      typeof process !== 'undefined' ? (process as any).env : undefined;
+    if (!penv) return {};
+
+    const key = String(
+      penv.BACKEND_ENV ||
+        penv.REACT_APP_BACKEND_ENV ||
+        penv.VITE_BACKEND_ENV ||
+        '',
+    ).trim();
+
+    const baseUrl = String(
+      penv.BACKEND_BASE_URL ||
+        penv.BACKEND_URL ||
+        penv.REACT_APP_BACKEND_BASE_URL ||
+        penv.VITE_BACKEND_BASE_URL ||
+        '',
+    ).trim();
+
+    return {
+      key: key || undefined,
+      baseUrl: baseUrl || undefined,
+    };
+  } catch (error) {
+    return {};
+  }
+}
+
+function applyRuntimeBackendOverride(
+  selectedKey: string | null,
+  baseUrl: string,
+): {
+  selectedKey: string | null;
+  baseUrl: string;
+} {
+  const runtime = resolveRuntimeBackendOverride();
+  const runtimeKey =
+    runtime.key && BACKEND_ENVS.some((item) => item.key === runtime.key)
+      ? runtime.key
+      : undefined;
+
+  if (!runtimeKey && !runtime.baseUrl) {
+    return { selectedKey, baseUrl };
+  }
+
+  let nextSelectedKey = selectedKey;
+  let nextBaseUrl = baseUrl;
+
+  if (runtimeKey) {
+    setBackendEnv(runtimeKey as any, { clearAuth: true });
+    nextSelectedKey = runtimeKey;
+    const matchedEnv = BACKEND_ENVS.find((item) => item.key === runtimeKey);
+    if (matchedEnv?.baseUrl) {
+      nextBaseUrl = matchedEnv.baseUrl;
+    }
+  }
+
+  if (runtime.baseUrl) {
+    nextBaseUrl = runtime.baseUrl;
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(BACKEND_BASE_KEY, runtime.baseUrl);
+        clearBackendAuthStorage();
+      }
+    } catch (error) {
+      // ignore
+    }
+  }
+
+  return {
+    selectedKey: nextSelectedKey,
+    baseUrl: nextBaseUrl,
+  };
+}
 
 export async function getInitialState(): Promise<{
   currentUser?: any;
@@ -31,6 +113,11 @@ export async function getInitialState(): Promise<{
       let selectedKey = getBackendEnvKey();
       let baseUrl = getBackendBaseUrl();
       let statuses: Record<string, any> = {};
+
+      const runtimeApplied = applyRuntimeBackendOverride(selectedKey, baseUrl);
+      selectedKey = runtimeApplied.selectedKey;
+      baseUrl = runtimeApplied.baseUrl;
+
       if (!selectedKey) {
         try {
           statuses = await detectBackendStatuses(2500);
@@ -69,6 +156,11 @@ export async function getInitialState(): Promise<{
     let selectedKey = getBackendEnvKey();
     let baseUrl = getBackendBaseUrl();
     let statuses: Record<string, any> = {};
+
+    const runtimeApplied = applyRuntimeBackendOverride(selectedKey, baseUrl);
+    selectedKey = runtimeApplied.selectedKey;
+    baseUrl = runtimeApplied.baseUrl;
+
     if (!selectedKey) {
       try {
         statuses = await detectBackendStatuses(2500);
@@ -90,8 +182,11 @@ export async function getInitialState(): Promise<{
       backend: { selectedKey, baseUrl, statuses, allEnvs: BACKEND_ENVS },
     };
   } catch (e) {
-    const selectedKey = getBackendEnvKey();
-    const baseUrl = getBackendBaseUrl();
+    let selectedKey = getBackendEnvKey();
+    let baseUrl = getBackendBaseUrl();
+    const runtimeApplied = applyRuntimeBackendOverride(selectedKey, baseUrl);
+    selectedKey = runtimeApplied.selectedKey;
+    baseUrl = runtimeApplied.baseUrl;
     const statuses: Record<string, any> = {};
     return {
       backend: { selectedKey, baseUrl, statuses, allEnvs: BACKEND_ENVS },

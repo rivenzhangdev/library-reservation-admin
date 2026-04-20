@@ -28,6 +28,11 @@ import {
   updateNotification,
 } from '../../services/library/notification';
 import { getUserList } from '../../services/library/user';
+import {
+  STANDARD_ACTION_COLUMN,
+  STANDARD_TABLE_SCROLL,
+  STANDARD_TABLE_SEARCH,
+} from '../../utils/table';
 
 /**
  * 通知数据类型
@@ -36,6 +41,7 @@ interface NotificationRecord {
   id: string;
   userId: string;
   userName: string;
+  publisherName?: string;
   type: number;
   title: string;
   content: string;
@@ -72,14 +78,13 @@ const NotificationManagement: React.FC = () => {
   const fetchUserOptions = async (keyword: string) => {
     try {
       const res: any = await getUserList({ q: keyword, page: 1, limit: 10 });
-      const raw = res?.data || {};
-      const list = raw.list || raw.users || [];
+      const list = Array.isArray(res?.data?.list) ? res.data.list : [];
       setUserOptions(
         list.map((user: any) => ({
           label: `${user.name || user.username}${
             user.studentId ? ` (${user.studentId})` : ''
           }`,
-          value: user.id || user._id,
+          value: user.id,
         })),
       );
     } catch (e) {
@@ -365,6 +370,16 @@ const NotificationManagement: React.FC = () => {
     },
     {
       title: intl.formatMessage({
+        id: 'common.createdBy',
+        defaultMessage: 'Created By',
+      }),
+      dataIndex: 'publisherName',
+      width: 140,
+      hideInSearch: true,
+      render: (_, record) => record.publisherName || '-',
+    },
+    {
+      title: intl.formatMessage({
         id: 'common.updatedBy',
         defaultMessage: 'Updated By',
       }),
@@ -379,8 +394,7 @@ const NotificationManagement: React.FC = () => {
         defaultMessage: 'Action',
       }),
       valueType: 'option',
-      width: 140,
-      fixed: 'right',
+      ...STANDARD_ACTION_COLUMN,
       render: (_, record) => (
         <Space size="small">
           <Button
@@ -447,24 +461,15 @@ const NotificationManagement: React.FC = () => {
         })}
         actionRef={actionRef}
         rowKey="id"
-        scroll={{ x: 1000 }}
-        search={{
-          labelWidth: 'auto',
-          defaultCollapsed: false,
-        }}
+        scroll={STANDARD_TABLE_SCROLL}
+        search={STANDARD_TABLE_SEARCH}
         request={async (params) => {
           try {
             const res: any = await getNotificationList(params);
-            const raw = res?.data;
-            let list: any[] = [];
-            if (Array.isArray(raw)) list = raw;
-            else if (Array.isArray(raw?.list)) list = raw.list;
-            else if (Array.isArray(raw?.notifications))
-              list = raw.notifications;
-            else list = [];
-            list = list.map((item: any) => ({
+            const list = (
+              Array.isArray(res?.data?.list) ? res.data.list : []
+            ).map((item: any) => ({
               ...item,
-              id: item.id || item._id,
               userName:
                 item.userName || item.user?.name || item.user?.username || '-',
               audience:
@@ -513,8 +518,11 @@ const NotificationManagement: React.FC = () => {
                     )
                   : item.userName || '-',
             }));
-            const total = raw?.total ?? (Array.isArray(list) ? list.length : 0);
-            return { data: list, success: true, total };
+            return {
+              data: list,
+              success: res?.success !== false,
+              total: Number(res?.data?.total || 0),
+            };
           } catch (e) {
             return { data: [], success: false, total: 0 };
           }
@@ -609,6 +617,26 @@ const NotificationManagement: React.FC = () => {
             <p>
               <strong>
                 {intl.formatMessage({
+                  id: 'notification.detail.publisher',
+                  defaultMessage: 'Publisher',
+                })}
+                ：
+              </strong>
+              {detailData.publisherName || '-'}
+            </p>
+            <p>
+              <strong>
+                {intl.formatMessage({
+                  id: 'notification.detail.updatedBy',
+                  defaultMessage: 'Updated By',
+                })}
+                ：
+              </strong>
+              {detailData.updatedByName || '-'}
+            </p>
+            <p>
+              <strong>
+                {intl.formatMessage({
                   id: 'notification.detail.time',
                   defaultMessage: 'Time',
                 })}
@@ -640,7 +668,7 @@ const NotificationManagement: React.FC = () => {
         onOk={async () => {
           try {
             const values = await editForm.validateFields();
-            const id = detailData?.id || detailData?._id;
+            const id = detailData?.id;
             if (!id) throw new Error('missing id');
             await updateNotification(id, values);
             message.success(

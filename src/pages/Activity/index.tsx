@@ -34,6 +34,12 @@ import {
 } from '../../services/library/activity';
 import { getFloors } from '../../services/library/floor';
 import { uploadImage } from '../../services/library/user';
+import {
+  STANDARD_ACTION_COLUMN,
+  STANDARD_TABLE_SCROLL,
+  STANDARD_TABLE_SEARCH,
+  toTableDataSource,
+} from '../../utils/table';
 
 /**
  * 活动数据类型
@@ -52,9 +58,7 @@ interface ActivityType {
   participants: number | any[];
   maxParticipants: number;
   createdByName?: string;
-  createdBy?: { name?: string; username?: string };
   updatedByName?: string;
-  updatedBy?: { name?: string; username?: string };
 }
 
 /**
@@ -142,21 +146,6 @@ const ActivityManagement: React.FC = () => {
   const closeQrModal = () => {
     setQrModalVisible(false);
     setQrLoading(false);
-  };
-
-  const copyToClipboard = async (text: string) => {
-    if (navigator.clipboard?.writeText) {
-      return navigator.clipboard.writeText(text);
-    }
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.style.position = 'fixed';
-    textarea.style.left = '-9999px';
-    document.body.appendChild(textarea);
-    textarea.focus();
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
   };
 
   /**
@@ -408,8 +397,7 @@ const ActivityManagement: React.FC = () => {
         defaultMessage: 'Action',
       }),
       valueType: 'option',
-      width: 150,
-      fixed: 'right',
+      ...STANDARD_ACTION_COLUMN,
       render: (_, record) => (
         <Space size="small" wrap style={{ width: '100%', gap: 4 }}>
           <Button
@@ -505,26 +493,12 @@ const ActivityManagement: React.FC = () => {
         })}
         actionRef={actionRef}
         rowKey="id"
-        scroll={{ x: 1100 }}
-        search={{
-          labelWidth: 'auto',
-          defaultCollapsed: false,
-        }}
+        scroll={STANDARD_TABLE_SCROLL}
+        search={STANDARD_TABLE_SEARCH}
         request={async (params) => {
           try {
             const res: any = await getActivityList(params);
-            const raw = res?.data;
-            let list: any[] = [];
-            if (Array.isArray(raw)) list = raw;
-            else if (Array.isArray(raw?.list)) list = raw.list;
-            else if (Array.isArray(raw?.activities)) list = raw.activities;
-            else list = [];
-            list = list.map((item: any) => ({
-              ...item,
-              id: item.id || item._id,
-            }));
-            const total = raw?.total ?? (Array.isArray(list) ? list.length : 0);
-            return { data: list, success: true, total };
+            return toTableDataSource<ActivityType>(res);
           } catch (e) {
             return { data: [], success: false, total: 0 };
           }

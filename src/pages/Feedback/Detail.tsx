@@ -18,7 +18,6 @@ import {
   Space,
   Tag,
 } from 'antd';
-import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 
 const DetailPage: React.FC = () => {
@@ -58,7 +57,19 @@ const DetailPage: React.FC = () => {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  const submitterText =
+    data?.userName ||
+    data?.userId?.name ||
+    data?.userId?.username ||
+    data?.userId?.studentId ||
+    data?.contact ||
+    intl.formatMessage({
+      id: 'common.unknown',
+      defaultMessage: 'Unknown',
+    });
 
   const onFinish = async (vals: any) => {
     try {
@@ -141,11 +152,7 @@ const DetailPage: React.FC = () => {
               defaultMessage: 'Submitter',
             })}
           >
-            {data.userName ||
-              intl.formatMessage({
-                id: 'right.guest',
-                defaultMessage: 'Guest',
-              })}
+            {submitterText}
           </Descriptions.Item>
           <Descriptions.Item
             label={intl.formatMessage({
@@ -189,7 +196,7 @@ const DetailPage: React.FC = () => {
                           onConfirm={async () => {
                             try {
                               const res: any = await deleteFeedbackImage(
-                                data.id || data._id,
+                                data.id,
                                 { url: src },
                               );
                               if (res?.success) {
@@ -275,7 +282,7 @@ const DetailPage: React.FC = () => {
                   </div>
                   <div style={{ marginTop: 6 }}>{c.content}</div>
                   <div style={{ color: '#888', marginTop: 6 }}>
-                    {dayjs(c.date).format('YYYY-MM-DD HH:mm')}
+                    {c.date || '-'}
                   </div>
                 </div>
               ))

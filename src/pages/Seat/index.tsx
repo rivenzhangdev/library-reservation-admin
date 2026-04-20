@@ -19,7 +19,6 @@ import {
   SeatStatus,
   SeatStatusText,
   SeatType as SeatTypeEnum,
-  SeatTypeText,
 } from '../../constants/status';
 import {
   getConfigSeatFacilities,
@@ -34,6 +33,11 @@ import {
   updateSeat,
 } from '../../services/library/seat';
 import { getZones } from '../../services/library/zone';
+import {
+  STANDARD_ACTION_COLUMN,
+  STANDARD_TABLE_SCROLL,
+  STANDARD_TABLE_SEARCH,
+} from '../../utils/table';
 
 /**
  * 座位数据类型
@@ -76,12 +80,6 @@ const SeatManagement: React.FC = () => {
     [SeatStatus.Maintenance]: 'Maintenance',
   };
 
-  const seatTypeDefault: Record<number, string> = {
-    [SeatTypeEnum.Single]: 'Single',
-    [SeatTypeEnum.Double]: 'Double',
-    [SeatTypeEnum.Group]: 'Group',
-  };
-
   const actionRef = useRef<ActionType>();
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [batchModalVisible, setBatchModalVisible] = useState(false);
@@ -115,15 +113,6 @@ const SeatManagement: React.FC = () => {
 
   const [zones, setZones] = useState<Array<{ id: string; name: string }>>([]);
   const [zoneSearchLoading, setZoneSearchLoading] = useState<boolean>(false);
-  const zoneOptions = React.useMemo(
-    () =>
-      zones.map((zone) => ({
-        label: zone.name,
-        value: zone.name,
-        key: zone.id,
-      })),
-    [zones],
-  );
   const [seatTypeConfigs, setSeatTypeConfigs] = useState<
     Array<{
       id?: number;
@@ -143,10 +132,8 @@ const SeatManagement: React.FC = () => {
       order?: number;
     }>
   >([]);
-  const [seatConfigLoading, setSeatConfigLoading] = useState<boolean>(false);
 
   const loadSeatOptionConfigs = async () => {
-    setSeatConfigLoading(true);
     try {
       const [typesRes, facilitiesRes] = await Promise.all([
         getConfigSeatTypes(),
@@ -158,8 +145,6 @@ const SeatManagement: React.FC = () => {
       setSeatFacilityConfigs(Array.isArray(facilityList) ? facilityList : []);
     } catch (e) {
       console.error('Failed to load seat configs', e);
-    } finally {
-      setSeatConfigLoading(false);
     }
   };
 
@@ -223,15 +208,10 @@ const SeatManagement: React.FC = () => {
         pageNum: 1,
         pageLimit: 50,
       });
-      const raw = res?.data ?? res;
-      let list: any[] = [];
-      if (Array.isArray(raw)) list = raw;
-      else if (Array.isArray(raw?.list)) list = raw.list;
-      else if (Array.isArray(raw?.zones)) list = raw.zones;
-      else if (Array.isArray(raw?.data)) list = raw.data;
+      const list = Array.isArray(res?.data?.list) ? res.data.list : [];
       setZones(
-        list.map((z) => ({
-          id: String(z.id || z._id || z._id?.toString?.() || z.name),
+        list.map((z: any) => ({
+          id: String(z.id),
           name: z.name,
         })),
       );
@@ -409,34 +389,16 @@ const SeatManagement: React.FC = () => {
       }),
       dataIndex: 'type',
       valueType: 'select',
-      valueEnum: seatTypeConfigs.reduce<Record<string, any>>(
-        (acc, item) => {
+      valueEnum: seatTypeConfigs
+        .filter((item) => item.enabled !== false)
+        .reduce<Record<string, any>>((acc, item) => {
           acc[String(item.type)] = {
             text: item.label,
           };
           return acc;
-        },
-        {
-          [SeatTypeEnum.Single]: {
-            text: intl.formatMessage({
-              id: SeatTypeText[SeatTypeEnum.Single],
-              defaultMessage: seatTypeDefault[SeatTypeEnum.Single],
-            }),
-          },
-          [SeatTypeEnum.Double]: {
-            text: intl.formatMessage({
-              id: SeatTypeText[SeatTypeEnum.Double],
-              defaultMessage: seatTypeDefault[SeatTypeEnum.Double],
-            }),
-          },
-          [SeatTypeEnum.Group]: {
-            text: intl.formatMessage({
-              id: SeatTypeText[SeatTypeEnum.Group],
-              defaultMessage: seatTypeDefault[SeatTypeEnum.Group],
-            }),
-          },
-        },
-      ),
+        }, {}),
+      render: (_, record) =>
+        seatTypeLabelMap[Number(record.type)] || String(record.type ?? '-'),
     },
     {
       title: intl.formatMessage({
@@ -493,8 +455,8 @@ const SeatManagement: React.FC = () => {
         defaultMessage: 'Actions',
       }),
       valueType: 'option',
+      ...STANDARD_ACTION_COLUMN,
       width: 260,
-      fixed: 'right',
       render: (_, record) => (
         <Space size={4} wrap={false}>
           <Button
@@ -551,11 +513,8 @@ const SeatManagement: React.FC = () => {
         })}
         actionRef={actionRef}
         rowKey="id"
-        scroll={{ x: 1300 }}
-        search={{
-          labelWidth: 'auto',
-          defaultCollapsed: false,
-        }}
+        scroll={STANDARD_TABLE_SCROLL}
+        search={STANDARD_TABLE_SEARCH}
         rowSelection={{
           onChange: (_, rows) => setSelectedSeatIds(rows.map((r: any) => r.id)),
         }}
@@ -599,13 +558,8 @@ const SeatManagement: React.FC = () => {
         request={async (params) => {
           try {
             const res: any = await getSeatList(params);
-            const raw = res?.data;
-            let list: any[] = [];
-            if (Array.isArray(raw)) list = raw;
-            else if (Array.isArray(raw?.list)) list = raw.list;
-            else if (Array.isArray(raw?.seats)) list = raw.seats;
-            else list = [];
-            const total = raw?.total ?? (Array.isArray(list) ? list.length : 0);
+            const list = Array.isArray(res?.data?.list) ? res.data.list : [];
+            const total = Number(res?.data?.total ?? list.length);
             return { data: list, success: true, total };
           } catch (e) {
             return { data: [], success: false, total: 0 };
@@ -846,10 +800,7 @@ const SeatManagement: React.FC = () => {
                     SeatTypeEnum.Group,
                   ].map((value) => (
                     <Select.Option key={value} value={value}>
-                      {intl.formatMessage({
-                        id: SeatTypeText[value],
-                        defaultMessage: seatTypeDefault[value],
-                      })}
+                      {seatTypeLabelMap[value] || String(value)}
                     </Select.Option>
                   ))}
             </Select>
@@ -1171,10 +1122,7 @@ const SeatManagement: React.FC = () => {
                     SeatTypeEnum.Group,
                   ].map((value) => (
                     <Select.Option key={value} value={value}>
-                      {intl.formatMessage({
-                        id: SeatTypeText[value],
-                        defaultMessage: seatTypeDefault[value],
-                      })}
+                      {seatTypeLabelMap[value] || String(value)}
                     </Select.Option>
                   ))}
             </Select>

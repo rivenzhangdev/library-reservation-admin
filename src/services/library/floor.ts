@@ -6,10 +6,7 @@ export async function getFloors(params?: any) {
     method: 'GET',
     params,
   });
-  const raw = res?.data;
-  if (Array.isArray(raw)) return raw;
-  if (Array.isArray(raw?.list)) return raw.list;
-  return [];
+  return Array.isArray(res?.data?.list) ? res.data.list : [];
 }
 
 /** 创建楼层 */

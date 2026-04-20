@@ -11,6 +11,7 @@ import phoneChangeRequest from './module/phoneChangeRequest/zh-CN';
 import seat from './module/seat/zh-CN';
 import studentIdChangeRequest from './module/studentIdChangeRequest/zh-CN';
 import zone from './module/zone/zh-CN';
+import operationDashboard from './module/operationDashboard/zh-CN';
 
 export default {
   ...booking,
@@ -26,4 +27,5 @@ export default {
   ...seat,
   ...zone,
   ...menu,
+  ...operationDashboard,
 };

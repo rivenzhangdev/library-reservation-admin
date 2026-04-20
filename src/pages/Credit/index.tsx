@@ -1,11 +1,13 @@
 import { UserOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
-import { useIntl } from '@umijs/max';
+import { history, useIntl } from '@umijs/max';
 import {
+  Alert,
   Avatar,
   Button,
   Card,
+  Descriptions,
   Form,
   Input,
   InputNumber,
@@ -16,18 +18,30 @@ import {
   Tag,
   message,
 } from 'antd';
-import React, { useRef, useState } from 'react';
-import { CreditType, CreditTypeText } from '../../constants/status';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  CreditType,
+  CreditTypeText,
+  CreditReasonText,
+  SystemDisplayName,
+  ViolationRecordType,
+} from '../../constants/status';
 import {
   addCreditPoints,
   deductCreditPoints,
   getCreditRecordList,
 } from '../../services/library/credit';
+import { getConfigCreditRules } from '../../services/library/config';
 import { getUserList, updateUserStatus } from '../../services/library/user';
 import {
   deleteViolation,
   getViolationList,
 } from '../../services/library/violation';
+import {
+  STANDARD_ACTION_COLUMN,
+  STANDARD_TABLE_SCROLL,
+  STANDARD_TABLE_SEARCH,
+} from '../../utils/table';
 
 /**
  * 信用记录数据类型
@@ -41,6 +55,8 @@ interface CreditRecordType {
   points: number;
   date: string;
   reason: string;
+  reasonCode?: string;
+  reasonText?: string;
   updatedByName?: string;
 }
 
@@ -58,8 +74,45 @@ const CreditManagement: React.FC = () => {
   const [adjustTarget, setAdjustTarget] =
     useState<Partial<CreditRecordType> | null>(null);
   const [form] = Form.useForm();
-
   const [activeTab, setActiveTab] = useState<string>('records');
+  const [creditRules, setCreditRules] = useState<any>(null);
+
+  const renderRulePoints = (
+    value: number | string | undefined,
+    mode: 'add' | 'deduct',
+  ) => {
+    if (value === undefined || value === null || value === '') {
+      return '-';
+    }
+    const numericValue = Number(value);
+    const color = mode === 'add' ? '#52c41a' : '#f5222d';
+    const prefix = mode === 'add' ? '+' : '-';
+    return (
+      <span style={{ color, fontWeight: 600 }}>{`${prefix}${
+        Number.isFinite(numericValue) ? numericValue : value
+      }`}</span>
+    );
+  };
+
+  const loadCreditRules = async () => {
+    try {
+      const res: any = await getConfigCreditRules();
+      const data = res?.data || null;
+      setCreditRules(data);
+    } catch (e: any) {
+      message.error(
+        e?.message ||
+          intl.formatMessage({
+            id: 'common.operationFailed',
+            defaultMessage: 'Operation failed',
+          }),
+      );
+    }
+  };
+
+  useEffect(() => {
+    loadCreditRules();
+  }, []); // loadCreditRules 在组件生命周期内稳定，无需作为依赖
 
   const handleTabChange = (key: string) => {
     setActiveTab(key);
@@ -75,6 +128,9 @@ const CreditManagement: React.FC = () => {
         break;
       case 'blacklist':
         blacklistActionRef.current?.reload?.();
+        break;
+      case 'rules':
+        loadCreditRules();
         break;
       default:
         break;
@@ -167,9 +223,21 @@ const CreditManagement: React.FC = () => {
         defaultMessage: 'Reason',
       }),
       dataIndex: 'reason',
+      valueType: 'text',
       ellipsis: true,
       width: 200,
-      hideInSearch: true,
+      hideInSearch: false,
+      render: (_: any, record: CreditRecordType) => {
+        const key = record.reasonCode || record.reason || '';
+        const messageId = CreditReasonText[key] as string;
+        if (messageId) {
+          return intl.formatMessage({
+            id: messageId,
+            defaultMessage: record.reasonText || record.reason || key,
+          });
+        }
+        return record.reasonText || record.reason || key;
+      },
     },
     {
       title: intl.formatMessage({
@@ -179,6 +247,13 @@ const CreditManagement: React.FC = () => {
       dataIndex: 'updatedByName',
       width: 140,
       hideInSearch: true,
+      render: (_: any, record: CreditRecordType) =>
+        record.updatedByName === SystemDisplayName
+          ? intl.formatMessage({
+              id: 'credit.updatedBy.system',
+              defaultMessage: 'System',
+            })
+          : record.updatedByName || '-',
     },
     {
       title: intl.formatMessage({
@@ -186,8 +261,7 @@ const CreditManagement: React.FC = () => {
         defaultMessage: 'Actions',
       }),
       valueType: 'option',
-      width: 120,
-      fixed: 'right',
+      ...STANDARD_ACTION_COLUMN,
       render: (_, record) => (
         <Space>
           <Button
@@ -239,21 +313,22 @@ const CreditManagement: React.FC = () => {
             })}
             actionRef={actionRef}
             rowKey="id"
-            scroll={{ x: 900 }}
-            search={{ labelWidth: 'auto', defaultCollapsed: false }}
+            scroll={STANDARD_TABLE_SCROLL}
+            search={STANDARD_TABLE_SEARCH}
             request={async (params) => {
               try {
                 const res: any = await getCreditRecordList(params);
-                const raw = res?.data || {};
-                const responseList = Array.isArray(raw.list) ? raw.list : [];
+                const responseList = Array.isArray(res?.data?.list)
+                  ? res.data.list
+                  : [];
                 const list = responseList.map((item: any) => ({
                   ...item,
-                  id: item.id || item._id,
+                  id: item.id,
                   userName: item.userName || '',
                   userAvatar: item.userAvatar || '',
                   updatedByName: item.updatedByName || '',
                 }));
-                const total = raw?.total ?? list.length;
+                const total = Number(res?.data?.total ?? list.length);
                 return { data: list, success: true, total };
               } catch (e) {
                 return { data: [], success: false, total: 0 };
@@ -274,18 +349,17 @@ const CreditManagement: React.FC = () => {
           <ProTable<any>
             actionRef={usersActionRef}
             rowKey="id"
-            search={{ labelWidth: 'auto', defaultCollapsed: false }}
+            scroll={STANDARD_TABLE_SCROLL}
+            search={STANDARD_TABLE_SEARCH}
             request={async (params) => {
               try {
                 const res: any = await getUserList(params);
-                const raw = res?.data || {};
-                const list = Array.isArray(raw.list) ? raw.list : [];
-                const total = raw.total ?? list.length;
+                const list = Array.isArray(res?.data?.list)
+                  ? res.data.list
+                  : [];
+                const total = Number(res?.data?.total ?? list.length);
                 return {
-                  data: list.map((item: any) => ({
-                    ...item,
-                    id: item.id || item._id,
-                  })),
+                  data: list,
                   success: true,
                   total,
                 };
@@ -356,6 +430,7 @@ const CreditManagement: React.FC = () => {
                   defaultMessage: 'Actions',
                 }),
                 valueType: 'option',
+                ...STANDARD_ACTION_COLUMN,
                 render: (_: any, record: any) => (
                   <Space>
                     <a
@@ -452,18 +527,17 @@ const CreditManagement: React.FC = () => {
               defaultMessage: 'Violations',
             })}
             rowKey="id"
-            search={{ labelWidth: 'auto', defaultCollapsed: false }}
+            scroll={STANDARD_TABLE_SCROLL}
+            search={STANDARD_TABLE_SEARCH}
             request={async (params) => {
               try {
                 const res: any = await getViolationList(params);
-                const raw = res?.data || {};
-                const list = Array.isArray(raw.list) ? raw.list : [];
-                const total = raw.total ?? list.length;
+                const list = Array.isArray(res?.data?.list)
+                  ? res.data.list
+                  : [];
+                const total = Number(res?.data?.total ?? list.length);
                 return {
-                  data: list.map((item: any) => ({
-                    ...item,
-                    id: item.id || item._id,
-                  })),
+                  data: list,
                   success: true,
                   total,
                 };
@@ -533,6 +607,13 @@ const CreditManagement: React.FC = () => {
                   defaultMessage: 'Violation Type',
                 }),
                 dataIndex: 'type',
+                render: (_: any, record: any) =>
+                  record.type === ViolationRecordType.Violation
+                    ? intl.formatMessage({
+                        id: 'credit.type.violation',
+                        defaultMessage: 'Violation penalty',
+                      })
+                    : String(record.type),
               },
               {
                 title: intl.formatMessage({
@@ -576,6 +657,7 @@ const CreditManagement: React.FC = () => {
                   defaultMessage: 'Actions',
                 }),
                 valueType: 'option',
+                ...STANDARD_ACTION_COLUMN,
                 render: (_: any, record: any) => (
                   <Space>
                     <a
@@ -628,6 +710,77 @@ const CreditManagement: React.FC = () => {
 
         <Tabs.TabPane
           tab={intl.formatMessage({
+            id: 'credit.tab.rules',
+            defaultMessage: 'Rules',
+          })}
+          key="rules"
+        >
+          <Card bordered={false} style={{ marginBottom: 16 }}>
+            <Alert
+              type="info"
+              showIcon
+              message={intl.formatMessage({
+                id: 'credit.rules.description',
+                defaultMessage:
+                  'Current credit rule settings are shown here. Edit them in the Configuration Center.',
+              })}
+            />
+          </Card>
+          <Card bordered={false} style={{ marginBottom: 16 }}>
+            <Descriptions column={1} bordered>
+              <Descriptions.Item
+                label={intl.formatMessage({
+                  id: 'credit.rule.bookingCheckoutReward',
+                  defaultMessage: 'Booking checkout reward',
+                })}
+              >
+                {renderRulePoints(
+                  creditRules?.bookingCheckoutRewardPoints,
+                  'add',
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item
+                label={intl.formatMessage({
+                  id: 'credit.rule.activityCheckoutReward',
+                  defaultMessage: 'Activity checkout reward',
+                })}
+              >
+                {renderRulePoints(
+                  creditRules?.activityCheckoutRewardPoints,
+                  'add',
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item
+                label={intl.formatMessage({
+                  id: 'credit.rule.activityMissedCheckoutPenalty',
+                  defaultMessage: 'Missed checkout penalty',
+                })}
+              >
+                {renderRulePoints(
+                  creditRules?.activityMissedCheckoutPenaltyPoints,
+                  'deduct',
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item
+                label={intl.formatMessage({
+                  id: 'credit.rule.violationDeduct',
+                  defaultMessage: 'Violation deduction',
+                })}
+              >
+                {renderRulePoints(creditRules?.violationDeductPoints, 'deduct')}
+              </Descriptions.Item>
+            </Descriptions>
+          </Card>
+          <Button type="primary" onClick={() => history.push('/system-config')}>
+            {intl.formatMessage({
+              id: 'credit.rules.goToConfigCenter',
+              defaultMessage: 'Go to Configuration Center',
+            })}
+          </Button>
+        </Tabs.TabPane>
+
+        <Tabs.TabPane
+          tab={intl.formatMessage({
             id: 'credit.tab.blacklist',
             defaultMessage: 'Blacklist',
           })}
@@ -640,18 +793,18 @@ const CreditManagement: React.FC = () => {
               defaultMessage: 'Blacklisted Users',
             })}
             rowKey="id"
-            search={{ labelWidth: 'auto', defaultCollapsed: false }}
+            scroll={STANDARD_TABLE_SCROLL}
+            search={STANDARD_TABLE_SEARCH}
             request={async (params) => {
               try {
                 const q = { ...(params || {}), blacklisted: 1 };
                 const res: any = await getUserList(q);
-                const raw = res?.data || {};
-                let list = Array.isArray(raw.list) ? raw.list : [];
+                let list = Array.isArray(res?.data?.list) ? res.data.list : [];
                 list = list.map((item: any) => ({
                   ...item,
-                  id: item.id || item._id,
+                  blacklistedAt: item.blacklistedAt || item.updatedAt || '',
                 }));
-                const total = raw.total ?? list.length;
+                const total = Number(res?.data?.total ?? list.length);
                 return { data: list, success: true, total };
               } catch (e) {
                 return { data: [], success: false, total: 0 };
@@ -715,6 +868,7 @@ const CreditManagement: React.FC = () => {
                   defaultMessage: 'Actions',
                 }),
                 valueType: 'option',
+                ...STANDARD_ACTION_COLUMN,
                 render: (_: any, record: any) => (
                   <a
                     onClick={async () => {

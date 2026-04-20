@@ -1,4 +1,4 @@
-﻿import { Roles } from '@/constants/roles';
+import { Roles } from '@/constants/roles';
 import {
   getActiveUsers,
   getDashboardData,
@@ -18,6 +18,7 @@ import {
 import { PageContainer } from '@ant-design/pro-components';
 import { history, useIntl, useModel } from '@umijs/max';
 import {
+  Alert,
   Avatar,
   Button,
   Card,
@@ -99,6 +100,7 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     fetchDashboardDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
 
   useEffect(() => {
@@ -333,6 +335,7 @@ const Dashboard: React.FC = () => {
       title: intl.formatMessage({ id: 'common.action' }),
       key: 'action',
       width: 80,
+      fixed: 'right' as const,
       align: 'center' as const,
       render: () => (
         <a onClick={() => history.push('/seat')}>
@@ -350,6 +353,8 @@ const Dashboard: React.FC = () => {
       }),
       dataIndex: 'user',
       key: 'user',
+      width: 160,
+      ellipsis: true,
     },
     {
       title: intl.formatMessage({
@@ -358,6 +363,8 @@ const Dashboard: React.FC = () => {
       }),
       dataIndex: 'seat',
       key: 'seat',
+      width: 140,
+      ellipsis: true,
     },
     {
       title: intl.formatMessage({
@@ -366,6 +373,7 @@ const Dashboard: React.FC = () => {
       }),
       dataIndex: 'date',
       key: 'date',
+      width: 120,
     },
     {
       title: intl.formatMessage({
@@ -374,6 +382,7 @@ const Dashboard: React.FC = () => {
       }),
       dataIndex: 'status',
       key: 'status',
+      width: 120,
       render: (status: string, record: any) => {
         const colorMap: Record<string, string> = {
           processing: 'processing',
@@ -390,6 +399,9 @@ const Dashboard: React.FC = () => {
         defaultMessage: 'Action',
       }),
       key: 'action',
+      width: 90,
+      fixed: 'right' as const,
+      align: 'center' as const,
       render: () => (
         <a onClick={() => history.push('/booking')}>
           {intl.formatMessage({ id: 'dashboard.view' })}
@@ -457,6 +469,19 @@ const Dashboard: React.FC = () => {
             : [],
         }}
       >
+        {isAdmin && (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message={intl.formatMessage({
+              id: 'dashboard.adminDataHint',
+              defaultMessage:
+                '今日/本周/本月统计来自预约记录；热门区域、最近预约、活跃用户需要先有预约数据。',
+            })}
+          />
+        )}
+
         {/* 统计卡片 */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
           {statData.map((stat, index) => (
@@ -525,9 +550,16 @@ const Dashboard: React.FC = () => {
                 bordered={false}
                 style={{ height: 400 }}
               >
-                <div style={{ height: 300 }}>
-                  <Pie {...pieConfig} height={300} />
-                </div>
+                {bookingStatusData.some((item) => Number(item.value) > 0) ? (
+                  <div style={{ height: 300 }}>
+                    <Pie {...pieConfig} height={300} />
+                  </div>
+                ) : (
+                  <Empty
+                    description={intl.formatMessage({ id: 'common.noData' })}
+                    style={{ paddingTop: 80 }}
+                  />
+                )}
               </Card>
             </Col>
           </Row>
@@ -553,7 +585,7 @@ const Dashboard: React.FC = () => {
                     dataSource={floorData}
                     pagination={false}
                     size="middle"
-                    scroll={{ x: 600 }}
+                    scroll={{ x: 'max-content' }}
                   />
                 ) : (
                   <Empty
@@ -650,6 +682,7 @@ const Dashboard: React.FC = () => {
                     dataSource={recentBookings}
                     pagination={false}
                     size="middle"
+                    scroll={{ x: 'max-content' }}
                   />
                 ) : (
                   <Empty

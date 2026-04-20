@@ -2,13 +2,21 @@ import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { request, useIntl } from '@umijs/max';
-import { Button, Form, Input, Modal, Space, message } from 'antd';
+import { Button, Form, Input, Modal, Select, Space, Tag, message } from 'antd';
 import React, { useRef, useState } from 'react';
+import {
+  STANDARD_ACTION_COLUMN,
+  STANDARD_TABLE_SCROLL,
+  STANDARD_TABLE_SEARCH,
+  renderOverflowText,
+  toTableDataSource,
+} from '../../utils/table';
 
 interface ZoneType {
   id: string;
   name: string;
   description?: string;
+  status?: number;
   updatedByName?: string;
   updatedBy?: { name?: string; username?: string };
 }
@@ -28,6 +36,9 @@ const ZoneManagement: React.FC = () => {
         defaultMessage: 'Zone Name',
       }),
       dataIndex: 'name',
+      width: 180,
+      ellipsis: true,
+      render: (_, record) => renderOverflowText(record.name),
     },
     {
       title: intl.formatMessage({
@@ -35,6 +46,30 @@ const ZoneManagement: React.FC = () => {
         defaultMessage: 'Description',
       }),
       dataIndex: 'description',
+      width: 240,
+      ellipsis: true,
+      render: (_, record) => renderOverflowText(record.description),
+    },
+    {
+      title: intl.formatMessage({
+        id: 'common.status',
+        defaultMessage: 'Status',
+      }),
+      dataIndex: 'status',
+      width: 120,
+      render: (_, record) => (
+        <Tag color={record.status ? 'success' : 'default'}>
+          {record.status ?? 0
+            ? intl.formatMessage({
+                id: 'common.enabled',
+                defaultMessage: 'Enabled',
+              })
+            : intl.formatMessage({
+                id: 'common.disabled',
+                defaultMessage: 'Disabled',
+              })}
+        </Tag>
+      ),
     },
     {
       title: intl.formatMessage({
@@ -52,7 +87,7 @@ const ZoneManagement: React.FC = () => {
         defaultMessage: 'Actions',
       }),
       valueType: 'option',
-      width: 150,
+      ...STANDARD_ACTION_COLUMN,
       render: (_: any, record: ZoneType) => (
         <Space>
           <Button
@@ -65,6 +100,43 @@ const ZoneManagement: React.FC = () => {
             }}
           >
             {intl.formatMessage({ id: 'common.edit', defaultMessage: 'Edit' })}
+          </Button>
+          <Button
+            type="link"
+            onClick={async () => {
+              const nextStatus = record.status ? 0 : 1;
+              try {
+                await request(`/api/zones/${record.id}`, {
+                  method: 'PUT',
+                  data: { status: nextStatus },
+                });
+                message.success(
+                  intl.formatMessage({
+                    id: nextStatus === 1 ? 'common.enabled' : 'common.disabled',
+                    defaultMessage: nextStatus === 1 ? 'Enabled' : 'Disabled',
+                  }),
+                );
+                actionRef.current?.reload?.();
+              } catch (e: any) {
+                message.error(
+                  e?.message ||
+                    intl.formatMessage({
+                      id: 'common.operationFailed',
+                      defaultMessage: 'Operation failed',
+                    }),
+                );
+              }
+            }}
+          >
+            {record.status
+              ? intl.formatMessage({
+                  id: 'common.disable',
+                  defaultMessage: 'Disable',
+                })
+              : intl.formatMessage({
+                  id: 'common.enable',
+                  defaultMessage: 'Enable',
+                })}
           </Button>
           <Button
             type="link"
@@ -129,21 +201,12 @@ const ZoneManagement: React.FC = () => {
         })}
         actionRef={actionRef}
         rowKey="id"
+        scroll={STANDARD_TABLE_SCROLL}
+        search={STANDARD_TABLE_SEARCH}
         request={async (params) => {
           try {
             const res = await request('/api/zones', { params });
-            const raw = res?.data;
-            let list: any[] = [];
-            if (Array.isArray(raw)) list = raw;
-            else if (Array.isArray(raw?.list)) list = raw.list;
-            else if (Array.isArray(raw?.zones)) list = raw.zones;
-            else list = [];
-            list = list.map((item: any) => ({
-              ...item,
-              id: item.id || item._id,
-            }));
-            const total = raw?.total ?? list.length;
-            return { data: list, success: true, total };
+            return toTableDataSource<ZoneType>(res);
           } catch (e) {
             return { data: [], success: false, total: 0 };
           }
@@ -246,6 +309,33 @@ const ZoneManagement: React.FC = () => {
             })}
           >
             <Input />
+          </Form.Item>
+          <Form.Item
+            name="status"
+            label={intl.formatMessage({
+              id: 'common.status',
+              defaultMessage: 'Status',
+            })}
+            initialValue={1}
+          >
+            <Select
+              options={[
+                {
+                  label: intl.formatMessage({
+                    id: 'common.enabled',
+                    defaultMessage: 'Enabled',
+                  }),
+                  value: 1,
+                },
+                {
+                  label: intl.formatMessage({
+                    id: 'common.disabled',
+                    defaultMessage: 'Disabled',
+                  }),
+                  value: 0,
+                },
+              ]}
+            />
           </Form.Item>
         </Form>
       </Modal>

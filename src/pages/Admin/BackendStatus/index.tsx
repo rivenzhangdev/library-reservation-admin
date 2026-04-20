@@ -3,12 +3,12 @@ import { useIntl } from '@umijs/max';
 import { Button, Space, Table, Tag, Typography, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import {
-  BACKEND_BASE_KEY,
   BACKEND_ENVS,
-  BACKEND_ENV_KEY,
+  clearBackendAuthStorage,
   detectBackendStatuses,
   getBackendBaseUrl,
   getBackendEnvKey,
+  setBackendBaseUrl,
   setBackendEnv,
 } from '../../../config/backendEnvs';
 
@@ -53,11 +53,11 @@ const BackendStatusPage: React.FC = () => {
 
   useEffect(() => {
     refresh();
-  }, []);
+  }, []); // refresh 在组件生命周期内稳定，无需作为依赖
 
   const handleSet = (key: string) => {
-    // @ts-ignore
-    setBackendEnv(key);
+    setBackendEnv(key, { clearAuth: true } as any);
+    clearBackendAuthStorage();
     message.success(
       intl.formatMessage({
         id: 'admin.setSuccess',
@@ -79,14 +79,8 @@ const BackendStatusPage: React.FC = () => {
       );
       return;
     }
-    try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(BACKEND_ENV_KEY, key);
-        localStorage.setItem(BACKEND_BASE_KEY, lan);
-      }
-    } catch (e) {
-      // ignore
-    }
+    setBackendBaseUrl(lan, key as any, { clearAuth: true });
+    clearBackendAuthStorage();
     message.success(
       intl.formatMessage({
         id: 'admin.useLanSuccess',
@@ -104,6 +98,7 @@ const BackendStatusPage: React.FC = () => {
       }),
       dataIndex: 'label',
       key: 'label',
+      width: 160,
     },
     {
       title: intl.formatMessage({
@@ -112,8 +107,20 @@ const BackendStatusPage: React.FC = () => {
       }),
       dataIndex: 'baseUrl',
       key: 'baseUrl',
+      width: 380,
       render: (text: string) => (
-        <a href={text} target="_blank" rel="noreferrer">
+        <a
+          href={text}
+          target="_blank"
+          rel="noreferrer"
+          style={{
+            display: 'inline-block',
+            maxWidth: 360,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
           {text}
         </a>
       ),
@@ -125,6 +132,7 @@ const BackendStatusPage: React.FC = () => {
       }),
       dataIndex: 'status',
       key: 'status',
+      width: 120,
       render: (s: EnvRow['status']) => {
         if (s === 'ok')
           return (
@@ -170,6 +178,7 @@ const BackendStatusPage: React.FC = () => {
       }),
       dataIndex: 'selected',
       key: 'selected',
+      width: 120,
       render: (v: boolean) =>
         v ? (
           <Tag color="processing">
@@ -186,6 +195,8 @@ const BackendStatusPage: React.FC = () => {
         defaultMessage: 'Action',
       }),
       key: 'action',
+      width: 280,
+      fixed: 'right' as const,
       render: (_: any, record: EnvRow) => (
         <Space>
           <Button
@@ -254,6 +265,7 @@ const BackendStatusPage: React.FC = () => {
         dataSource={rows}
         columns={columns}
         pagination={false}
+        scroll={{ x: 'max-content' }}
       />
     </PageContainer>
   );

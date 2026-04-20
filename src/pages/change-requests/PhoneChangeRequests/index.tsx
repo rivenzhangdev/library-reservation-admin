@@ -9,6 +9,11 @@ import {
   getPhoneChangeRequests,
   rejectPhoneChangeRequest,
 } from '../../../services/library/phoneChangeRequest';
+import {
+  STANDARD_ACTION_COLUMN,
+  STANDARD_TABLE_SCROLL,
+  STANDARD_TABLE_SEARCH,
+} from '../../../utils/table';
 
 interface PhoneChangeRequestType {
   id: string;
@@ -126,7 +131,7 @@ const PhoneChangeRequests: React.FC = () => {
       width: 260,
       render: (_, record) => (
         <div>
-          <div>{record.userName || '-'}</div>
+          <div>{record.userId?.name || '-'}</div>
           <div style={{ color: '#999', fontSize: 12 }}>
             {record.userId?.username}
             {record.userId?.studentId ? ` · ${record.userId.studentId}` : ''}
@@ -226,6 +231,7 @@ const PhoneChangeRequests: React.FC = () => {
         defaultMessage: 'Action',
       }),
       valueType: 'option',
+      ...STANDARD_ACTION_COLUMN,
       width: 180,
       render: (_, record) => (
         <Space>
@@ -283,10 +289,7 @@ const PhoneChangeRequests: React.FC = () => {
         })}
         actionRef={actionRef}
         rowKey="id"
-        search={{
-          labelWidth: 'auto',
-          defaultCollapsed: false,
-        }}
+        search={STANDARD_TABLE_SEARCH}
         request={async (params) => {
           const response: any = await getPhoneChangeRequests({
             page: params.current,
@@ -302,7 +305,7 @@ const PhoneChangeRequests: React.FC = () => {
         }}
         columns={columns}
         rowSelection={{}}
-        scroll={{ x: 1400 }}
+        scroll={STANDARD_TABLE_SCROLL}
       />
     </PageContainer>
   );

@@ -8,6 +8,12 @@ import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
 import { Button, Image, Modal, Popconfirm, message } from 'antd';
 import React, { useRef, useState } from 'react';
+import {
+  STANDARD_ACTION_COLUMN,
+  STANDARD_TABLE_SCROLL,
+  STANDARD_TABLE_SEARCH,
+  toTableDataSource,
+} from '../../utils/table';
 
 const UploadsPage: React.FC = () => {
   const actionRef = useRef<ActionType>();
@@ -74,6 +80,7 @@ const UploadsPage: React.FC = () => {
         defaultMessage: 'Action',
       }),
       valueType: 'option',
+      ...STANDARD_ACTION_COLUMN,
       render: (_: any, record: any) => [
         <Button
           key="preview"
@@ -93,7 +100,7 @@ const UploadsPage: React.FC = () => {
           })}
           onConfirm={async () => {
             try {
-              await deleteUpload(record._id);
+              await deleteUpload(record.id);
               message.success(
                 intl.formatMessage({
                   id: 'common.deleteSuccessRefresh',
@@ -132,12 +139,13 @@ const UploadsPage: React.FC = () => {
     >
       <ProTable
         actionRef={actionRef}
-        rowKey={(r) => r._id}
+        rowKey="id"
         rowSelection={{
           selectedRowKeys: selectedRows,
-          onChange: (_, rows) => setSelectedRows(rows.map((r: any) => r._id)),
+          onChange: (_, rows) => setSelectedRows(rows.map((r: any) => r.id)),
         }}
-        search={{ labelWidth: 'auto', defaultCollapsed: false }}
+        scroll={STANDARD_TABLE_SCROLL}
+        search={STANDARD_TABLE_SEARCH}
         toolBarRender={() => [
           <Button
             key="batchDelete"
@@ -188,12 +196,7 @@ const UploadsPage: React.FC = () => {
             const p = Number(params.current || 1);
             const l = Number(params.pageSize || 10);
             const res: any = await getUploads({ page: p, limit: l });
-            const raw = res?.data || {};
-            return {
-              data: raw.list || [],
-              success: res?.success !== false,
-              total: raw.total || 0,
-            };
+            return toTableDataSource(res);
           } catch (e) {
             return { data: [], success: false, total: 0 };
           }
@@ -202,11 +205,7 @@ const UploadsPage: React.FC = () => {
         pagination={{ pageSize: 10 }}
       />
 
-      <Modal
-        visible={!!preview}
-        footer={null}
-        onCancel={() => setPreview(null)}
-      >
+      <Modal open={!!preview} footer={null} onCancel={() => setPreview(null)}>
         {preview ? (
           <img src={preview} alt="preview" style={{ width: '100%' }} />
         ) : null}

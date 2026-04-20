@@ -5,6 +5,7 @@ import './index.less';
 import UserProfileModal, { UserProfile } from '@/components/UserProfileModal';
 import {
   BACKEND_ENVS,
+  clearBackendAuthStorage,
   detectBackendStatuses,
   getBackendEnvKey,
   setBackendEnv,
@@ -285,8 +286,17 @@ const RightContent: React.FC<{
   const handleEnvChange = (value: string) => {
     try {
       const found = BACKEND_ENVS.find((e) => e.key === value);
-      setBackendEnv(value as any);
+      setBackendEnv(value as any, { clearAuth: true });
       setSelectedEnv(value);
+      setLocalUser(null);
+      if (modelSetCurrentUser) {
+        try {
+          modelSetCurrentUser(null);
+        } catch (e) {
+          // ignore
+        }
+      }
+      clearBackendAuthStorage();
       const envLabel = found
         ? intl.formatMessage({
             id: `backend.env.${found.key}`,
@@ -297,7 +307,7 @@ const RightContent: React.FC<{
         intl.formatMessage(
           {
             id: 'right.backend.switchSuccessTo',
-            defaultMessage: '已切换到 {env}',
+            defaultMessage: '已切换到 {env}，并已清理旧登录状态',
           },
           { env: envLabel },
         ),
@@ -310,6 +320,7 @@ const RightContent: React.FC<{
             detail: { key: value },
           }),
         );
+        window.dispatchEvent(new Event('backend_env_switched'));
       } catch (e) {
         // ignore
       }

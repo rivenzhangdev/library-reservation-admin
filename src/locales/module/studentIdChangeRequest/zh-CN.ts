@@ -1,9 +1,11 @@
 export default {
   'studentIdChangeRequest.column.requester': '申请人',
+  'studentIdChangeRequest.column.oldStudentId': '申请前学号',
   'studentIdChangeRequest.column.currentStudentId': '当前学号',
   'studentIdChangeRequest.column.requestedStudentId': '申请学号',
   'studentIdChangeRequest.column.currentName': '当前姓名',
   'studentIdChangeRequest.column.requestedName': '申请姓名',
+  'studentIdChangeRequest.column.requestSnapshot': '申请时记录',
   'studentIdChangeRequest.column.reason': '申请原因',
   'studentIdChangeRequest.column.status': '状态',
   'studentIdChangeRequest.column.reviewedAt': '审核时间',

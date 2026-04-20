@@ -30,6 +30,12 @@ import {
   updateUser,
   uploadImage,
 } from '../../services/library/user';
+import {
+  STANDARD_ACTION_COLUMN,
+  STANDARD_TABLE_SCROLL,
+  STANDARD_TABLE_SEARCH,
+  toTableDataSource,
+} from '../../utils/table';
 import './index.less';
 
 /**
@@ -288,8 +294,7 @@ const UserManagement: React.FC = () => {
         defaultMessage: 'Action',
       }),
       valueType: 'option',
-      width: 150,
-      fixed: 'right',
+      ...STANDARD_ACTION_COLUMN,
       render: (_, record) => (
         <Space size="small">
           <Button
@@ -335,11 +340,8 @@ const UserManagement: React.FC = () => {
         })}
         actionRef={actionRef}
         rowKey="id"
-        scroll={{ x: 1100 }}
-        search={{
-          labelWidth: 'auto',
-          defaultCollapsed: false,
-        }}
+        scroll={STANDARD_TABLE_SCROLL}
+        search={STANDARD_TABLE_SEARCH}
         toolBarRender={() => [
           <Button
             key="export"
@@ -419,18 +421,7 @@ const UserManagement: React.FC = () => {
         request={async (params) => {
           try {
             const res: any = await getUserList(params);
-            const raw = res?.data;
-            let list: any[] = [];
-            if (Array.isArray(raw)) list = raw;
-            else if (Array.isArray(raw?.list)) list = raw.list;
-            else if (Array.isArray(raw?.users)) list = raw.users;
-            else list = [];
-            list = list.map((item: any) => ({
-              ...item,
-              id: item.id || item._id,
-            }));
-            const total = raw?.total ?? (Array.isArray(list) ? list.length : 0);
-            return { data: list, success: true, total };
+            return toTableDataSource<UserType>(res);
           } catch (e) {
             return { data: [], success: false, total: 0 };
           }

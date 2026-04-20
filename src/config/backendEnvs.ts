@@ -103,12 +103,49 @@ export function getBackendEnvKey(): string | null {
   return null;
 }
 
-export function setBackendEnv(key: BackendEnvKey) {
+export function clearBackendAuthStorage() {
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('currentUser');
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
+export function setBackendEnv(
+  key: BackendEnvKey,
+  options?: { clearAuth?: boolean },
+) {
   try {
     const found = BACKEND_ENVS.find((e) => e.key === key);
     if (found && typeof window !== 'undefined') {
       localStorage.setItem(BACKEND_ENV_KEY, key);
       localStorage.setItem(BACKEND_BASE_KEY, found.baseUrl);
+      if (options?.clearAuth) {
+        clearBackendAuthStorage();
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
+export function setBackendBaseUrl(
+  baseUrl: string,
+  key?: BackendEnvKey,
+  options?: { clearAuth?: boolean },
+) {
+  try {
+    if (typeof window !== 'undefined') {
+      if (key) {
+        localStorage.setItem(BACKEND_ENV_KEY, key);
+      }
+      localStorage.setItem(BACKEND_BASE_KEY, baseUrl);
+      if (options?.clearAuth) {
+        clearBackendAuthStorage();
+      }
     }
   } catch (e) {
     // ignore

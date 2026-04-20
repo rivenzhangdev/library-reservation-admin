@@ -1,9 +1,11 @@
 export default {
   'studentIdChangeRequest.column.requester': 'Requester',
+  'studentIdChangeRequest.column.oldStudentId': 'Student ID Before Request',
   'studentIdChangeRequest.column.currentStudentId': 'Current Student ID',
   'studentIdChangeRequest.column.requestedStudentId': 'Requested Student ID',
   'studentIdChangeRequest.column.currentName': 'Current Name',
   'studentIdChangeRequest.column.requestedName': 'Requested Name',
+  'studentIdChangeRequest.column.requestSnapshot': 'Requested Snapshot',
   'studentIdChangeRequest.column.reason': 'Reason',
   'studentIdChangeRequest.column.status': 'Status',
   'studentIdChangeRequest.column.reviewedAt': 'Reviewed At',

@@ -16,6 +16,7 @@ export default {
   'feedback.status.rejected': '已拒绝',
   'feedback.processFeedback': '处理反馈',
   'feedback.form.status': '状态',
+  'feedback.form.urgencyRequired': '请选择紧急度',
   'feedback.form.reply': '处理意见',
   'feedback.form.replyRequired': '请填写处理意见',
   'feedback.form.submit': '提交处理',
@@ -37,4 +38,7 @@ export default {
   'feedback.official': '官方',
   'feedback.field.createdAt': '创建时间',
   'feedback.form.replyPlaceholder': '请输入处理意见',
+  'feedback.quickReply.processing': '回复并继续处理',
+  'feedback.quickReply.resolve': '回复并解决',
+  'feedback.quickReply.reject': '回复并驳回',
 };

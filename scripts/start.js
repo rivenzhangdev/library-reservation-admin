@@ -26,6 +26,7 @@ function spawnDev(envKey, baseUrl, lanUrl) {
   const env = Object.assign({}, process.env, {
     BACKEND_ENV: envKey,
     BACKEND_BASE_URL: baseUrl || '',
+    BACKEND_URL: baseUrl || '',
     BACKEND_LAN_URL: lanUrl || '',
   });
   const child = spawn('pnpm', ['run', 'dev'], {
@@ -201,14 +202,14 @@ async function interactiveSelect(arg) {
       if (await isPortInUse(host, parsedPort)) {
         console.log(
           chalk.green(
-            `检测到 ${host}:${parsedPort} 端口已被占用，后台服务似乎已启动，继续使用当前环境。`
-          )
+            `检测到 ${host}:${parsedPort} 端口已被占用，后台服务似乎已启动，继续使用当前环境。`,
+          ),
         );
       } else {
         console.log(
           chalk.yellow(
-            `检测到 ${host}:${parsedPort} 端口未占用，后台服务可能尚未启动，请确认后端是否已运行。`
-          )
+            `检测到 ${host}:${parsedPort} 端口未占用，后台服务可能尚未启动，请确认后端是否已运行。`,
+          ),
         );
       }
     }

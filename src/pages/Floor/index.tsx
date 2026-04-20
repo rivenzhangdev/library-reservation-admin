@@ -4,6 +4,13 @@ import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { request, useIntl } from '@umijs/max';
 import { Button, Form, Input, InputNumber, Modal, Space, message } from 'antd';
 import React, { useRef, useState } from 'react';
+import {
+  STANDARD_ACTION_COLUMN,
+  STANDARD_TABLE_SCROLL,
+  STANDARD_TABLE_SEARCH,
+  renderOverflowText,
+  toTableDataSource,
+} from '../../utils/table';
 
 interface FloorType {
   id: string;
@@ -29,6 +36,9 @@ const FloorManagement: React.FC = () => {
         defaultMessage: 'Floor Name',
       }),
       dataIndex: 'name',
+      width: 180,
+      ellipsis: true,
+      render: (_, record) => renderOverflowText(record.name),
     },
     {
       title: intl.formatMessage({
@@ -36,6 +46,9 @@ const FloorManagement: React.FC = () => {
         defaultMessage: 'Description',
       }),
       dataIndex: 'description',
+      width: 240,
+      ellipsis: true,
+      render: (_, record) => renderOverflowText(record.description),
     },
     {
       title: intl.formatMessage({
@@ -60,7 +73,7 @@ const FloorManagement: React.FC = () => {
         defaultMessage: 'Actions',
       }),
       valueType: 'option',
-      width: 150,
+      ...STANDARD_ACTION_COLUMN,
       render: (_: any, record: FloorType) => (
         <Space>
           <Button
@@ -137,15 +150,12 @@ const FloorManagement: React.FC = () => {
         })}
         actionRef={actionRef}
         rowKey="id"
+        scroll={STANDARD_TABLE_SCROLL}
+        search={STANDARD_TABLE_SEARCH}
         request={async (params) => {
           try {
             const res = await request('/api/floors', { params });
-            const list: any[] = res?.data?.list ?? [];
-            return {
-              data: list,
-              success: true,
-              total: res?.data?.total ?? list.length,
-            };
+            return toTableDataSource<FloorType>(res);
           } catch (e) {
             return { data: [], success: false, total: 0 };
           }

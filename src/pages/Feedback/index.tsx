@@ -25,8 +25,13 @@ import {
   Tag,
   Timeline,
 } from 'antd';
-import dayjs from 'dayjs';
 import React, { useRef, useState } from 'react';
+import {
+  STANDARD_ACTION_COLUMN,
+  STANDARD_TABLE_SCROLL,
+  STANDARD_TABLE_SEARCH,
+  toTableDataSource,
+} from '../../utils/table';
 
 const { TextArea } = Input;
 
@@ -71,6 +76,7 @@ const FeedbackPage: React.FC = () => {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detail, setDetail] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [processSubmitting, setProcessSubmitting] = useState(false);
 
   const openDetail = async (id: string) => {
     setDetailOpen(true);
@@ -86,7 +92,8 @@ const FeedbackPage: React.FC = () => {
 
   const reloadDetail = async () => {
     if (!detail) return;
-    const id = detail.id || detail._id;
+    const id = detail.id;
+    if (!id) return;
     try {
       const res: any = await getFeedbackDetail(id);
       setDetail(res.data);
@@ -95,11 +102,13 @@ const FeedbackPage: React.FC = () => {
     }
   };
 
-  const handleProcess = async (values: any) => {
-    const id = detail?.id || detail?._id;
+  const handleProcess = async (status?: number) => {
+    const id = detail?.id;
     if (!id) return;
     try {
-      await processFeedback(id, { status: values.status, reply: values.reply });
+      const values = await processForm.validateFields();
+      setProcessSubmitting(true);
+      await processFeedback(id, { status, reply: values.reply });
       message.success(
         intl.formatMessage({
           id: 'feedback.processSuccess',
@@ -110,6 +119,9 @@ const FeedbackPage: React.FC = () => {
       await reloadDetail();
       actionRef.current?.reload();
     } catch (e: any) {
+      if (e?.errorFields) {
+        return;
+      }
       message.error(
         e?.message ||
           intl.formatMessage({
@@ -117,6 +129,8 @@ const FeedbackPage: React.FC = () => {
             defaultMessage: 'API error',
           }),
       );
+    } finally {
+      setProcessSubmitting(false);
     }
   };
 
@@ -134,7 +148,7 @@ const FeedbackPage: React.FC = () => {
   };
 
   const handleAddComment = async () => {
-    const id = detail?.id || detail?._id;
+    const id = detail?.id;
     if (!id || !replyText.trim()) return;
     try {
       await addComment(id, { content: replyText });
@@ -146,6 +160,7 @@ const FeedbackPage: React.FC = () => {
       );
       setReplyText('');
       await reloadDetail();
+      actionRef.current?.reload();
     } catch (e: any) {
       message.error(
         e?.message ||
@@ -270,8 +285,7 @@ const FeedbackPage: React.FC = () => {
       }),
       key: 'option',
       valueType: 'option',
-      width: 80,
-      fixed: 'right',
+      ...STANDARD_ACTION_COLUMN,
       render: (_: any, record: any) => [
         <Button key="detail" type="link" onClick={() => openDetail(record.id)}>
           {intl.formatMessage({ id: 'common.view', defaultMessage: 'Details' })}
@@ -359,6 +373,15 @@ const FeedbackPage: React.FC = () => {
                 id: 'feedback.field.urgency',
                 defaultMessage: 'Urgency',
               })}
+              rules={[
+                {
+                  required: true,
+                  message: intl.formatMessage({
+                    id: 'feedback.form.urgencyRequired',
+                    defaultMessage: 'Please select urgency',
+                  }),
+                },
+              ]}
             >
               <Select>
                 <Select.Option value={1}>
@@ -444,8 +467,8 @@ const FeedbackPage: React.FC = () => {
         <ProTable<FeedbackType>
           actionRef={actionRef}
           rowKey="id"
-          scroll={{ x: 800 }}
-          search={{ labelWidth: 'auto', defaultCollapsed: false }}
+          scroll={STANDARD_TABLE_SCROLL}
+          search={STANDARD_TABLE_SEARCH}
           pagination={{ pageSize: 10 }}
           request={async (params) => {
             const p = Number(params.current || 1);
@@ -462,15 +485,7 @@ const FeedbackPage: React.FC = () => {
               const res: any = isAdmin
                 ? await getAllFeedbacks(q)
                 : await getMyFeedbacks(q);
-              const raw = res?.data || {};
-              const list = (raw.feedbacks || raw.list || []).map(
-                (item: any) => ({ ...item, id: item.id || item._id }),
-              );
-              return {
-                data: list,
-                success: res?.success !== false,
-                total: raw.total || 0,
-              };
+              return toTableDataSource<FeedbackType>(res);
             } catch (e) {
               return { data: [], success: false, total: 0 };
             }
@@ -584,9 +599,7 @@ const FeedbackPage: React.FC = () => {
                   defaultMessage: 'Created at',
                 })}
               >
-                {detail.createdAt
-                  ? dayjs(detail.createdAt).format('YYYY-MM-DD HH:mm')
-                  : '-'}
+                {detail.createdAt ? detail.createdAt : '-'}
               </Descriptions.Item>
               <Descriptions.Item
                 label={intl.formatMessage({
@@ -595,7 +608,10 @@ const FeedbackPage: React.FC = () => {
                 })}
                 span={2}
               >
-                {detail.userName ||
+                {detail.userDisplayName ||
+                  detail.userName ||
+                  detail.userId?.name ||
+                  detail.userId?.username ||
                   intl.formatMessage({
                     id: 'right.guest',
                     defaultMessage: 'Guest',
@@ -659,7 +675,7 @@ const FeedbackPage: React.FC = () => {
                               onConfirm={async () => {
                                 try {
                                   const res: any = await deleteFeedbackImage(
-                                    detail.id || detail._id,
+                                    detail.id,
                                     { url: src },
                                   );
                                   if (res?.success) {
@@ -749,7 +765,7 @@ const FeedbackPage: React.FC = () => {
                               </Tag>
                             )}
                             <span style={{ color: '#999', marginLeft: 8 }}>
-                              {dayjs(c.date).format('YYYY-MM-DD HH:mm')}
+                              {c.date || '-'}
                             </span>
                           </div>
                           <div style={{ marginTop: 4 }}>{c.content}</div>
@@ -784,89 +800,62 @@ const FeedbackPage: React.FC = () => {
                       defaultMessage: 'Process feedback',
                     })}
                   </h4>
-                  <Form
-                    form={processForm}
-                    onFinish={handleProcess}
-                    initialValues={{
-                      status: getEffectiveFeedbackStatus(detail),
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        gap: 12,
-                        alignItems: 'flex-start',
-                        flexWrap: 'wrap',
-                      }}
-                    >
-                      <Form.Item
-                        name="status"
-                        label={intl.formatMessage({
-                          id: 'feedback.form.status',
-                          defaultMessage: 'Status',
-                        })}
-                        rules={[{ required: true }]}
-                        style={{ marginBottom: 0 }}
-                      >
-                        <Select style={{ width: 120 }}>
-                          <Select.Option value={1}>
-                            {intl.formatMessage({
-                              id: 'feedback.status.1',
-                              defaultMessage: 'Pending',
-                            })}
-                          </Select.Option>
-                          <Select.Option value={2}>
-                            {intl.formatMessage({
-                              id: 'feedback.status.2',
-                              defaultMessage: 'Processing',
-                            })}
-                          </Select.Option>
-                          <Select.Option value={3}>
-                            {intl.formatMessage({
-                              id: 'feedback.status.3',
-                              defaultMessage: 'Resolved',
-                            })}
-                          </Select.Option>
-                          <Select.Option value={4}>
-                            {intl.formatMessage({
-                              id: 'feedback.status.4',
-                              defaultMessage: 'Rejected',
-                            })}
-                          </Select.Option>
-                        </Select>
-                      </Form.Item>
-                      <Form.Item
-                        name="reply"
-                        label={intl.formatMessage({
-                          id: 'feedback.form.reply',
-                          defaultMessage: 'Processing remarks',
-                        })}
-                        rules={[
-                          {
-                            required: true,
-                            message: intl.formatMessage({
-                              id: 'feedback.form.replyRequired',
-                              defaultMessage: 'Please enter processing remarks',
-                            }),
-                          },
-                        ]}
-                        style={{ flex: 1, minWidth: 200, marginBottom: 0 }}
-                      >
-                        <Input
-                          placeholder={intl.formatMessage({
-                            id: 'feedback.form.replyPlaceholder',
+                  <Form form={processForm} layout="vertical">
+                    <Form.Item
+                      name="reply"
+                      label={intl.formatMessage({
+                        id: 'feedback.form.reply',
+                        defaultMessage: 'Processing remarks',
+                      })}
+                      rules={[
+                        {
+                          required: true,
+                          message: intl.formatMessage({
+                            id: 'feedback.form.replyRequired',
                             defaultMessage: 'Please enter processing remarks',
-                          })}
-                        />
-                      </Form.Item>
-                      <Form.Item style={{ marginBottom: 0 }}>
-                        <Button type="primary" htmlType="submit">
-                          {intl.formatMessage({
-                            id: 'feedback.form.submit',
-                            defaultMessage: 'Submit',
-                          })}
-                        </Button>
-                      </Form.Item>
+                          }),
+                        },
+                      ]}
+                      style={{ marginBottom: 12 }}
+                    >
+                      <TextArea
+                        rows={3}
+                        placeholder={intl.formatMessage({
+                          id: 'feedback.form.replyPlaceholder',
+                          defaultMessage: 'Please enter processing remarks',
+                        })}
+                      />
+                    </Form.Item>
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                      <Button
+                        type="primary"
+                        loading={processSubmitting}
+                        onClick={() => handleProcess()}
+                      >
+                        {intl.formatMessage({
+                          id: 'feedback.quickReply.processing',
+                          defaultMessage: 'Reply and continue processing',
+                        })}
+                      </Button>
+                      <Button
+                        loading={processSubmitting}
+                        onClick={() => handleProcess(3)}
+                      >
+                        {intl.formatMessage({
+                          id: 'feedback.quickReply.resolve',
+                          defaultMessage: 'Reply and resolve',
+                        })}
+                      </Button>
+                      <Button
+                        danger
+                        loading={processSubmitting}
+                        onClick={() => handleProcess(4)}
+                      >
+                        {intl.formatMessage({
+                          id: 'feedback.quickReply.reject',
+                          defaultMessage: 'Reply and reject',
+                        })}
+                      </Button>
                     </div>
                   </Form>
                 </div>
