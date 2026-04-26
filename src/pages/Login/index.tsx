@@ -117,13 +117,16 @@ const LoginPage: React.FC = () => {
       </div>
       <Card className="login-card" variant="outlined">
         <div className="login-header">
-          {intl.formatMessage({
-            id: 'app.title',
-            defaultMessage: intl.formatMessage({
+          <img src="/logo.png" alt="Smart Library" className="logo-image" />
+          <div className="header-text">
+            {intl.formatMessage({
               id: 'app.title',
-              defaultMessage: 'Library Admin',
-            }),
-          })}
+              defaultMessage: intl.formatMessage({
+                id: 'app.title',
+                defaultMessage: 'Library Admin',
+              }),
+            })}
+          </div>
         </div>
         <Form
           form={form}

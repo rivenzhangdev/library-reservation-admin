@@ -11,6 +11,8 @@ import {
   Select,
   Space,
   Tag,
+  TimePicker,
+  Typography,
   message,
 } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
@@ -74,6 +76,43 @@ const NotificationManagement: React.FC = () => {
     Array<{ label: string; value: string }>
   >([]);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+
+  const buildTemplateDataPayload = (values: any) => {
+    const templateType = values?.templateType;
+    if (!templateType) return undefined;
+
+    const pick = (value: any) => {
+      const text = String(value ?? '').trim();
+      return text || undefined;
+    };
+
+    const pickTime = (value: any) => {
+      if (value && typeof value.format === 'function') {
+        return value.format('HH:mm');
+      }
+      return pick(value);
+    };
+
+    if (templateType === 'BOOKING_SUCCESS') {
+      return {
+        title: pick(values.templateTitle),
+        bookingTime: pickTime(values.templateBookingTime),
+        seatInfo: pick(values.templateSeatInfo),
+        remark: pick(values.templateRemark),
+      };
+    }
+
+    if (templateType === 'BOOKING_REMINDER') {
+      return {
+        title: pick(values.templateTitle),
+        remindTime: pickTime(values.templateRemindTime),
+        seatInfo: pick(values.templateSeatInfo),
+        remark: pick(values.templateRemark),
+      };
+    }
+
+    return undefined;
+  };
 
   const fetchUserOptions = async (keyword: string) => {
     try {
@@ -166,8 +205,8 @@ const NotificationManagement: React.FC = () => {
     if (!selectedRowKeys.length) return;
     Modal.confirm({
       title: intl.formatMessage({
-        id: 'notification.confirmDeleteTitle',
-        defaultMessage: 'Confirm delete selected notifications',
+        id: 'user.confirmDeleteTitle',
+        defaultMessage: 'Confirm delete',
       }),
       content: intl.formatMessage({
         id: 'notification.confirmDeleteSelectedContent',
@@ -253,13 +292,6 @@ const NotificationManagement: React.FC = () => {
             defaultMessage: 'Activity',
           }),
           status: 'Success',
-        },
-        [NotificationTypeEnum.Marketing]: {
-          text: intl.formatMessage({
-            id: 'notification.type.marketing',
-            defaultMessage: 'Marketing',
-          }),
-          status: 'Warning',
         },
       },
       render: (_, record) => {
@@ -742,12 +774,6 @@ const NotificationManagement: React.FC = () => {
                   defaultMessage: 'Activity',
                 })}
               </Select.Option>
-              <Select.Option value={NotificationTypeEnum.Marketing}>
-                {intl.formatMessage({
-                  id: 'notification.type.marketing',
-                  defaultMessage: 'Marketing',
-                })}
-              </Select.Option>
             </Select>
           </Form.Item>
           <Form.Item
@@ -789,22 +815,24 @@ const NotificationManagement: React.FC = () => {
             if (payload.time?.toISOString) {
               payload.time = payload.time.toISOString();
             }
-            if (
-              payload.templateData &&
-              typeof payload.templateData === 'string'
-            ) {
-              try {
-                payload.templateData = JSON.parse(payload.templateData);
-              } catch (parseError) {
-                message.error(
-                  intl.formatMessage({
-                    id: 'notification.templateDataInvalid',
-                    defaultMessage: 'Template Data must be valid JSON',
-                  }),
-                );
-                return;
-              }
+
+            const builtTemplateData = buildTemplateDataPayload(values);
+            if (builtTemplateData) {
+              const filteredTemplateData = Object.fromEntries(
+                Object.entries(builtTemplateData).filter(
+                  ([, value]) =>
+                    value !== undefined && value !== null && value !== '',
+                ),
+              );
+              payload.templateData = filteredTemplateData;
             }
+
+            delete payload.templateTitle;
+            delete payload.templateBookingTime;
+            delete payload.templateRemindTime;
+            delete payload.templateSeatInfo;
+            delete payload.templateRemark;
+
             await sendNotification(payload);
             message.success(
               intl.formatMessage({
@@ -977,20 +1005,109 @@ const NotificationManagement: React.FC = () => {
             </Select>
           </Form.Item>
           <Form.Item
-            name="templateData"
-            label={intl.formatMessage({
-              id: 'notification.form.templateData',
-              defaultMessage: 'Template Data',
-            })}
+            noStyle
+            shouldUpdate={(prev, current) =>
+              prev.templateType !== current.templateType
+            }
           >
-            <Input.TextArea
-              rows={4}
-              placeholder={intl.formatMessage({
-                id: 'notification.form.templateDataPlaceholder',
-                defaultMessage:
-                  '{"title":"...","bookingTime":"...","seatInfo":"..."}',
-              })}
-            />
+            {({ getFieldValue }) => {
+              const templateType = getFieldValue('templateType');
+              if (!templateType) return null;
+
+              return (
+                <div
+                  style={{
+                    border: '1px solid #d9d9d9',
+                    borderRadius: 8,
+                    padding: 12,
+                    marginBottom: 16,
+                    background: '#fafafa',
+                  }}
+                >
+                  <Typography.Text strong>
+                    {intl.formatMessage({
+                      id: 'notification.form.wechatSectionTitle',
+                      defaultMessage: 'WeChat Template Message',
+                    })}
+                  </Typography.Text>
+
+                  <Form.Item
+                    style={{ marginTop: 12 }}
+                    name="templateTitle"
+                    label={intl.formatMessage({
+                      id: 'notification.form.templateTitle',
+                      defaultMessage: 'Template Title',
+                    })}
+                  >
+                    <Input
+                      placeholder={intl.formatMessage({
+                        id: 'notification.form.templateTitlePlaceholder',
+                        defaultMessage: 'Enter title text for the template',
+                      })}
+                    />
+                  </Form.Item>
+
+                  <Form.Item
+                    name={
+                      templateType === 'BOOKING_REMINDER'
+                        ? 'templateRemindTime'
+                        : 'templateBookingTime'
+                    }
+                    label={intl.formatMessage({
+                      id:
+                        templateType === 'BOOKING_REMINDER'
+                          ? 'notification.form.templateRemindTime'
+                          : 'notification.form.templateBookingTime',
+                      defaultMessage:
+                        templateType === 'BOOKING_REMINDER'
+                          ? 'Reminder Time'
+                          : 'Booking Time',
+                    })}
+                  >
+                    <TimePicker
+                      style={{ width: '100%' }}
+                      format="HH:mm"
+                      placeholder={intl.formatMessage({
+                        id: 'notification.form.templateTimePlaceholder',
+                        defaultMessage: 'Select time',
+                      })}
+                    />
+                  </Form.Item>
+
+                  <Form.Item
+                    name="templateSeatInfo"
+                    label={intl.formatMessage({
+                      id: 'notification.form.templateSeatInfo',
+                      defaultMessage: 'Seat Info',
+                    })}
+                  >
+                    <Input
+                      placeholder={intl.formatMessage({
+                        id: 'notification.form.templateSeatInfoPlaceholder',
+                        defaultMessage: 'e.g. 2F Area A R3C8',
+                      })}
+                    />
+                  </Form.Item>
+
+                  <Form.Item
+                    name="templateRemark"
+                    label={intl.formatMessage({
+                      id: 'notification.form.templateRemark',
+                      defaultMessage: 'Remark',
+                    })}
+                  >
+                    <Input.TextArea
+                      rows={3}
+                      placeholder={intl.formatMessage({
+                        id: 'notification.form.templateRemarkPlaceholder',
+                        defaultMessage:
+                          'Additional tips shown in template message',
+                      })}
+                    />
+                  </Form.Item>
+                </div>
+              );
+            }}
           </Form.Item>
           <Form.Item
             name="time"
@@ -1026,12 +1143,6 @@ const NotificationManagement: React.FC = () => {
                 {intl.formatMessage({
                   id: 'notification.type.activity',
                   defaultMessage: 'Activity',
-                })}
-              </Select.Option>
-              <Select.Option value={NotificationTypeEnum.Marketing}>
-                {intl.formatMessage({
-                  id: 'notification.type.marketing',
-                  defaultMessage: 'Marketing',
                 })}
               </Select.Option>
             </Select>

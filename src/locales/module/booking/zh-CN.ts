@@ -41,6 +41,11 @@ export default {
   'booking.action.checkIn': '测试签到',
   'booking.action.checkOutQr': '签退二维码',
   'booking.action.checkOut': '测试签退',
+  'booking.action.markViolated': '标记违约',
+  'booking.action.markViolated.confirm':
+    '该操作用于测试验证，并会释放当前座位时段，是否继续？',
+  'booking.action.markViolated.success': '已标记为违约',
+  'booking.action.markViolated.failed': '标记违约失败',
   'booking.qr.hint': '扫码可模拟预约签到或签退事件。',
   'booking.qr.payload': 'Payload：{payload}',
   'booking.userSearchPlaceholder': '输入用户名/姓名搜索并选择用户',

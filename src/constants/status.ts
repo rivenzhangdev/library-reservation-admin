@@ -4,7 +4,6 @@ export enum BookingStatus {
   Completed = 2,
   Canceled = 3,
   Violated = 4,
-  Waitlisted = 5,
 }
 
 export enum TimeSlot {
@@ -39,7 +38,6 @@ export const BookingStatusText: Record<number, string> = {
   [BookingStatus.Completed]: 'booking.status.completed',
   [BookingStatus.Canceled]: 'booking.status.canceled',
   [BookingStatus.Violated]: 'booking.status.violated',
-  [BookingStatus.Waitlisted]: 'booking.status.waitlisted',
 };
 
 export const TimeSlotText: Record<number, string> = {
@@ -126,22 +124,6 @@ export const CreditReasonText: Record<string, string> = {
 export const SystemDisplayName = 'System';
 
 // ========== 企业增强功能枚举 ==========
-
-export enum WaitlistStatus {
-  Waiting = 'waiting',
-  Notified = 'notified',
-  Confirmed = 'confirmed',
-  Expired = 'expired',
-  Cancelled = 'cancelled',
-}
-
-export const WaitlistStatusText: Record<string, string> = {
-  [WaitlistStatus.Waiting]: 'waitlist.status.waiting',
-  [WaitlistStatus.Notified]: 'waitlist.status.notified',
-  [WaitlistStatus.Confirmed]: 'waitlist.status.confirmed',
-  [WaitlistStatus.Expired]: 'waitlist.status.expired',
-  [WaitlistStatus.Cancelled]: 'waitlist.status.cancelled',
-};
 
 export enum ChangeRequestType {
   Reschedule = 'reschedule',

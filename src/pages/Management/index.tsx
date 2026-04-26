@@ -1,12 +1,28 @@
 import { PageContainer } from '@ant-design/pro-components';
-import { useIntl } from '@umijs/max';
+import { history, useIntl, useLocation } from '@umijs/max';
 import { Tabs } from 'antd';
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import FloorManagement from '../Floor';
 import ZoneManagement from '../Zone';
 
 const Management: React.FC = () => {
   const intl = useIntl();
+  const location = useLocation();
+  const tabFromQuery = useMemo(() => {
+    const tab = new URLSearchParams(location.search || '').get('tab');
+    return tab === 'zone' ? 'zone' : 'floor';
+  }, [location.search]);
+  const [activeKey, setActiveKey] = useState<'floor' | 'zone'>(tabFromQuery);
+
+  useEffect(() => {
+    setActiveKey(tabFromQuery);
+  }, [tabFromQuery]);
+
+  const handleTabChange = (key: string) => {
+    const nextKey = key === 'zone' ? 'zone' : 'floor';
+    setActiveKey(nextKey);
+    history.replace(`/management?tab=${nextKey}`);
+  };
 
   return (
     <PageContainer
@@ -15,26 +31,28 @@ const Management: React.FC = () => {
         defaultMessage: 'Management',
       })}
     >
-      <Tabs defaultActiveKey="1">
-        <Tabs.TabPane
-          tab={intl.formatMessage({
-            id: 'floor.title',
-            defaultMessage: 'Floor Management',
-          })}
-          key="1"
-        >
-          <FloorManagement />
-        </Tabs.TabPane>
-        <Tabs.TabPane
-          tab={intl.formatMessage({
-            id: 'zone.title',
-            defaultMessage: 'Zone Management',
-          })}
-          key="2"
-        >
-          <ZoneManagement />
-        </Tabs.TabPane>
-      </Tabs>
+      <Tabs
+        activeKey={activeKey}
+        onChange={handleTabChange}
+        items={[
+          {
+            key: 'floor',
+            label: intl.formatMessage({
+              id: 'floor.title',
+              defaultMessage: 'Floor Management',
+            }),
+            children: <FloorManagement embedded />,
+          },
+          {
+            key: 'zone',
+            label: intl.formatMessage({
+              id: 'zone.title',
+              defaultMessage: 'Zone Management',
+            }),
+            children: <ZoneManagement embedded />,
+          },
+        ]}
+      />
     </PageContainer>
   );
 };

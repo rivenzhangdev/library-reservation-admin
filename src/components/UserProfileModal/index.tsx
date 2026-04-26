@@ -133,6 +133,7 @@ const UserProfileModal: React.FC<{
       onCancel={onClose}
       onOk={handleOk}
       confirmLoading={uploading || avatarUploading}
+      forceRender
       destroyOnHidden
     >
       <Form form={form} layout="vertical">

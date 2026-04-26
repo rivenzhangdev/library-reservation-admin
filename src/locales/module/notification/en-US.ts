@@ -23,7 +23,6 @@ export default {
   'notification.edit': 'Edit notification',
   'notification.updateSuccess': 'Updated successfully',
   'notification.updateFailed': 'Update failed',
-  'notification.confirmDeleteTitle': 'Confirm delete',
   'notification.confirmDeleteSelectedContent':
     'Are you sure you want to delete selected notifications?',
   'notification.batchMarkRead': 'Mark selected as read',
@@ -39,6 +38,18 @@ export default {
   'notification.form.templateType': 'Template Type',
   'notification.template.bookingSuccess': 'Booking success',
   'notification.template.bookingReminder': 'Booking reminder',
+  'notification.form.templateTitle': 'Template Title',
+  'notification.form.templateTitlePlaceholder': 'Enter template message title',
+  'notification.form.templateBookingTime': 'Booking Time',
+  'notification.form.templateBookingTimePlaceholder':
+    'e.g. 2026-04-24 14:00-17:00',
+  'notification.form.templateRemindTime': 'Reminder Time',
+  'notification.form.templateRemindTimePlaceholder': 'e.g. Today 21:30',
+  'notification.form.templateSeatInfo': 'Seat Info',
+  'notification.form.templateSeatInfoPlaceholder': 'e.g. 2F Area A R3C8',
+  'notification.form.templateRemark': 'Remark',
+  'notification.form.templateRemarkPlaceholder':
+    'Extra tips shown in template message',
   'notification.form.templateData': 'Template Data',
   'notification.form.templateDataPlaceholder':
     '{"title":"...","bookingTime":"...","seatInfo":"..."}',

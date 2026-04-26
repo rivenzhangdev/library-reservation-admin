@@ -1,5 +1,16 @@
 import { request } from '@umijs/max';
 
+function ensureSuccess(response: any, fallbackMessage: string) {
+  if (response && response.success === false) {
+    const backendMessage =
+      response?.error?.message || response?.message || fallbackMessage;
+    const error = new Error(String(backendMessage));
+    (error as any).data = response;
+    throw error;
+  }
+  return response;
+}
+
 /**
  * 获取预约列表
  */
@@ -23,46 +34,51 @@ export async function getBookingDetail(id: number) {
  * 取消预约
  */
 export async function cancelBooking(id: number) {
-  return request(`/api/bookings/cancel/${id}`, {
+  const res = await request(`/api/bookings/cancel/${id}`, {
     method: 'POST',
   });
+  return ensureSuccess(res, 'Failed to cancel booking');
 }
 
 /**
  * 删除预约
  */
 export async function deleteBooking(id: number) {
-  return request(`/api/bookings/${id}`, {
+  const res = await request(`/api/bookings/${id}`, {
     method: 'DELETE',
   });
+  return ensureSuccess(res, 'Failed to delete booking');
 }
 
 /**
  * 签到
  */
 export async function checkIn(id: number) {
-  return request(`/api/bookings/checkin/${id}`, {
+  const res = await request(`/api/bookings/checkin/${id}`, {
     method: 'POST',
   });
+  return ensureSuccess(res, 'Check-in failed');
 }
 
 /**
  * 签退
  */
 export async function checkOut(id: number) {
-  return request(`/api/bookings/checkout/${id}`, {
+  const res = await request(`/api/bookings/checkout/${id}`, {
     method: 'POST',
   });
+  return ensureSuccess(res, 'Check-out failed');
 }
 
 /**
  * 创建预约
  */
 export async function createBooking(data: any) {
-  return request('/api/bookings', {
+  const res = await request('/api/bookings', {
     method: 'POST',
     data,
   });
+  return ensureSuccess(res, 'Failed to create booking');
 }
 
 /**
@@ -72,10 +88,11 @@ export async function batchCancelBookings(
   bookingIds: (string | number)[],
   reason?: string,
 ) {
-  return request('/api/bookings/batch/cancel', {
+  const res = await request('/api/bookings/batch/cancel', {
     method: 'PUT',
     data: { bookingIds, reason },
   });
+  return ensureSuccess(res, 'Failed to batch cancel bookings');
 }
 
 /**
@@ -86,8 +103,9 @@ export async function updateBookingStatus(
   status: string,
   reason?: string,
 ) {
-  return request(`/api/bookings/status/${id}`, {
+  const res = await request(`/api/bookings/status/${id}`, {
     method: 'PUT',
     data: { status, reason },
   });
+  return ensureSuccess(res, 'Failed to update booking status');
 }

@@ -10,10 +10,15 @@ if (inquirer && inquirer.default) inquirer = inquirer.default;
 let chalk = require('chalk');
 if (chalk && chalk.default) chalk = chalk.default;
 
-// read backend envs from workspace shared config
+// read backend envs from project-local config
 function readConfig() {
   try {
-    const cfgPath = path.resolve(__dirname, '..', '..', 'backend-envs.json');
+    const cfgPath = path.resolve(
+      __dirname,
+      '..',
+      'config',
+      'backend-envs.json',
+    );
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const cfg = require(cfgPath);
     return (cfg && cfg.BACKEND_ENVS) || null;

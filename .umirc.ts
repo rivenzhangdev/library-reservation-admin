@@ -15,7 +15,8 @@ export default defineConfig({
   },
   layout: {
     title: '图书馆管理后台',
-    logo: false,
+    logo: '/logo.png',
+    unAccessible: '/403',
   },
   // 本地开发时将 /api 请求代理到后端服务，优先使用环境变量 BACKEND_BASE_URL
   // 启动示例（PowerShell）：
@@ -64,6 +65,13 @@ export default defineConfig({
           component: 'OperationDashboard',
           access: 'canSeeAdmin',
         },
+        {
+          path: 'audit-logs',
+          name: 'auditLogs',
+          icon: 'FileSearchOutlined',
+          component: 'AuditLog',
+          access: 'canSeeAdmin',
+        },
       ],
     },
     {
@@ -77,7 +85,7 @@ export default defineConfig({
       path: '/change-requests',
       name: 'changeRequests',
       icon: 'SwapOutlined',
-      access: 'canSeeAdmin',
+      access: 'canReview',
       routes: [
         {
           path: '/change-requests',
@@ -103,7 +111,7 @@ export default defineConfig({
       path: '/booking',
       name: 'booking',
       icon: 'CalendarOutlined',
-      access: 'canSeeAdmin',
+      access: 'canSeeManagement',
       routes: [
         {
           path: '/booking',
@@ -116,7 +124,26 @@ export default defineConfig({
           component: 'Booking',
           access: 'canSeeAdmin',
         },
+        {
+          path: 'rules',
+          name: 'bookingRules',
+          icon: 'ControlOutlined',
+          component: 'BookingRules',
+          access: 'canSeeManagement',
+        },
+        {
+          path: 'change-requests',
+          name: 'bookingChangeRequests',
+          icon: 'AuditOutlined',
+          component: 'Approval',
+          access: 'canReview',
+        },
       ],
+    },
+    {
+      path: '/booking-change-requests',
+      redirect: '/booking/change-requests',
+      hideInMenu: true,
     },
     {
       path: '/seat',
@@ -172,9 +199,28 @@ export default defineConfig({
       access: 'canSeeAdmin',
     },
     {
+      path: '/third-party-services',
+      name: 'thirdPartyServices',
+      icon: 'ApiOutlined',
+      access: 'canSeeAdmin',
+      routes: [
+        {
+          path: '/third-party-services',
+          redirect: '/third-party-services/student-registry',
+        },
+        {
+          path: '/third-party-services/student-registry',
+          name: 'studentRegistry',
+          icon: 'SolutionOutlined',
+          component: 'Management/StudentRegistry',
+          access: 'canSeeAdmin',
+        },
+      ],
+    },
+    {
       path: '/management',
       name: 'management',
-      icon: 'AppstoreAddOutlined',
+      icon: 'ApartmentOutlined',
       component: 'Management',
       access: 'canSeeAdmin',
     },
@@ -197,6 +243,24 @@ export default defineConfig({
       hideInMenu: true,
       access: 'canSeeAdmin',
     },
+    {
+      path: '/audit-logs',
+      redirect: '/data-management/audit-logs',
+      hideInMenu: true,
+    },
+    {
+      path: '/403',
+      component: '403',
+      layout: false,
+      hideInMenu: true,
+    },
+    {
+      path: '*',
+      component: '404',
+      layout: false,
+      hideInMenu: true,
+    },
   ],
   npmClient: 'pnpm',
+  favicons: ['./public/favicon.icon'],
 });

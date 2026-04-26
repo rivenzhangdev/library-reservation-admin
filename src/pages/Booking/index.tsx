@@ -31,6 +31,7 @@ import {
   createBooking,
   getBookingDetail,
   getBookingList,
+  updateBookingStatus,
 } from '../../services/library/booking';
 import { getConfigTimeSlots } from '../../services/library/config';
 import { getFloors } from '../../services/library/floor';
@@ -425,6 +426,40 @@ const BookingManagement: React.FC = () => {
     }
   };
 
+  const handleMarkViolated = (id: number) => {
+    Modal.confirm({
+      title: intl.formatMessage({
+        id: 'booking.action.markViolated',
+        defaultMessage: 'Mark as violated (test)',
+      }),
+      content: intl.formatMessage({
+        id: 'booking.action.markViolated.confirm',
+        defaultMessage:
+          'This operation is for test verification and will release the seat slot. Continue?',
+      }),
+      onOk: async () => {
+        try {
+          await updateBookingStatus(id, String(BookingStatus.Violated));
+          message.success(
+            intl.formatMessage({
+              id: 'booking.action.markViolated.success',
+              defaultMessage: 'Booking marked as violated',
+            }),
+          );
+          actionRef.current?.reload?.();
+        } catch (e: any) {
+          message.error(
+            e?.message ||
+              intl.formatMessage({
+                id: 'booking.action.markViolated.failed',
+                defaultMessage: 'Failed to mark violated',
+              }),
+          );
+        }
+      },
+    });
+  };
+
   const handleShowDetail = async (id: number) => {
     try {
       const res: any = await getBookingDetail(id);
@@ -486,15 +521,6 @@ const BookingManagement: React.FC = () => {
       dataIndex: 'date',
       valueType: 'date',
       width: 110,
-    },
-    {
-      title: intl.formatMessage({
-        id: 'booking.column.dateRange',
-        defaultMessage: 'Date range',
-      }),
-      dataIndex: 'dateRange',
-      valueType: 'dateRange',
-      hideInTable: true,
     },
     {
       title: intl.formatMessage({
@@ -601,82 +627,96 @@ const BookingManagement: React.FC = () => {
       valueType: 'option',
       ...STANDARD_ACTION_COLUMN,
       width: 280,
-      render: (_, record) => (
-        <Space size="small" wrap style={{ minWidth: 240 }}>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            size="small"
-            onClick={() => handleShowDetail(record.id)}
-          >
-            {intl.formatMessage({
-              id: 'booking.action.details',
-              defaultMessage: 'Details',
-            })}
-          </Button>
-          {record.status === BookingStatus.Upcoming && (
-            <>
-              <Button
-                type="link"
-                size="small"
-                onClick={() => handleCheckIn(record.id)}
-              >
-                {intl.formatMessage({
-                  id: 'booking.action.checkIn',
-                  defaultMessage: 'Test Check-in',
-                })}
-              </Button>
-              <Button
-                type="link"
-                size="small"
-                onClick={() => generateBookingQr(record, 'checkin')}
-              >
-                {intl.formatMessage({
-                  id: 'booking.action.checkInQr',
-                  defaultMessage: 'Check-in QR',
-                })}
-              </Button>
-            </>
-          )}
-          {record.status === BookingStatus.Ongoing && (
-            <>
-              <Button
-                type="link"
-                size="small"
-                onClick={() => handleCheckOut(record.id)}
-              >
-                {intl.formatMessage({
-                  id: 'booking.action.checkOut',
-                  defaultMessage: 'Test Check-out',
-                })}
-              </Button>
-              <Button
-                type="link"
-                size="small"
-                onClick={() => generateBookingQr(record, 'checkout')}
-              >
-                {intl.formatMessage({
-                  id: 'booking.action.checkOutQr',
-                  defaultMessage: 'Check-out QR',
-                })}
-              </Button>
-            </>
-          )}
-          {record.status === BookingStatus.Upcoming && (
+      render: (_, record) => {
+        const statusValue = Number(record.status);
+        return (
+          <Space size="small" wrap style={{ minWidth: 240 }}>
             <Button
               type="link"
-              danger
+              icon={<EditOutlined />}
               size="small"
-              onClick={() => handleCancel(record.id)}
+              onClick={() => handleShowDetail(record.id)}
             >
               {intl.formatMessage({
-                id: 'common.cancel',
-                defaultMessage: 'Cancel',
+                id: 'booking.action.details',
+                defaultMessage: 'Details',
               })}
             </Button>
-          )}
-        </Space>
-      ),
+            {statusValue === BookingStatus.Upcoming && (
+              <>
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => handleCheckIn(record.id)}
+                >
+                  {intl.formatMessage({
+                    id: 'booking.action.checkIn',
+                    defaultMessage: 'Test Check-in',
+                  })}
+                </Button>
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => generateBookingQr(record, 'checkin')}
+                >
+                  {intl.formatMessage({
+                    id: 'booking.action.checkInQr',
+                    defaultMessage: 'Check-in QR',
+                  })}
+                </Button>
+              </>
+            )}
+            {statusValue === BookingStatus.Ongoing && (
+              <>
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => handleCheckOut(record.id)}
+                >
+                  {intl.formatMessage({
+                    id: 'booking.action.checkOut',
+                    defaultMessage: 'Test Check-out',
+                  })}
+                </Button>
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => generateBookingQr(record, 'checkout')}
+                >
+                  {intl.formatMessage({
+                    id: 'booking.action.checkOutQr',
+                    defaultMessage: 'Check-out QR',
+                  })}
+                </Button>
+                <Button
+                  type="link"
+                  danger
+                  size="small"
+                  onClick={() => handleMarkViolated(record.id)}
+                >
+                  {intl.formatMessage({
+                    id: 'booking.action.markViolated',
+                    defaultMessage: 'Mark violated',
+                  })}
+                </Button>
+              </>
+            )}
+            {statusValue === BookingStatus.Upcoming && (
+              <Button
+                type="link"
+                danger
+                size="small"
+                onClick={() => handleCancel(record.id)}
+              >
+                {intl.formatMessage({
+                  id: 'common.cancel',
+                  defaultMessage: 'Cancel',
+                })}
+              </Button>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
@@ -1019,13 +1059,17 @@ const BookingManagement: React.FC = () => {
         onOk={async () => {
           try {
             const values = await form.validateFields();
-            const { timeSlot, startTime, endTime } = values;
+            const { timeSlot, startTime, endTime, date } = values;
             if (startTime || endTime) {
               ensureCustomTimeIsValid(timeSlot, startTime, endTime);
             }
             const range = getTimeSlotRange(timeSlot);
             const payload = {
               ...values,
+              date:
+                typeof date?.format === 'function'
+                  ? date.format('YYYY-MM-DD')
+                  : date,
               startTime: normalizeTimeValue(startTime) || range.start,
               endTime: normalizeTimeValue(endTime) || range.end,
             };

@@ -64,6 +64,14 @@ interface FeedbackType {
   commentsCount?: number;
 }
 
+function getEffectiveFeedbackStatus(
+  record: Partial<FeedbackType> | any,
+): number {
+  const raw = Number(record?.status);
+  if ([1, 2, 3, 4].includes(raw)) return raw;
+  return 1;
+}
+
 const FeedbackPage: React.FC = () => {
   const [form] = Form.useForm();
   const [processForm] = Form.useForm();
@@ -132,19 +140,6 @@ const FeedbackPage: React.FC = () => {
     } finally {
       setProcessSubmitting(false);
     }
-  };
-
-  const getEffectiveFeedbackStatus = (feedback: any) => {
-    const rawStatus = Number(feedback?.status);
-    const commentsCount = Number(
-      feedback?.commentsCount ||
-        (Array.isArray(feedback?.comments) ? feedback.comments.length : 0),
-    );
-    const hasRecords = commentsCount > 0;
-    if (hasRecords && rawStatus === 1) {
-      return 2;
-    }
-    return rawStatus || 1;
   };
 
   const handleAddComment = async () => {

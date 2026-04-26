@@ -619,7 +619,7 @@ const SystemConfig: React.FC = () => {
         <Button
           key="goBooking"
           type="primary"
-          onClick={() => history.push('/booking')}
+          onClick={() => history.push('/booking/list')}
         >
           {intl.formatMessage({
             id: 'booking.config.goBack',
@@ -1304,14 +1304,27 @@ const SystemConfig: React.FC = () => {
                     </Card>
                   </Col>
                 </Row>
-                <Space style={{ marginTop: 16 }}>
-                  <Button type="primary" onClick={() => history.push('/floor')}>
+                <Paragraph style={{ marginTop: 16 }} type="secondary">
+                  {intl.formatMessage({
+                    id: 'booking.config.floorRules.rulesDescription',
+                    defaultMessage:
+                      'Please complete configuration in the Time Slots and Credit Rules tabs to keep floor and area presentation aligned with current policy.',
+                  })}
+                </Paragraph>
+                <Space>
+                  <Button
+                    type="primary"
+                    onClick={() => history.push('/management?tab=floor')}
+                  >
                     {intl.formatMessage({
                       id: 'booking.config.goToFloor',
                       defaultMessage: 'Go to Floor Management',
                     })}
                   </Button>
-                  <Button type="default" onClick={() => history.push('/zone')}>
+                  <Button
+                    type="default"
+                    onClick={() => history.push('/management?tab=zone')}
+                  >
                     {intl.formatMessage({
                       id: 'booking.config.goToZone',
                       defaultMessage: 'Go to Zone Management',

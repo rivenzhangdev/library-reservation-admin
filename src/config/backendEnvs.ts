@@ -1,97 +1,22 @@
-export type BackendEnvKey = 'development' | 'test' | 'uat' | 'production';
+import backendEnvsJson from '../../config/backend-envs.json';
 
+export type BackendEnvKey = string;
 export interface BackendEnv {
   key: BackendEnvKey;
   label: string;
   baseUrl: string;
   lanBaseUrl?: string;
+  isProd?: boolean;
 }
 
-const BACKEND_ENVS_FALLBACK: BackendEnv[] = [
-  {
-    key: 'development',
-    label: 'Development',
-    baseUrl: 'http://localhost:3000',
-    lanBaseUrl: 'http://192.168.18.60:3000',
-  },
-  {
-    key: 'test',
-    label: 'Test',
-    baseUrl: 'http://localhost:3001',
-    lanBaseUrl: 'http://192.168.18.60:3001',
-  },
-  {
-    key: 'uat',
-    label: 'UAT',
-    baseUrl: 'http://localhost:3002',
-    lanBaseUrl: 'http://192.168.18.60:3002',
-  },
-  {
-    key: 'production',
-    label: 'Production',
-    baseUrl: 'http://localhost:3000',
-    lanBaseUrl: 'http://192.168.18.60:3000',
-  },
-];
-
-export const BACKEND_ENVS: BackendEnv[] = (() => {
-  let envs: BackendEnv[] = BACKEND_ENVS_FALLBACK;
-  try {
-    if (typeof window === 'undefined') {
-      // Prefer a shared workspace config if present.
-      // Use eval('require') so bundlers don't try to resolve this optional file.
-      // eslint-disable-next-line no-eval,@typescript-eslint/no-implied-eval
-      const requireFn = eval('require');
-      const shared = requireFn('../../backend-envs.json');
-      if (shared && Array.isArray(shared.BACKEND_ENVS)) {
-        envs = shared.BACKEND_ENVS as BackendEnv[];
-      }
-    }
-  } catch (e) {
-    // ignore and fallback
-  }
-
-  // Allow build/start-time overrides via environment variables.
-  // Examples (in scripts):
-  //   cross-env BACKEND_ENV=uat BACKEND_BASE_URL=http://192.168.x.x:3002 pnpm dev
-  try {
-    const penv = typeof process !== 'undefined' ? (process as any).env : null;
-    if (penv) {
-      const overrideKey =
-        penv.BACKEND_ENV || penv.REACT_APP_BACKEND_ENV || penv.VITE_BACKEND_ENV;
-      const overrideBase =
-        penv.BACKEND_BASE_URL ||
-        penv.REACT_APP_BACKEND_BASE_URL ||
-        penv.VITE_BACKEND_BASE_URL;
-      const overrideLan =
-        penv.BACKEND_LAN_URL ||
-        penv.REACT_APP_BACKEND_LAN_URL ||
-        penv.VITE_BACKEND_LAN_BASE_URL;
-      if (overrideKey || overrideBase || overrideLan) {
-        const idx = envs.findIndex((e) => e.key === overrideKey);
-        if (idx >= 0) {
-          if (overrideBase) (envs[idx] as any).baseUrl = overrideBase;
-          if (overrideLan) (envs[idx] as any).lanBaseUrl = overrideLan;
-        } else {
-          const newEnv: BackendEnv = {
-            key: (overrideKey as BackendEnvKey) || 'development',
-            label: overrideKey || 'Env',
-            baseUrl: overrideBase || (envs[0] && envs[0].baseUrl) || '',
-            lanBaseUrl: overrideLan || '',
-          };
-          envs = [newEnv, ...envs];
-        }
-      }
-    }
-  } catch (e) {
-    // ignore
-  }
-
-  return envs;
-})();
+export const BACKEND_ENVS: BackendEnv[] =
+  backendEnvsJson && Array.isArray(backendEnvsJson.BACKEND_ENVS)
+    ? backendEnvsJson.BACKEND_ENVS
+    : [];
 
 export const BACKEND_ENV_KEY = 'backend_env';
 export const BACKEND_BASE_KEY = 'backend_base_url';
+export const BOOT_BACKEND_ENV_KEY: BackendEnvKey = 'development';
 
 export function getBackendEnvKey(): string | null {
   try {
@@ -152,6 +77,25 @@ export function setBackendBaseUrl(
   }
 }
 
+export function resetBackendEnvStorageOnLaunch(
+  key: BackendEnvKey = BOOT_BACKEND_ENV_KEY,
+) {
+  try {
+    if (typeof window === 'undefined') return;
+
+    localStorage.removeItem(BACKEND_ENV_KEY);
+    localStorage.removeItem(BACKEND_BASE_KEY);
+
+    const found =
+      BACKEND_ENVS.find((item) => item.key === key) || BACKEND_ENVS[0];
+    if (found?.key) {
+      setBackendEnv(found.key);
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
 export function getBackendBaseUrl(): string {
   try {
     if (typeof window !== 'undefined') {
@@ -194,4 +138,16 @@ export async function detectBackendStatuses(
     }
   }
   return results;
+}
+
+export function isBackendEnvProdByKey(key?: string | null): boolean {
+  const envKey = String(key || '').trim();
+  if (!envKey) return false;
+  const matched = BACKEND_ENVS.find((item) => item.key === envKey);
+  return !!matched?.isProd;
+}
+
+export function shouldShowBackendEnvSwitch(key?: string | null): boolean {
+  const selectedKey = key || getBackendEnvKey() || 'development';
+  return !isBackendEnvProdByKey(selectedKey);
 }

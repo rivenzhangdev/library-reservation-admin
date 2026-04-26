@@ -45,6 +45,11 @@ export default {
   'booking.action.checkIn': 'Test Check-in',
   'booking.action.checkOutQr': 'Check-out QR',
   'booking.action.checkOut': 'Test Check-out',
+  'booking.action.markViolated': 'Mark Violated',
+  'booking.action.markViolated.confirm':
+    'This operation is for test verification and will release the seat slot. Continue?',
+  'booking.action.markViolated.success': 'Booking marked as violated',
+  'booking.action.markViolated.failed': 'Failed to mark violated',
   'booking.qr.hint':
     'Scan this QR to simulate a booking check-in or check-out event.',
   'booking.qr.payload': 'Payload: {payload}',

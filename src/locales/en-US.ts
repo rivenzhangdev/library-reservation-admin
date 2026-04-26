@@ -1,5 +1,7 @@
 import admin from './module/admin/en-US';
+import approval from './module/approval/en-US';
 import booking from './module/booking/en-US';
+import bookingRules from './module/bookingRules/en-US';
 import common from './module/common/en-US';
 import credit from './module/credit/en-US';
 import feedback from './module/feedback/en-US';
@@ -15,11 +17,13 @@ import operationDashboard from './module/operationDashboard/en-US';
 
 export default {
   ...booking,
+  ...bookingRules,
   ...common,
   ...feedback,
   ...credit,
   ...floor,
   ...admin,
+  ...approval,
   ...management,
   ...notification,
   ...phoneChangeRequest,

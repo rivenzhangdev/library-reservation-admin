@@ -1,27 +1,103 @@
 import { PageContainer } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
-import { Alert, Card, Col, Empty, Row, Select, Spin, Statistic } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Empty,
+  List,
+  Modal,
+  Row,
+  Select,
+  Spin,
+  Statistic,
+  Typography,
+  message,
+} from 'antd';
 import { Line } from '@ant-design/charts';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   getDashboardStats,
   getDashboardTrends,
 } from '../../services/library/operationDashboard';
+import { orphanBooking } from '../../services/library';
+
+type DashboardStats = {
+  todayBookings?: number;
+  activeBookings?: number;
+  pendingChangeRequests?: number;
+  pendingFeedback?: number;
+};
+
+type TrendPoint = {
+  day: string;
+  count: number | string;
+};
+
+type ApiEnvelope<T> = {
+  data?: T;
+};
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return fallback;
+}
 
 const OperationDashboardPage: React.FC = () => {
   const intl = useIntl();
-  const [stats, setStats] = useState<any>(null);
-  const [trends, setTrends] = useState<any[]>([]);
+  const [orphanModalVisible, setOrphanModalVisible] = useState(false);
+  const [orphanLoading, setOrphanLoading] = useState(false);
+  const [orphans, setOrphans] = useState<number[]>([]);
+  const [repairing, setRepairing] = useState(false);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [trends, setTrends] = useState<TrendPoint[]>([]);
   const [loading, setLoading] = useState(false);
   const [trendDays, setTrendDays] = useState(7);
 
-  const unwrapData = (response: any) => response?.data ?? response ?? null;
+  const unwrapData = <T,>(response: T | ApiEnvelope<T> | null | undefined) =>
+    (response && typeof response === 'object' && 'data' in response
+      ? response.data
+      : response) ?? null;
+
+  const fetchOrphanBookings = async () => {
+    setOrphanLoading(true);
+    try {
+      const res = await orphanBooking.getOrphanBookings();
+      const data = res?.data || res;
+      setOrphans(
+        Array.isArray(data?.orphanBookingIds) ? data.orphanBookingIds : [],
+      );
+      setOrphanModalVisible(true);
+    } catch (error: unknown) {
+      message.error(getErrorMessage(error, '查询失败'));
+    } finally {
+      setOrphanLoading(false);
+    }
+  };
+
+  const handleRepairOrphans = async () => {
+    setRepairing(true);
+    try {
+      const res = await orphanBooking.repairOrphanBookings();
+      const data = res?.data || res;
+      message.success(`已释放异常占座 ${data?.repairedCount ?? 0} 条`);
+      setOrphans([]);
+      setOrphanModalVisible(false);
+    } catch (error: unknown) {
+      message.error(getErrorMessage(error, '处理失败'));
+    } finally {
+      setRepairing(false);
+    }
+  };
 
   const fetchStats = useCallback(async () => {
     setLoading(true);
     try {
       const res = await getDashboardStats();
-      setStats(unwrapData(res));
+      setStats(unwrapData<DashboardStats>(res));
     } catch {
       setStats(null);
     } finally {
@@ -32,7 +108,7 @@ const OperationDashboardPage: React.FC = () => {
   const fetchTrends = useCallback(async () => {
     try {
       const res = await getDashboardTrends({ days: trendDays });
-      const payload = unwrapData(res);
+      const payload = unwrapData<{ bookingTrends?: TrendPoint[] }>(res);
       setTrends(
         Array.isArray(payload?.bookingTrends) ? payload.bookingTrends : [],
       );
@@ -50,7 +126,7 @@ const OperationDashboardPage: React.FC = () => {
   }, [fetchTrends]);
 
   const lineConfig = {
-    data: trends.map((t: any) => ({
+    data: trends.map((t) => ({
       day: t.day,
       count: Number(t.count),
     })),
@@ -64,11 +140,72 @@ const OperationDashboardPage: React.FC = () => {
   return (
     <PageContainer
       title={intl.formatMessage({ id: 'operationDashboard.pageTitle' })}
+      extra={[
+        <Button
+          key="orphan-check"
+          loading={orphanLoading}
+          onClick={fetchOrphanBookings}
+        >
+          {intl.formatMessage({
+            id: 'operationDashboard.staleOccupancyCheck',
+          })}
+        </Button>,
+      ]}
     >
+      <Modal
+        open={orphanModalVisible}
+        title={intl.formatMessage({
+          id: 'operationDashboard.staleOccupancyCheckResult',
+        })}
+        onCancel={() => setOrphanModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setOrphanModalVisible(false)}>
+            {intl.formatMessage({ id: 'common.close', defaultMessage: '关闭' })}
+          </Button>,
+          <Button
+            key="repair"
+            type="primary"
+            loading={repairing}
+            disabled={!orphans.length}
+            onClick={handleRepairOrphans}
+          >
+            {intl.formatMessage({
+              id: 'operationDashboard.releaseStaleOccupancy',
+            })}
+          </Button>,
+        ]}
+      >
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message={intl.formatMessage({
+            id: 'operationDashboard.staleOccupancyHint',
+          })}
+        />
+        {orphans.length ? (
+          <List
+            size="small"
+            bordered
+            dataSource={orphans}
+            renderItem={(id) => (
+              <List.Item>
+                <Typography.Text code>{id}</Typography.Text>
+              </List.Item>
+            )}
+          />
+        ) : (
+          <Typography.Text type="success">
+            {intl.formatMessage({
+              id: 'operationDashboard.noStaleOccupancy',
+            })}
+          </Typography.Text>
+        )}
+      </Modal>
       <Alert
         type="info"
         showIcon
-        style={{ marginBottom: 16 }}
+        style={{ marginBottom: 16, display: 'flex', alignItems: 'baseline' }}
         message={intl.formatMessage({
           id: 'operationDashboard.dataHint',
           defaultMessage:
@@ -78,16 +215,6 @@ const OperationDashboardPage: React.FC = () => {
 
       <Spin spinning={loading}>
         <Row gutter={[16, 16]}>
-          <Col xs={12} sm={6}>
-            <Card>
-              <Statistic
-                title={intl.formatMessage({
-                  id: 'operationDashboard.totalBookings',
-                })}
-                value={stats?.totalBookings ?? 0}
-              />
-            </Card>
-          </Col>
           <Col xs={12} sm={6}>
             <Card>
               <Statistic
@@ -112,29 +239,9 @@ const OperationDashboardPage: React.FC = () => {
             <Card>
               <Statistic
                 title={intl.formatMessage({
-                  id: 'operationDashboard.totalUsers',
-                })}
-                value={stats?.totalUsers ?? 0}
-              />
-            </Card>
-          </Col>
-          <Col xs={12} sm={6}>
-            <Card>
-              <Statistic
-                title={intl.formatMessage({
                   id: 'operationDashboard.pendingChangeRequests',
                 })}
                 value={stats?.pendingChangeRequests ?? 0}
-              />
-            </Card>
-          </Col>
-          <Col xs={12} sm={6}>
-            <Card>
-              <Statistic
-                title={intl.formatMessage({
-                  id: 'operationDashboard.totalActivities',
-                })}
-                value={stats?.totalActivities ?? 0}
               />
             </Card>
           </Col>

@@ -9,6 +9,7 @@ import {
   detectBackendStatuses,
   getBackendEnvKey,
   setBackendEnv,
+  shouldShowBackendEnvSwitch,
 } from '@/config/backendEnvs';
 import { Roles } from '@/constants/roles';
 import { updateUser, uploadImage } from '@/services/library/user';
@@ -20,7 +21,7 @@ import {
 } from '@ant-design/icons';
 import { history, SelectLang, useIntl, useModel } from '@umijs/max';
 import type { MenuProps } from 'antd';
-import { Dropdown, message, Tooltip } from 'antd';
+import { Dropdown, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 
 const RightContent: React.FC<{
@@ -150,39 +151,46 @@ const RightContent: React.FC<{
   }, [headerProps?.collapsed, headerProps?.isMobile]);
 
   // 构造用户菜单项（放在状态之后，这样 icon 可以根据 selectedEnv 实时变化）
+  const envSwitchVisible = shouldShowBackendEnvSwitch(selectedEnv);
   const userMenuItems: MenuProps['items'] = [
     {
       key: 'profile',
       icon: <UserOutlined />,
       label: intl.formatMessage({ id: 'right.personalCenter' }),
     },
-    {
-      type: 'divider' as const,
-    },
-    // 环境切换标题（不可选）
-    {
-      key: 'env_header',
-      label: intl.formatMessage({
-        id: 'right.envHeader',
-        defaultMessage: '切换环境',
-      }),
-      disabled: true,
-    },
-    // 环境项
-    ...BACKEND_ENVS.map((e) => {
-      const k = `env:${e.key}`;
-      return {
-        key: k,
-        label: intl.formatMessage({
-          id: `backend.env.${e.key}`,
-          defaultMessage: e.label,
-        }),
-        icon: selectedEnv === e.key ? <CheckOutlined /> : undefined,
-      } as any;
-    }),
-    {
-      type: 'divider' as const,
-    },
+    ...(envSwitchVisible
+      ? [
+          {
+            type: 'divider' as const,
+          },
+          {
+            key: 'env_header',
+            label: intl.formatMessage({
+              id: 'right.envHeader',
+              defaultMessage: '切换环境',
+            }),
+            disabled: true,
+          },
+          ...BACKEND_ENVS.map((e) => {
+            const k = `env:${e.key}`;
+            return {
+              key: k,
+              label: intl.formatMessage({
+                id: `backend.env.${e.key}`,
+                defaultMessage: e.label,
+              }),
+              icon: selectedEnv === e.key ? <CheckOutlined /> : undefined,
+            } as any;
+          }),
+          {
+            type: 'divider' as const,
+          },
+        ]
+      : [
+          {
+            type: 'divider' as const,
+          },
+        ]),
     {
       key: 'logout',
       icon: <LogoutOutlined />,
@@ -356,62 +364,57 @@ const RightContent: React.FC<{
         <div
           className={`rc-user-group rc-user-group-${layoutMode}`}
           style={{ cursor: 'pointer', padding: 8, minWidth: 0 }}
+          title={
+            currentUser?.name ||
+            currentUser?.username ||
+            intl.formatMessage({
+              id: 'user.role.user',
+              defaultMessage: '普通用户',
+            })
+          }
         >
-          <Tooltip
-            title={
-              currentUser?.name ||
-              currentUser?.username ||
-              intl.formatMessage({
-                id: 'user.role.user',
-                defaultMessage: '普通用户',
-              })
-            }
-            placement="left"
-          >
-            <div className="rc-avatar" role="img" aria-label="avatar">
-              {currentUser?.avatar && !avatarLoadFailed ? (
-                <img
-                  src={currentUser.avatar}
-                  alt="avatar"
-                  onError={() => setAvatarLoadFailed(true)}
-                />
-              ) : (
-                <UserOutlined />
-              )}
-              {isAdmin && (
-                <div
-                  className="rc-admin-badge"
-                  title={intl.formatMessage({
-                    id: 'user.role.admin',
-                    defaultMessage: '管理员',
-                  })}
-                >
-                  <SafetyOutlined />
-                </div>
-              )}
-            </div>
-          </Tooltip>
+          <div className="rc-avatar" role="img" aria-label="avatar">
+            {currentUser?.avatar && !avatarLoadFailed ? (
+              <img
+                src={currentUser.avatar}
+                alt="avatar"
+                onError={() => setAvatarLoadFailed(true)}
+              />
+            ) : (
+              <UserOutlined />
+            )}
+            {isAdmin && (
+              <div
+                className="rc-admin-badge"
+                title={intl.formatMessage({
+                  id: 'user.role.admin',
+                  defaultMessage: '管理员',
+                })}
+              >
+                <SafetyOutlined />
+              </div>
+            )}
+          </div>
 
           {showUserMeta && (
             <div className="rc-user-meta">
-              <div className="rc-username">
-                <Tooltip
-                  title={
-                    currentUser?.name ||
-                    currentUser?.username ||
-                    intl.formatMessage({
-                      id: 'user.role.user',
-                      defaultMessage: '普通用户',
-                    })
-                  }
-                >
-                  {currentUser?.name ||
-                    currentUser?.username ||
-                    intl.formatMessage({
-                      id: 'user.role.user',
-                      defaultMessage: '普通用户',
-                    })}
-                </Tooltip>
+              <div
+                className="rc-username"
+                title={
+                  currentUser?.name ||
+                  currentUser?.username ||
+                  intl.formatMessage({
+                    id: 'user.role.user',
+                    defaultMessage: '普通用户',
+                  })
+                }
+              >
+                {currentUser?.name ||
+                  currentUser?.username ||
+                  intl.formatMessage({
+                    id: 'user.role.user',
+                    defaultMessage: '普通用户',
+                  })}
               </div>
               <div
                 className={

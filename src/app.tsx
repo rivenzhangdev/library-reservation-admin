@@ -6,15 +6,47 @@ import { forwardRef } from 'react';
 import {
   BACKEND_BASE_KEY,
   BACKEND_ENVS,
+  BOOT_BACKEND_ENV_KEY,
   clearBackendAuthStorage,
   detectBackendStatuses,
   getBackendBaseUrl,
   getBackendEnvKey,
+  resetBackendEnvStorageOnLaunch,
   setBackendEnv,
 } from './config/backendEnvs';
 import requestConfig from './utils/request';
 
 export const request = requestConfig;
+
+if (typeof window !== 'undefined') {
+  // Recover from stale dynamic chunk cache (common after route/component renames or new deploy).
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason = (event as any)?.reason;
+    const message = String(reason?.message || reason || '');
+    const isChunkLoadError =
+      /Loading chunk [\w-]+ failed/i.test(message) ||
+      /ChunkLoadError/i.test(message);
+
+    if (!isChunkLoadError) {
+      return;
+    }
+
+    const reloadKey = 'admin_chunk_reload_once';
+    const alreadyReloaded = sessionStorage.getItem(reloadKey) === '1';
+
+    if (alreadyReloaded) {
+      // Give up after one retry to avoid infinite reload loops.
+      return;
+    }
+
+    sessionStorage.setItem(reloadKey, '1');
+    window.location.reload();
+  });
+
+  window.addEventListener('load', () => {
+    sessionStorage.removeItem('admin_chunk_reload_once');
+  });
+}
 
 const loginPath = '/login';
 
@@ -103,6 +135,9 @@ export async function getInitialState(): Promise<{
   token?: string;
   backend?: any;
 }> {
+  // 每次启动清空并重置环境相关存储
+  resetBackendEnvStorageOnLaunch(BOOT_BACKEND_ENV_KEY);
+
   try {
     const rawUser = localStorage.getItem('currentUser');
     const token = localStorage.getItem('token');
@@ -227,6 +262,7 @@ export const layout = ({ initialState }: any) => {
   };
 
   return {
+    logo: '/logo.png',
     // 使用 RightContent 统一渲染用户菜单，避免重复头像区块
     rightContentRender: (headerProps: any) => {
       return <RightContent headerProps={headerProps} />;

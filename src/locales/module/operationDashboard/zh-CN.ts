@@ -13,4 +13,10 @@ export default {
   'operationDashboard.days7': '最近7天',
   'operationDashboard.days14': '最近14天',
   'operationDashboard.days30': '最近30天',
+  'operationDashboard.staleOccupancyCheck': '异常占座检查',
+  'operationDashboard.staleOccupancyCheckResult': '异常占座检查结果',
+  'operationDashboard.releaseStaleOccupancy': '释放异常占座',
+  'operationDashboard.staleOccupancyHint':
+    '检查仍在占用座位、但关联用户已经不存在的异常预约。处理后会自动取消这些预约并释放座位。',
+  'operationDashboard.noStaleOccupancy': '未发现异常占座',
 };

@@ -166,6 +166,35 @@ ${error.message}`
 [${status}]`
           }`.trim(),
         );
+      } else if (status === 403) {
+        const title =
+          formatMessageFn?.({
+            id: 'request.forbidden.title',
+            defaultMessage: isZh ? '权限不足' : 'Access denied',
+          }) ?? (isZh ? '权限不足' : 'Access denied');
+        const content =
+          formatMessageFn?.({
+            id: 'request.forbidden.content',
+            defaultMessage: isZh
+              ? '当前账号没有访问此页面或执行该操作的权限。'
+              : 'Your account does not have permission to access this page or perform this action.',
+          }) ??
+          (isZh
+            ? '当前账号没有访问此页面或执行该操作的权限。'
+            : 'Your account does not have permission to access this page or perform this action.');
+        try {
+          Modal.warning({
+            title,
+            content,
+            onOk: () => {
+              if (typeof window !== 'undefined') {
+                window.location.replace('/403');
+              }
+            },
+          });
+        } catch (e) {
+          // ignore
+        }
       }
     } catch (e) {
       // ignore
@@ -275,7 +304,7 @@ ${error.message}`
               await showSessionExpired();
             }
             // 业务错误：API 返回 success: false 时抛出异常，让调用方 catch 能捕获
-            if (body && body.success === false && body.error) {
+            if (body && body.success === false) {
               const fm = getFormatMessage();
               const defaultMsg = fm
                 ? fm({
@@ -283,8 +312,10 @@ ${error.message}`
                     defaultMessage: '操作失败',
                   })
                 : '操作失败';
-              const err = new Error(body.error.message || defaultMsg);
-              (err as any).code = body.error.code;
+              const err = new Error(
+                body?.error?.message || body?.message || defaultMsg,
+              );
+              (err as any).code = body?.error?.code || body?.code;
               (err as any).data = body;
               throw err;
             }

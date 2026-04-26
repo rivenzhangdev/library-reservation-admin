@@ -21,7 +21,9 @@ interface FloorType {
   updatedBy?: { name?: string; username?: string };
 }
 
-const FloorManagement: React.FC = () => {
+const FloorManagement: React.FC<{ embedded?: boolean }> = ({
+  embedded = false,
+}) => {
   const intl = useIntl();
 
   const actionRef = useRef<ActionType>();
@@ -136,13 +138,8 @@ const FloorManagement: React.FC = () => {
     },
   ];
 
-  return (
-    <PageContainer
-      title={intl.formatMessage({
-        id: 'floor.title',
-        defaultMessage: 'Floor Management',
-      })}
-    >
+  const tableNode = (
+    <>
       <ProTable<FloorType>
         headerTitle={intl.formatMessage({
           id: 'floor.listTitle',
@@ -276,6 +273,21 @@ const FloorManagement: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
+    </>
+  );
+
+  if (embedded) {
+    return tableNode;
+  }
+
+  return (
+    <PageContainer
+      title={intl.formatMessage({
+        id: 'floor.title',
+        defaultMessage: 'Floor Management',
+      })}
+    >
+      {tableNode}
     </PageContainer>
   );
 };

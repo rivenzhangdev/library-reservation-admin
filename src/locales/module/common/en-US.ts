@@ -7,6 +7,23 @@ export default {
   'common.lang.en': 'English',
   'app.title': 'Library Admin',
   'common.action': 'Action',
+  'common.enabled': 'Enabled',
+  'common.disabled': 'Disabled',
+  'common.createdAt': 'Created At',
+  'common.field.type': 'Type',
+  'common.field.relatedId': 'Related ID',
+  'auditLog.exportFailed': 'Export failed',
+  'auditLog.fieldGuide.title': 'Field Guide',
+  'auditLog.fieldGuide.action':
+    'Action: operation code, such as booking.create or user.update.',
+  'auditLog.fieldGuide.type':
+    'Type: business object type, such as booking / user / config.',
+  'auditLog.fieldGuide.relatedId':
+    'Related ID: identifier of the operated object.',
+  'auditLog.fieldGuide.updatedBy':
+    'Updated By: operator name (falls back to operator ID if missing).',
+  'auditLog.search.operatorKeyword': 'Search by name / username / ID',
+  'auditLog.search.relatedId': 'Search by related ID',
   // Right top & user
   'right.personalCenter': 'Personal Center',
   'right.logout': 'Log out',
@@ -191,6 +208,8 @@ export default {
   'dashboard.card.activeUsers': 'Active Users',
   'dashboard.label.bookings': 'Bookings',
   'dashboard.label.lastActive': 'Last Active',
+  'dashboard.adminDataHint':
+    'Today/week/month metrics come from booking records. Hot areas, recent bookings, and active users require booking data to appear.',
   'dashboard.viewDetails': 'View Details',
   'dashboard.column.totalSeats': 'Total Seats',
   'dashboard.column.occupiedSeats': 'Occupied Seats',

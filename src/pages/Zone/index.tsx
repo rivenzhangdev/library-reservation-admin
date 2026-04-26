@@ -21,7 +21,9 @@ interface ZoneType {
   updatedBy?: { name?: string; username?: string };
 }
 
-const ZoneManagement: React.FC = () => {
+const ZoneManagement: React.FC<{ embedded?: boolean }> = ({
+  embedded = false,
+}) => {
   const intl = useIntl();
 
   const actionRef = useRef<ActionType>();
@@ -187,13 +189,8 @@ const ZoneManagement: React.FC = () => {
     },
   ];
 
-  return (
-    <PageContainer
-      title={intl.formatMessage({
-        id: 'zone.title',
-        defaultMessage: 'Zone Management',
-      })}
-    >
+  const tableNode = (
+    <>
       <ProTable<ZoneType>
         headerTitle={intl.formatMessage({
           id: 'zone.listTitle',
@@ -339,6 +336,21 @@ const ZoneManagement: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
+    </>
+  );
+
+  if (embedded) {
+    return tableNode;
+  }
+
+  return (
+    <PageContainer
+      title={intl.formatMessage({
+        id: 'zone.title',
+        defaultMessage: 'Zone Management',
+      })}
+    >
+      {tableNode}
     </PageContainer>
   );
 };

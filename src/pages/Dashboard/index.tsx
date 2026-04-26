@@ -7,7 +7,6 @@ import {
   getRecentBookings,
   getStatistics,
 } from '@/services/library/dashboard';
-import { Line, Pie } from '@ant-design/charts';
 import {
   CalendarOutlined,
   DownloadOutlined,
@@ -221,58 +220,6 @@ const Dashboard: React.FC = () => {
     },
   ];
 
-  const usageTrendData =
-    statisticsData.trend && statisticsData.trend.length > 0
-      ? statisticsData.trend.map((t: any) => ({
-          time: t.date,
-          value: t.bookings,
-        }))
-      : [];
-
-  const bookingStatusData = [
-    {
-      type: intl.formatMessage({ id: 'dashboard.bookingType.total' }),
-      value: statisticsData.totalBookings || dashboardData.totalBookings || 0,
-    },
-    {
-      type: intl.formatMessage({ id: 'dashboard.bookingType.completed' }),
-      value: statisticsData.completedBookings || 0,
-    },
-    {
-      type: intl.formatMessage({ id: 'dashboard.bookingType.canceled' }),
-      value: statisticsData.canceledBookings || 0,
-    },
-    {
-      type: intl.formatMessage({ id: 'dashboard.bookingType.violated' }),
-      value:
-        statisticsData.violatedBookings || dashboardData.violationCount || 0,
-    },
-  ];
-
-  const lineConfig = {
-    data: usageTrendData,
-    xField: 'time',
-    yField: 'value',
-    point: { size: 4, shape: 'circle' },
-    lineStyle: { lineWidth: 3, stroke: '#5B8FF9' },
-    xAxis: { tickCount: 7 },
-    yAxis: { min: 0 },
-    animation: { appear: { animation: 'path-in', duration: 1000 } },
-  };
-
-  const pieConfig = {
-    data: bookingStatusData,
-    angleField: 'value',
-    colorField: 'type',
-    color: ['#1890ff', '#13c2c2', '#faad14', '#ff7f4f'],
-    radius: 0.75,
-    label: {
-      type: 'outer',
-      content: (data: any) => `${(data.percent * 100).toFixed(0)}%`,
-    },
-    legend: { position: 'bottom', layout: 'horizontal' },
-  };
-
   const floorColumns = [
     {
       title: intl.formatMessage({
@@ -473,7 +420,11 @@ const Dashboard: React.FC = () => {
           <Alert
             type="info"
             showIcon
-            style={{ marginBottom: 16 }}
+            style={{
+              marginBottom: 16,
+              display: 'flex',
+              alignItems: 'baseline',
+            }}
             message={intl.formatMessage({
               id: 'dashboard.adminDataHint',
               defaultMessage:
@@ -486,7 +437,7 @@ const Dashboard: React.FC = () => {
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
           {statData.map((stat, index) => (
             <Col xs={24} sm={12} lg={6} key={index}>
-              <Card bordered={false} style={{ height: '100%' }}>
+              <Card variant="borderless" style={{ height: '100%' }}>
                 <Space
                   style={{ width: '100%', justifyContent: 'space-between' }}
                 >
@@ -521,57 +472,13 @@ const Dashboard: React.FC = () => {
           ))}
         </Row>
 
-        {/* 图表区域 - 仅管理员 */}
-        {isAdmin && (
-          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-            <Col xs={24} lg={12}>
-              <Card
-                title={intl.formatMessage({ id: 'dashboard.card.usageTrend' })}
-                bordered={false}
-                style={{ height: 400 }}
-              >
-                {usageTrendData.length > 0 ? (
-                  <div style={{ height: 300 }}>
-                    <Line {...lineConfig} style={{ height: 300 }} />
-                  </div>
-                ) : (
-                  <Empty
-                    description={intl.formatMessage({ id: 'common.noData' })}
-                    style={{ paddingTop: 80 }}
-                  />
-                )}
-              </Card>
-            </Col>
-            <Col xs={24} lg={12}>
-              <Card
-                title={intl.formatMessage({
-                  id: 'dashboard.card.bookingStatus',
-                })}
-                bordered={false}
-                style={{ height: 400 }}
-              >
-                {bookingStatusData.some((item) => Number(item.value) > 0) ? (
-                  <div style={{ height: 300 }}>
-                    <Pie {...pieConfig} height={300} />
-                  </div>
-                ) : (
-                  <Empty
-                    description={intl.formatMessage({ id: 'common.noData' })}
-                    style={{ paddingTop: 80 }}
-                  />
-                )}
-              </Card>
-            </Col>
-          </Row>
-        )}
-
         {/* 楼层座位状态和热门区域 - 仅管理员 */}
         {isAdmin && (
           <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
             <Col xs={24} lg={14}>
               <Card
                 title={intl.formatMessage({ id: 'dashboard.card.floorStatus' })}
-                bordered={false}
+                variant="borderless"
                 style={{ minHeight: 360 }}
                 extra={
                   <a onClick={() => history.push('/seat')}>
@@ -597,10 +504,10 @@ const Dashboard: React.FC = () => {
             <Col xs={24} lg={10}>
               <Card
                 title={intl.formatMessage({ id: 'dashboard.card.hotAreas' })}
-                bordered={false}
+                variant="borderless"
                 style={{ minHeight: 360 }}
                 extra={
-                  <a onClick={() => history.push('/management')}>
+                  <a onClick={() => history.push('/system-config')}>
                     {intl.formatMessage({ id: 'dashboard.viewAll' })}
                   </a>
                 }
@@ -615,7 +522,7 @@ const Dashboard: React.FC = () => {
                       <Card
                         key={area.key}
                         size="small"
-                        bordered={false}
+                        variant="borderless"
                         style={{ background: '#fafafa' }}
                       >
                         <Space
@@ -668,7 +575,7 @@ const Dashboard: React.FC = () => {
                 title={intl.formatMessage({
                   id: 'dashboard.card.recentBookings',
                 })}
-                bordered={false}
+                variant="borderless"
                 style={{ minHeight: 360 }}
                 extra={
                   <a onClick={() => history.push('/booking')}>
@@ -694,7 +601,7 @@ const Dashboard: React.FC = () => {
             <Col xs={24} lg={10}>
               <Card
                 title={intl.formatMessage({ id: 'dashboard.card.activeUsers' })}
-                bordered={false}
+                variant="borderless"
                 style={{ minHeight: 360 }}
                 extra={
                   <a onClick={() => history.push('/user')}>
@@ -712,15 +619,26 @@ const Dashboard: React.FC = () => {
                       <Card
                         key={user.key}
                         size="small"
-                        bordered={false}
+                        variant="borderless"
                         style={{ background: '#fafafa' }}
                       >
                         <Space>
                           <Avatar
                             src={user.avatar}
-                            icon={<UserOutlined />}
+                            icon={!user.avatar ? <UserOutlined /> : undefined}
                             size={40}
-                          />
+                            style={{
+                              backgroundColor: user.avatar
+                                ? 'transparent'
+                                : '#1890ff',
+                              color: '#fff',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {!user.avatar && user.name
+                              ? String(user.name).charAt(0).toUpperCase()
+                              : null}
+                          </Avatar>
                           <div>
                             <div
                               style={{

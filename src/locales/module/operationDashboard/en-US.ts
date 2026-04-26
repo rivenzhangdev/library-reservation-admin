@@ -13,4 +13,11 @@ export default {
   'operationDashboard.days7': 'Last 7 days',
   'operationDashboard.days14': 'Last 14 days',
   'operationDashboard.days30': 'Last 30 days',
+  'operationDashboard.staleOccupancyCheck': 'Stale Occupancy Check',
+  'operationDashboard.staleOccupancyCheckResult':
+    'Stale Occupancy Check Result',
+  'operationDashboard.releaseStaleOccupancy': 'Release Stale Occupancy',
+  'operationDashboard.staleOccupancyHint':
+    'Check bookings that are still occupying seats after the linked user has been removed. Repair will cancel those bookings and free the seats.',
+  'operationDashboard.noStaleOccupancy': 'No stale occupancy found',
 };

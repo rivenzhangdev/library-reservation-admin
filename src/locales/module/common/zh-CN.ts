@@ -7,6 +7,22 @@ export default {
   'common.lang.en': 'English',
   'app.title': '图书馆管理后台',
   'common.action': '操作',
+  'common.enabled': '启用',
+  'common.disabled': '停用',
+  'common.createdAt': '创建时间',
+  'common.field.type': '类型',
+  'common.field.relatedId': '关联ID',
+  'auditLog.exportFailed': '导出失败',
+  'auditLog.fieldGuide.title': '字段说明',
+  'auditLog.fieldGuide.action':
+    'Action：操作码，例如 booking.create 或 user.update。',
+  'auditLog.fieldGuide.type':
+    'Type：业务对象类型，例如 booking / user / config。',
+  'auditLog.fieldGuide.relatedId': 'Related ID：被操作对象的唯一标识。',
+  'auditLog.fieldGuide.updatedBy':
+    'Updated By：操作人名称（缺失时回退为操作人 ID）。',
+  'auditLog.search.operatorKeyword': '按姓名/用户名/ID 搜索',
+  'auditLog.search.relatedId': '按关联ID搜索',
   // 右上角与用户相关
   'right.personalCenter': '个人中心',
   'right.logout': '退出登录',
@@ -203,6 +219,8 @@ export default {
   'dashboard.card.activeUsers': '最近活跃用户',
   'dashboard.label.bookings': '预约次数',
   'dashboard.label.lastActive': '最后活跃',
+  'dashboard.adminDataHint':
+    '今日/本周/本月统计来自预约记录；热门区域、最近预约、活跃用户需要先有预约数据。',
   'dashboard.viewDetails': '查看详情',
   'dashboard.column.totalSeats': '总座位',
   'dashboard.column.occupiedSeats': '已占用座位',

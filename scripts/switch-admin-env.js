@@ -5,14 +5,36 @@ const { spawn } = require('child_process');
 const readline = require('readline');
 
 function readConfig() {
-  try {
-    const cfgPath = path.resolve(__dirname, '..', '..', 'backend-envs.json');
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const cfg = require(cfgPath);
-    return (cfg && cfg.BACKEND_ENVS) || null;
-  } catch (e) {
-    return null;
+  const cfgPath = path.resolve(__dirname, '..', 'config', 'backend-envs.json');
+  if (!fs.existsSync(cfgPath)) {
+    console.error(
+      `[switch-admin-env] ERROR: backend-envs.json not found at ${cfgPath}`,
+    );
+    console.error(
+      '  Please configure library-reservation-admin/config/backend-envs.json first.',
+    );
+    process.exit(1);
   }
+  let cfg;
+  try {
+    cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+  } catch (e) {
+    console.error(
+      `[switch-admin-env] ERROR: Failed to parse backend-envs.json: ${e.message}`,
+    );
+    process.exit(1);
+  }
+  if (
+    !cfg ||
+    !Array.isArray(cfg.BACKEND_ENVS) ||
+    cfg.BACKEND_ENVS.length === 0
+  ) {
+    console.error(
+      '[switch-admin-env] ERROR: backend-envs.json is empty or missing BACKEND_ENVS array.',
+    );
+    process.exit(1);
+  }
+  return cfg.BACKEND_ENVS;
 }
 
 function writeDotEnv(found) {
@@ -36,32 +58,7 @@ function startDev() {
   dev.on('close', (code) => process.exit(code));
 }
 
-const envs = readConfig() || [
-  {
-    key: 'development',
-    label: 'Development',
-    baseUrl: 'http://localhost:3000',
-    lanBaseUrl: '',
-  },
-  {
-    key: 'test',
-    label: 'Test',
-    baseUrl: 'http://localhost:3001',
-    lanBaseUrl: '',
-  },
-  {
-    key: 'uat',
-    label: 'UAT',
-    baseUrl: 'http://localhost:3002',
-    lanBaseUrl: '',
-  },
-  {
-    key: 'production',
-    label: 'Production',
-    baseUrl: 'http://localhost:3000',
-    lanBaseUrl: '',
-  },
-];
+const envs = readConfig();
 
 const alias = {
   dev: 'development',

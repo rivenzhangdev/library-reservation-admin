@@ -17,6 +17,7 @@ import {
 
 interface StudentIdChangeRequestType {
   id: string;
+  userName?: string;
   userId: {
     id: string;
     username: string;
@@ -39,18 +40,61 @@ const StudentIdChangeRequests: React.FC = () => {
   const intl = useIntl();
   const actionRef = useRef<ActionType>();
 
-  const handleApprove = async (record: StudentIdChangeRequestType) => {
+  const openReviewConfirm = (params: {
+    action: 'approve' | 'reject';
+    record: StudentIdChangeRequestType;
+    onConfirm: () => Promise<void>;
+  }) => {
+    const { action, record, onConfirm } = params;
+    const isApprove = action === 'approve';
+
     Modal.confirm({
       title: intl.formatMessage({
-        id: 'studentIdChangeRequest.approveConfirmTitle',
-        defaultMessage: 'Approve student ID change request?',
+        id: isApprove
+          ? 'studentIdChangeRequest.approveConfirmTitle'
+          : 'studentIdChangeRequest.rejectConfirmTitle',
+        defaultMessage: isApprove
+          ? 'Approve student ID change request?'
+          : 'Reject student ID change request?',
       }),
-      content: intl.formatMessage({
-        id: 'studentIdChangeRequest.approveConfirmContent',
-        defaultMessage:
-          'Approve this request and update the student ID for the user after review.',
+      content: (
+        <div>
+          <div style={{ marginBottom: 8 }}>
+            {intl.formatMessage({
+              id: isApprove
+                ? 'studentIdChangeRequest.approveConfirmContent'
+                : 'studentIdChangeRequest.rejectConfirmContent',
+              defaultMessage: isApprove
+                ? 'Approve this request and transfer the student ID to the requester. If the student ID is currently bound by another user, the previous binding will be removed automatically.'
+                : 'Reject this request and keep the existing student ID unchanged.',
+            })}
+          </div>
+          <div style={{ color: '#666' }}>
+            {record.userId?.name || '-'} · {record.newStudentId} ·{' '}
+            {record.newRealName}
+          </div>
+        </div>
+      ),
+      okText: intl.formatMessage({
+        id: isApprove
+          ? 'studentIdChangeRequest.action.approve'
+          : 'studentIdChangeRequest.action.reject',
+        defaultMessage: isApprove ? 'Approve' : 'Reject',
       }),
-      onOk: async () => {
+      okButtonProps: isApprove ? undefined : { danger: true },
+      cancelText: intl.formatMessage({
+        id: 'common.cancel',
+        defaultMessage: 'Cancel',
+      }),
+      onOk: onConfirm,
+    });
+  };
+
+  const handleApprove = async (record: StudentIdChangeRequestType) => {
+    openReviewConfirm({
+      action: 'approve',
+      record,
+      onConfirm: async () => {
         try {
           await approveStudentIdChangeRequest(record.id);
           message.success(
@@ -74,17 +118,10 @@ const StudentIdChangeRequests: React.FC = () => {
   };
 
   const handleReject = async (record: StudentIdChangeRequestType) => {
-    Modal.confirm({
-      title: intl.formatMessage({
-        id: 'studentIdChangeRequest.rejectConfirmTitle',
-        defaultMessage: 'Reject student ID change request?',
-      }),
-      content: intl.formatMessage({
-        id: 'studentIdChangeRequest.rejectConfirmContent',
-        defaultMessage:
-          'Reject this request and keep the existing student ID unchanged.',
-      }),
-      onOk: async () => {
+    openReviewConfirm({
+      action: 'reject',
+      record,
+      onConfirm: async () => {
         try {
           await rejectStudentIdChangeRequest(record.id);
           message.success(
@@ -117,9 +154,9 @@ const StudentIdChangeRequests: React.FC = () => {
       width: 240,
       render: (_, record) => (
         <div>
-          <div>{record.userId?.name || '-'}</div>
+          <div>{record.userId?.name || record.userName || '-'}</div>
           <div style={{ color: '#999', fontSize: 12 }}>
-            {record.userId?.username}
+            {(record.userId?.username || record.userName || '-').toString()}
             {record.userId?.studentId ? ` · ${record.userId.studentId}` : ''}
           </div>
         </div>
