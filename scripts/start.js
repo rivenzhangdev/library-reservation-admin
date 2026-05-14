@@ -2,6 +2,7 @@
 /* eslint-disable */
 const { spawn } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 const net = require('net');
 const util = require('util');
 const execp = util.promisify(require('child_process').exec);
@@ -28,11 +29,17 @@ function readConfig() {
 }
 
 function spawnDev(envKey, baseUrl, lanUrl) {
+  writeDotEnv(envKey, baseUrl, lanUrl);
+
   const env = Object.assign({}, process.env, {
     BACKEND_ENV: envKey,
     BACKEND_BASE_URL: baseUrl || '',
     BACKEND_URL: baseUrl || '',
     BACKEND_LAN_URL: lanUrl || '',
+    UMI_APP_BACKEND_ENV: envKey,
+    UMI_APP_BACKEND_BASE_URL: baseUrl || '',
+    UMI_APP_BACKEND_URL: baseUrl || '',
+    UMI_APP_BACKEND_LAN_URL: lanUrl || '',
   });
   const child = spawn('pnpm', ['run', 'dev'], {
     stdio: 'inherit',
@@ -40,6 +47,25 @@ function spawnDev(envKey, baseUrl, lanUrl) {
     shell: true,
   });
   child.on('exit', (code) => process.exit(code));
+}
+
+function writeDotEnv(envKey, baseUrl, lanUrl) {
+  try {
+    const outPath = path.resolve(__dirname, '..', '.env');
+    const content = `BACKEND_ENV=${envKey || ''}\nBACKEND_BASE_URL=${
+      baseUrl || ''
+    }\nBACKEND_URL=${baseUrl || ''}\nBACKEND_LAN_URL=${
+      lanUrl || ''
+    }\nUMI_APP_BACKEND_ENV=${envKey || ''}\nUMI_APP_BACKEND_BASE_URL=${
+      baseUrl || ''
+    }\nUMI_APP_BACKEND_URL=${baseUrl || ''}\nUMI_APP_BACKEND_LAN_URL=${
+      lanUrl || ''
+    }\n`;
+    fs.writeFileSync(outPath, content, 'utf8');
+    console.log(chalk.gray(`Synced ${outPath}`));
+  } catch (e) {
+    console.warn(chalk.yellow(`Failed to sync .env: ${e.message}`));
+  }
 }
 
 function parsePortFromBaseUrl(urlStr) {

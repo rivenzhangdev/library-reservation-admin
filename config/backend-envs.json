@@ -24,7 +24,7 @@
     {
       "key": "production",
       "label": "线上生产",
-      "baseUrl": "https://api.your-library.example.com",
+      "baseUrl": "http://localhost:3003",
       "lanBaseUrl": "",
       "isProd": true
     }

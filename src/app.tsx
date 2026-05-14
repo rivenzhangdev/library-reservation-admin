@@ -61,6 +61,7 @@ function resolveRuntimeBackendOverride(): {
 
     const key = String(
       penv.BACKEND_ENV ||
+        penv.UMI_APP_BACKEND_ENV ||
         penv.REACT_APP_BACKEND_ENV ||
         penv.VITE_BACKEND_ENV ||
         '',
@@ -69,6 +70,8 @@ function resolveRuntimeBackendOverride(): {
     const baseUrl = String(
       penv.BACKEND_BASE_URL ||
         penv.BACKEND_URL ||
+        penv.UMI_APP_BACKEND_BASE_URL ||
+        penv.UMI_APP_BACKEND_URL ||
         penv.REACT_APP_BACKEND_BASE_URL ||
         penv.VITE_BACKEND_BASE_URL ||
         '',
@@ -135,8 +138,24 @@ export async function getInitialState(): Promise<{
   token?: string;
   backend?: any;
 }> {
-  // 每次启动清空并重置环境相关存储
-  resetBackendEnvStorageOnLaunch(BOOT_BACKEND_ENV_KEY);
+  // 启动时仅在明确有运行时覆盖，或本地环境无效时，才重置环境存储。
+  const runtimeBoot = resolveRuntimeBackendOverride();
+  const runtimeBootKey =
+    runtimeBoot.key && BACKEND_ENVS.some((item) => item.key === runtimeBoot.key)
+      ? runtimeBoot.key
+      : BACKEND_ENVS.find((item) => item.baseUrl === runtimeBoot.baseUrl)?.key;
+  const existingBootKey = getBackendEnvKey();
+  const hasValidExistingKey =
+    !!existingBootKey &&
+    BACKEND_ENVS.some((item) => item.key === existingBootKey);
+
+  if (runtimeBootKey || runtimeBoot.baseUrl) {
+    resetBackendEnvStorageOnLaunch(
+      (runtimeBootKey || BOOT_BACKEND_ENV_KEY) as any,
+    );
+  } else if (!hasValidExistingKey) {
+    resetBackendEnvStorageOnLaunch(BOOT_BACKEND_ENV_KEY);
+  }
 
   try {
     const rawUser = localStorage.getItem('currentUser');
